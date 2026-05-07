@@ -258,8 +258,9 @@
       div.innerHTML = list.map(p => `
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <strong style="font-size:14px;">${p.name}</strong>
+            <strong style="font-size:14px;">${p.name} ${p.is_default ? '<span style="color:var(--accent);font-size:11px;">(기본)</span>' : ''}</strong>
             <div style="display:flex;gap:6px;">
+              ${p.is_default ? '' : `<button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;" onclick="setDefault(${p.id})">기본 설정</button>`}
               <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;" onclick="editPersona(${p.id})">수정</button>
               <button class="btn btn-danger" style="font-size:11px;padding:3px 8px;" onclick="delPersona(${p.id},'${p.name}')">삭제</button>
             </div>
@@ -299,6 +300,11 @@
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, content })
       });
+      loadPersonas();
+    }
+
+    async function setDefault(id) {
+      await fetch(`/api/admin/personas/${id}/default`, { method: 'POST' });
       loadPersonas();
     }
 

@@ -31,6 +31,17 @@
 
   <script>
     async function load() {
+      // 페르소나 체크
+      const pCheck = await fetch('/api/admin/personas/check').then(r => r.json());
+      if (!pCheck.exists) {
+        document.getElementById('story-grid').innerHTML = `
+          <div style="grid-column:1/-1;text-align:center;padding:40px 0;">
+            <p style="color:var(--accent);font-size:16px;margin-bottom:12px;">페르소나를 먼저 등록해주세요</p>
+            <a href="/admin.html" class="btn btn-primary">어드민 페이지로 이동</a>
+          </div>`;
+        return;
+      }
+
       const [storiesRes, recentRes] = await Promise.all([
         fetch('/api/stories'),
         fetch('/api/stories/recent'),
@@ -74,7 +85,7 @@
       if (!confirm(`"${storyName}" 의 모든 채팅 기록을 삭제할까요?`)) return;
       await fetch(`/api/stories/${encodeURIComponent(storyName)}/sessions`, { method: 'DELETE' });
       sessionStorage.removeItem(`session_${storyName}`);
-      load();
+      await load();
     }
 
     function timeAgo(unixSec) {

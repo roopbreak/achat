@@ -45,13 +45,16 @@ const renderer = new marked.Renderer();
 renderer.hr = () => '';
 
 renderer.image = ({ href, text }) => {
-  return `<img src="${href ?? ''}" alt="${text ?? ''}" loading="lazy" onerror="this.style.display='none'" onclick="openLightbox(this.src)" style="cursor:zoom-in;">`;
+  return `<img src="${href ?? ''}" alt="${text ?? ''}" loading="lazy" onerror="this.style.display='none'" class="chat-img">`;
 };
 
-function openLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox').classList.add('open');
-}
+// 이미지 클릭 → 라이트박스 (이벤트 위임)
+document.getElementById('chat-messages').addEventListener('click', e => {
+  if (e.target.tagName === 'IMG' && e.target.classList.contains('chat-img')) {
+    document.getElementById('lightbox-img').src = e.target.src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+});
 
 renderer.heading = ({ text, depth }) => {
   // 상태창 감지: 이모지로 시작하거나 대괄호 패턴 포함
@@ -102,6 +105,15 @@ document.title = `${storyName} — AChat`;
   const story = list.find(s => s.name === storyName);
   if (!story) { alert('스토리를 찾을 수 없습니다.'); location.href = '/'; return; }
   charName = story.char_name ?? '';
+
+  // 페르소나 체크 — 없으면 어드민으로
+  const pCheck = await fetch('/api/admin/personas/check').then(r => r.json());
+  if (!pCheck.exists) {
+    alert('페르소나를 먼저 등록해주세요.');
+    location.href = '/admin.html';
+    return;
+  }
+  await loadPersonaSelect();
 
 
   if (!sessionId) {
@@ -589,6 +601,28 @@ document.getElementById('chat-input').addEventListener('input', function () {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 140) + 'px';
 });
+
+// ── 페르소나 선택 ────────────────────────────────────
+
+async function loadPersonaSelect() {
+  const personas = await fetch('/api/admin/personas').then(r => r.json());
+  const storyP   = await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/persona`).then(r => r.json());
+  const sel = document.getElementById('persona-select');
+  sel.innerHTML = personas.map(p =>
+    `<option value="${p.id}" ${p.is_default ? 'data-default="1"' : ''}>${p.name}${p.is_default ? ' (기본)' : ''}</option>`
+  ).join('');
+  // 스토리에 지정된 페르소나 선택, 없으면 디폴트
+  sel.value = storyP.persona_id ?? personas.find(p => p.is_default)?.id ?? personas[0]?.id ?? '';
+}
+
+async function saveStoryPersona() {
+  const personaId = document.getElementById('persona-select').value;
+  await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/persona`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ persona_id: personaId, persona_override: null }),
+  });
+}
 
 // ── 유저 노트 ────────────────────────────────────────
 

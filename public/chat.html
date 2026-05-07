@@ -59,6 +59,9 @@
         <option value="4096" selected>길게 (4K)</option>
         <option value="8192">매우 길게 (8K)</option>
       </select>
+      <span style="font-size:13px;color:var(--text-dim);margin-left:8px;">페르소나</span>
+      <select id="persona-select" onchange="saveStoryPersona()" style="width:auto;font-size:13px;padding:5px 10px;">
+      </select>
       <span style="font-size:13px;color:var(--text-dim);margin-left:8px;">모델</span>
       <select id="model-select" onchange="saveModel()" style="width:auto;font-size:13px;padding:5px 10px;">
         <option value="claude-sonnet-4-6">Sonnet 4.6</option>

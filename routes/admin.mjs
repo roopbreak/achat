@@ -9,7 +9,7 @@ import {
   updateUrlMappings, getUrlMappings,
   getStoryNote, upsertStoryNote,
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
-  setStoryPersona, getDB,
+  setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
 } from '../lib/db.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 
@@ -145,8 +145,28 @@ router.put('/personas/:id', (req, res) => {
 
 // DELETE /api/admin/personas/:id
 router.delete('/personas/:id', (req, res) => {
+  const personas = getPersonas();
+  if (personas.length <= 1) return res.status(400).json({ error: '최소 1개 페르소나 필요' });
+  const target = getPersona(req.params.id);
   deletePersona(req.params.id);
+  // 삭제한 게 디폴트면 다른 걸 디폴트로
+  if (target?.is_default) {
+    const remaining = getPersonas();
+    if (remaining.length) setDefaultPersona(remaining[0].id);
+  }
   res.json({ ok: true });
+});
+
+// POST /api/admin/personas/:id/default
+router.post('/personas/:id/default', (req, res) => {
+  setDefaultPersona(req.params.id);
+  res.json({ ok: true });
+});
+
+// GET /api/admin/personas/check — 페르소나 존재 여부
+router.get('/personas/check', (_req, res) => {
+  const personas = getPersonas();
+  res.json({ exists: personas.length > 0, count: personas.length });
 });
 
 // POST /api/admin/stories/:name/persona

@@ -203,6 +203,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
   margin: 10px 0;
   border: 1px solid var(--border);
 }
+.msg-assistant .chat-img { cursor: zoom-in; }
 .msg-assistant p { margin-bottom: 0.6em; }
 .msg-assistant p:last-child { margin-bottom: 0; }
 
