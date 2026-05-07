@@ -83,8 +83,9 @@
       document.getElementById('session-meta').textContent = `${turnCount}턴`;
       document.getElementById('empty-state').style.display = 'none';
 
-      const res  = await fetch(`/api/sessions/${sessionId}/messages`);
-      const msgs = await res.json();
+      const res  = await fetch(`/api/sessions/${sessionId}/messages?limit=99999`);
+      const data = await res.json();
+      const msgs = data.messages ?? (Array.isArray(data) ? data : []);
 
       const viewer = document.getElementById('msg-viewer');
       viewer.innerHTML = msgs.map(m => `

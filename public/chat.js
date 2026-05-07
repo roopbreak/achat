@@ -213,8 +213,8 @@ async function loadMessages(sid, before) {
   if (!res.ok) throw new Error('세션 없음');
   const data = await res.json();
 
-  hasMoreMsgs = data.hasMore;
-  const msgs = data.messages;
+  hasMoreMsgs = data.hasMore ?? false;
+  const msgs = data.messages ?? (Array.isArray(data) ? data : []);
   if (!msgs.length) return;
 
   oldestExchange = msgs[0].exchange_number;
@@ -424,9 +424,9 @@ async function exportChat() {
   if (!sessionId) return alert('세션 없음');
 
   // 전체 메시지 가져오기 (페이지네이션 없이)
-  const res = await fetch(`/api/sessions/${sessionId}/messages?limit=9999`);
+  const res = await fetch(`/api/sessions/${sessionId}/messages?limit=99999`);
   const data = await res.json();
-  const msgs = data.messages ?? data;
+  const msgs = data.messages ?? (Array.isArray(data) ? data : []);
 
   const format = prompt('형식 선택:\\n1 = 텍스트 (.txt)\\n2 = JSON (.json)', '1');
 
