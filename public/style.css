@@ -207,6 +207,18 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .msg-assistant p { margin-bottom: 0.6em; }
 .msg-assistant p:last-child { margin-bottom: 0; }
 
+/* 설정 패널 */
+#settings-panel {
+  display: none;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
 /* 입력 영역 */
 #chat-input-area {
   flex-shrink: 0;
@@ -307,8 +319,13 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* ── 반응형 ── */
 @media (max-width: 600px) {
+  #chat-messages { padding: 16px; gap: 14px; }
   .msg-user { max-width: 90%; }
   .msg-assistant img { max-width: 100%; }
   .story-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   #chat-header .session-actions .btn span { display: none; }
+  #settings-panel { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
+  #settings-panel select { width: 100% !important; }
 }
+
+html, body { overflow-x: hidden; }
