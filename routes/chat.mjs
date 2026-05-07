@@ -52,7 +52,7 @@ router.post('/:name/chat', async (req, res) => {
   let assistantText = '';
 
   try {
-    const { systemBlocks, messages } = await buildContext(storyName, sessionId, message.trim());
+    const { systemBlocks, messages } = await buildContext(storyName, sessionId, message.trim(), maxTokens || 4096);
     assistantText = await streamToSSE(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
   } catch (err) {
     if (!res.writableEnded) {
@@ -124,7 +124,7 @@ router.delete('/:name/messages/:exchangeNum', (req, res) => {
 // POST /api/stories/:name/regen — 마지막 응답 재생성
 router.post('/:name/regen', async (req, res) => {
   const storyName = decodeURIComponent(req.params.name);
-  const { sessionId, feedback, model } = req.body;
+  const { sessionId, feedback, model, maxTokens } = req.body;
   if (!sessionId) return res.status(400).json({ error: 'sessionId 필요' });
 
   const db = getDB();
@@ -160,7 +160,7 @@ router.post('/:name/regen', async (req, res) => {
   // 컨텍스트 조립 (마지막 턴 제거된 상태에서)
   let assistantText = '';
   try {
-    const { systemBlocks, messages } = await buildContext(storyName, sessionId, userContent);
+    const { systemBlocks, messages } = await buildContext(storyName, sessionId, userContent, maxTokens || 4096);
     assistantText = await streamToSSE(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
   } catch (err) {
     if (!res.writableEnded) {
