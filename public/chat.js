@@ -318,7 +318,7 @@ async function doRegen(exchangeNumber, btn) {
     const res = await fetch(`/api/stories/${encodeURIComponent(storyName)}/regen`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ sessionId, feedback, model: currentModel }),
+      body:    JSON.stringify({ sessionId, feedback, model: currentModel, maxTokens }),
     });
 
     if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
