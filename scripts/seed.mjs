@@ -69,16 +69,36 @@ for (const storyName of storyDirs) {
   fs.mkdirSync(destDir, { recursive: true });
   deleteStoryImages(storyName);
 
-  for (const imgFile of imgFiles) {
-    const match = imgFile.match(/^batch_(.+)_\d+\.(png|jpg|webp)$/i);
-    if (!match) continue;
-    const src = path.join(imgDir, imgFile);
-    const dest = path.join(destDir, imgFile);
-    if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
-    insertStoryImage(storyName, match[1], imgFile);
-    totalImages++;
+  // images/ 하위 디렉토리(charDir) 지원
+  const processImgDir = (srcDir, charDir) => {
+    const files = fs.readdirSync(srcDir).filter(f => /^batch_.+_\d+\.(png|jpg|webp)$/i.test(f));
+    if (!files.length) return 0;
+    const dest = path.join(DATA_DIR, 'stories', storyName, 'images', charDir);
+    fs.mkdirSync(dest, { recursive: true });
+    for (const f of files) {
+      const match = f.match(/^batch_(.+)_\d+\.(png|jpg|webp)$/i);
+      if (!match) continue;
+      const src = path.join(srcDir, f);
+      const d   = path.join(dest, f);
+      if (!fs.existsSync(d)) fs.copyFileSync(src, d);
+      insertStoryImage(storyName, charDir, match[1], f);
+      totalImages++;
+    }
+    return files.length;
+  };
+
+  // flat 이미지 (images/*.png)
+  let imgCount = processImgDir(imgDir, '');
+
+  // 서브디렉토리 이미지 (images/{charDir}/*.png)
+  for (const sub of fs.readdirSync(imgDir)) {
+    const subPath = path.join(imgDir, sub);
+    if (fs.statSync(subPath).isDirectory()) {
+      imgCount += processImgDir(subPath, sub);
+    }
   }
-  console.log(`   🖼️  이미지 ${imgFiles.length}장`);
+
+  if (imgCount) console.log(`   🖼️  이미지 ${imgCount}장`);
 }
 
 const { getDB } = await import('../lib/db.mjs');

@@ -1,11 +1,27 @@
 import { Router } from 'express';
-import { getStories } from '../lib/db.mjs';
+import { getStories, getDB } from '../lib/db.mjs';
 
 const router = Router();
 
 // GET /api/stories
 router.get('/', (_req, res) => {
   res.json(getStories());
+});
+
+// GET /api/stories/recent — 최근 진행한 스토리 목록
+router.get('/recent', (_req, res) => {
+  const rows = getDB().prepare(`
+    SELECT s.name, s.char_name, cs.updated_at, cs.id as session_id
+    FROM stories s
+    JOIN (
+      SELECT story_name, MAX(updated_at) as updated_at, id
+      FROM chat_sessions
+      GROUP BY story_name
+    ) cs ON cs.story_name = s.name
+    ORDER BY cs.updated_at DESC
+    LIMIT 10
+  `).all();
+  res.json(rows);
 });
 
 export default router;

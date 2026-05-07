@@ -76,6 +76,24 @@
       <div id="img-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
     </div>
 
+    <!-- URL 매핑 설정 -->
+    <div class="admin-section">
+      <h2>🔗 이미지 URL 매핑 (CDN → 로컬)</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+        외부 CDN URL을 로컬 이미지로 라우팅. 한 줄에 하나씩: <code style="color:var(--accent);">https://cdn.../s/ → charDir</code>
+      </p>
+      <div class="form-row">
+        <label>스토리명</label>
+        <input type="text" id="mapping-story-name" placeholder="예: 진소하" oninput="loadMappings()">
+      </div>
+      <div class="form-row">
+        <label>매핑 (CDN prefix → 로컬 charDir)</label>
+        <textarea id="mapping-text" rows="4" placeholder="https://ddsmdy.com/soha/s/ → soha&#10;https://ddsmdy.com/soha/u/ → sua" style="font-family:monospace;font-size:13px;"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveMappings()">저장</button>
+      <div id="mapping-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
     <!-- 스토리 목록 -->
     <div class="admin-section">
       <h2>등록된 스토리</h2>
@@ -183,6 +201,31 @@
       if (!confirm(`"${name}" 스토리와 이미지를 모두 삭제할까요?`)) return;
       await fetch(`/api/admin/stories/${encodeURIComponent(name)}`, { method: 'DELETE' });
       loadStories();
+    }
+
+    async function loadMappings() {
+      const name = document.getElementById('mapping-story-name').value.trim();
+      if (!name) return;
+      const res  = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/url-mappings`);
+      const list = await res.json();
+      if (list.length) {
+        document.getElementById('mapping-text').value = list.map(m => `${m.from} → ${m.charDir}`).join('\n');
+      }
+    }
+
+    async function saveMappings() {
+      const name = document.getElementById('mapping-story-name').value.trim();
+      const text = document.getElementById('mapping-text').value.trim();
+      const out  = document.getElementById('mapping-result');
+      if (!name) { out.textContent = '스토리명을 입력하세요.'; return; }
+      const res  = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/url-mappings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mappings: text }),
+      });
+      const json = await res.json();
+      out.style.color = json.ok ? '#7dff9e' : 'var(--danger)';
+      out.textContent = json.ok ? `저장 완료 (${json.count}개 매핑)` : json.error;
     }
 
     loadStories();
