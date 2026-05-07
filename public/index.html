@@ -42,12 +42,16 @@
       if (recent.length) {
         document.getElementById('recent-section').style.display = 'block';
         document.getElementById('recent-grid').innerHTML = recent.map(s => `
-          <div class="story-card" onclick="location.href='/chat.html?story=${encodeURIComponent(s.name)}'">
-            <h3>${s.name}</h3>
-            <div class="char" style="display:flex;justify-content:space-between;align-items:center;">
-              <span>${s.char_name}</span>
-              <span style="font-size:11px;color:var(--text-dim);">${timeAgo(s.updated_at)}</span>
+          <div class="story-card" style="position:relative;">
+            <div onclick="location.href='/chat.html?story=${encodeURIComponent(s.name)}'">
+              <h3>${s.name}</h3>
+              <div class="char" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>${s.char_name}</span>
+                <span style="font-size:11px;color:var(--text-dim);">${timeAgo(s.updated_at)}</span>
+              </div>
             </div>
+            <button onclick="event.stopPropagation();clearRecent('${s.name}')"
+              style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px;" title="세션 삭제">✕</button>
           </div>
         `).join('');
       }
@@ -64,6 +68,13 @@
           <div class="char">${s.char_name}</div>
         </div>
       `).join('');
+    }
+
+    async function clearRecent(storyName) {
+      if (!confirm(`"${storyName}" 의 모든 채팅 기록을 삭제할까요?`)) return;
+      await fetch(`/api/stories/${encodeURIComponent(storyName)}/sessions`, { method: 'DELETE' });
+      sessionStorage.removeItem(`session_${storyName}`);
+      load();
     }
 
     function timeAgo(unixSec) {

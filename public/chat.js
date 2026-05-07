@@ -75,9 +75,12 @@ function replaceTemplateVars(text) {
 
 const params    = new URLSearchParams(location.search);
 const storyName = params.get('story') ?? '';
-let sessionId   = sessionStorage.getItem(`session_${storyName}`) ?? null;
-let isStreaming  = false;
-let exchangeNum  = 0;
+let sessionId    = sessionStorage.getItem(`session_${storyName}`) ?? null;
+let isStreaming   = false;
+let exchangeNum   = 0;
+let hasMoreMsgs   = false;
+let loadingMore   = false;
+let oldestExchange = null;
 
 // ── 초기화 ──────────────────────────────────────────────
 
@@ -95,14 +98,12 @@ document.title = `${storyName} — AChat`;
   if (!sessionId) {
     await newSession(false);
   } else {
-    // 기존 세션 메시지 복원
     try {
-      const msgsRes = await fetch(`/api/sessions/${sessionId}/messages`);
-      if (!msgsRes.ok) throw new Error('세션 없음');
-      const msgs = await msgsRes.json();
-      for (const m of msgs) appendMessage(m.role, m.content, false, m.exchange_number);
+      await loadMessages(sessionId);
+      // 로드 후 맨 아래로
+      const el = document.getElementById('chat-messages');
+      el.scrollTop = el.scrollHeight;
     } catch {
-      // 세션이 만료됐으면 새로 시작
       await newSession(false);
     }
     loadSlotList();
@@ -125,9 +126,9 @@ async function newSession(reset = true) {
   document.getElementById('chat-messages').innerHTML = '';
 
   // first_mes 로드
-  const msgsRes = await fetch(`/api/sessions/${sessionId}/messages`);
-  const msgs = await msgsRes.json();
-  for (const m of msgs) appendMessage(m.role, m.content, false, m.exchange_number);
+  await loadMessages(sessionId);
+  const el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
 
   loadSlotList();
 }
@@ -183,10 +184,70 @@ function appendMessage(role, content, streaming = false, exchangeNumber = null) 
   return div;
 }
 
-function autoScroll(el) {
-  // 사용자가 위로 스크롤한 상태면 자동 스크롤 안 함
-  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-  if (atBottom) el.scrollTop = el.scrollHeight;
+function autoScroll() {
+  // 자동 스크롤 비활성화
+}
+
+// ── 페이지네이션 메시지 로드 ─────────────────────────
+
+async function loadMessages(sid, before) {
+  const url = before != null
+    ? `/api/sessions/${sid}/messages?limit=50&before=${before}`
+    : `/api/sessions/${sid}/messages?limit=50`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('세션 없음');
+  const data = await res.json();
+
+  hasMoreMsgs = data.hasMore;
+  const msgs = data.messages;
+  if (!msgs.length) return;
+
+  oldestExchange = msgs[0].exchange_number;
+
+  const container = document.getElementById('chat-messages');
+
+  // "더 보기" 버튼 제거 후 재추가
+  const existingBtn = document.getElementById('load-more-btn');
+  if (existingBtn) existingBtn.remove();
+
+  if (hasMoreMsgs) {
+    const btn = document.createElement('button');
+    btn.id = 'load-more-btn';
+    btn.className = 'btn btn-secondary';
+    btn.style.cssText = 'align-self:center;font-size:13px;padding:6px 16px;margin-bottom:8px;';
+    btn.textContent = '↑ 이전 메시지';
+    btn.onclick = loadOlderMessages;
+    container.prepend(btn);
+  }
+
+  // 메시지 추가 (before가 있으면 위쪽에 삽입)
+  const scrollBefore = container.scrollHeight;
+  const firstMsg = container.querySelector('.msg');
+
+  for (const m of msgs) {
+    const div = appendMessage(m.role, m.content, false, m.exchange_number);
+    if (before != null && firstMsg) {
+      container.insertBefore(div, firstMsg);
+    }
+  }
+
+  // 위쪽 삽입 시 스크롤 위치 보정
+  if (before != null) {
+    container.scrollTop = container.scrollHeight - scrollBefore;
+  }
+}
+
+async function loadOlderMessages() {
+  if (loadingMore || !hasMoreMsgs || !oldestExchange) return;
+  loadingMore = true;
+  const btn = document.getElementById('load-more-btn');
+  if (btn) btn.textContent = '로딩 중...';
+  try {
+    await loadMessages(sessionId, oldestExchange);
+  } finally {
+    loadingMore = false;
+  }
 }
 
 function showRegenPanel(msgDiv, exchangeNumber) {
@@ -431,7 +492,7 @@ async function loadSlot(slotId, slotName) {
   document.getElementById('slot-panel').style.display = 'none';
 
   document.getElementById('chat-messages').innerHTML = '';
-  const msgsRes = await fetch(`/api/sessions/${sessionId}/messages`);
-  const msgs = await msgsRes.json();
-  for (const m of msgs) appendMessage(m.role, m.content, false, m.exchange_number);
+  await loadMessages(sessionId);
+  const el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
 }

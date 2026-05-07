@@ -94,6 +94,59 @@
       <div id="mapping-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
     </div>
 
+    <!-- 페르소나 관리 -->
+    <div class="admin-section">
+      <h2>👤 페르소나 관리</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+        플레이어 캐릭터 프리셋. 여러 개 만들고 스토리별로 선택할 수 있습니다.
+      </p>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input type="text" id="persona-name" placeholder="이름 (예: 정태원)" style="width:160px;">
+        <button class="btn btn-primary" onclick="addPersona()">추가</button>
+      </div>
+      <textarea id="persona-content" rows="5" placeholder="캐릭터 설정을 입력하세요.&#10;예: 정태원, 27세, IT 스타트업 개발자. 성격 온화하고 다정함..." style="margin-bottom:10px;"></textarea>
+      <div id="persona-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- 스토리별 페르소나 선택 -->
+    <div class="admin-section">
+      <h2>🔗 스토리별 페르소나 연결</h2>
+      <div class="form-row">
+        <label>스토리명</label>
+        <input type="text" id="sp-story" placeholder="예: 진소하" oninput="loadStoryPersona()">
+      </div>
+      <div class="form-row">
+        <label>페르소나 선택</label>
+        <select id="sp-persona" style="font-size:14px;">
+          <option value="">없음</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>오버라이드 (선택. 이 스토리에서만 적용할 수정사항)</label>
+        <textarea id="sp-override" rows="3" placeholder="예: 나이를 21세로 변경, 컴공 2학년"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveStoryPersona()">저장</button>
+      <div id="sp-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
+    <!-- 유저 노트 -->
+    <div class="admin-section">
+      <h2>📝 유저 노트 (스토리별)</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+        스토리별 메모. 시스템 프롬프트에 최우선으로 주입됩니다.
+      </p>
+      <div class="form-row">
+        <label>스토리명</label>
+        <input type="text" id="note-story" placeholder="예: 진소하" oninput="loadNote()">
+      </div>
+      <div class="form-row">
+        <label>노트</label>
+        <textarea id="note-content" rows="6" placeholder="진행 상태, 규칙, 중요 사건 등..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveNote()">저장</button>
+      <div id="note-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
     <!-- 스토리 목록 -->
     <div class="admin-section">
       <h2>등록된 스토리</h2>
@@ -197,6 +250,112 @@
       }
     }
 
+    // ── 페르소나 ──────────────────────────────
+    async function loadPersonas() {
+      const res = await fetch('/api/admin/personas');
+      const list = await res.json();
+      const div = document.getElementById('persona-list');
+      div.innerHTML = list.map(p => `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <strong style="font-size:14px;">${p.name}</strong>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;" onclick="editPersona(${p.id})">수정</button>
+              <button class="btn btn-danger" style="font-size:11px;padding:3px 8px;" onclick="delPersona(${p.id},'${p.name}')">삭제</button>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text-dim);white-space:pre-wrap;max-height:80px;overflow:hidden;">${p.content.slice(0,200)}${p.content.length>200?'...':''}</div>
+        </div>
+      `).join('') || '<div style="color:var(--text-dim);font-size:13px;">페르소나 없음</div>';
+
+      // 스토리별 연결 드롭다운 업데이트
+      const sel = document.getElementById('sp-persona');
+      sel.innerHTML = '<option value="">없음</option>' + list.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    async function addPersona() {
+      const name = document.getElementById('persona-name').value.trim();
+      const content = document.getElementById('persona-content').value.trim();
+      if (!name || !content) return alert('이름과 설정을 입력하세요.');
+      await fetch('/api/admin/personas', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, content })
+      });
+      document.getElementById('persona-name').value = '';
+      document.getElementById('persona-content').value = '';
+      loadPersonas();
+    }
+
+    async function editPersona(id) {
+      const res = await fetch('/api/admin/personas');
+      const list = await res.json();
+      const p = list.find(x => x.id === id);
+      if (!p) return;
+      const name = prompt('이름', p.name);
+      if (!name) return;
+      const content = prompt('설정', p.content);
+      if (!content) return;
+      await fetch(`/api/admin/personas/${id}`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, content })
+      });
+      loadPersonas();
+    }
+
+    async function delPersona(id, name) {
+      if (!confirm(`"${name}" 페르소나를 삭제할까요?`)) return;
+      await fetch(`/api/admin/personas/${id}`, { method: 'DELETE' });
+      loadPersonas();
+    }
+
+    async function loadStoryPersona() {
+      const name = document.getElementById('sp-story').value.trim();
+      if (!name) return;
+      const res = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/persona`);
+      const data = await res.json();
+      document.getElementById('sp-persona').value = data.persona_id ?? '';
+      document.getElementById('sp-override').value = data.persona_override ?? '';
+    }
+
+    async function saveStoryPersona() {
+      const name = document.getElementById('sp-story').value.trim();
+      if (!name) return alert('스토리명을 입력하세요.');
+      const persona_id = document.getElementById('sp-persona').value || null;
+      const persona_override = document.getElementById('sp-override').value.trim() || null;
+      const res = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/persona`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ persona_id, persona_override })
+      });
+      const json = await res.json();
+      const out = document.getElementById('sp-result');
+      out.style.color = json.ok ? '#7dff9e' : 'var(--danger)';
+      out.textContent = json.ok ? '저장 완료' : (json.error ?? '오류');
+    }
+
+    // ── 유저 노트 ────────────────────────────
+    async function loadNote() {
+      const name = document.getElementById('note-story').value.trim();
+      if (!name) return;
+      const res = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/note`);
+      const data = await res.json();
+      document.getElementById('note-content').value = data.content ?? '';
+    }
+
+    async function saveNote() {
+      const name = document.getElementById('note-story').value.trim();
+      if (!name) return alert('스토리명을 입력하세요.');
+      const content = document.getElementById('note-content').value;
+      const res = await fetch(`/api/admin/stories/${encodeURIComponent(name)}/note`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ content })
+      });
+      const json = await res.json();
+      const out = document.getElementById('note-result');
+      out.style.color = json.ok ? '#7dff9e' : 'var(--danger)';
+      out.textContent = json.ok ? '저장 완료' : (json.error ?? '오류');
+    }
+
+    // ── 스토리 삭제 ──────────────────────────
     async function deleteStory(name) {
       if (!confirm(`"${name}" 스토리와 이미지를 모두 삭제할까요?`)) return;
       await fetch(`/api/admin/stories/${encodeURIComponent(name)}`, { method: 'DELETE' });
@@ -229,6 +388,7 @@
     }
 
     loadStories();
+    loadPersonas();
   </script>
 </body>
 </html>
