@@ -5,7 +5,11 @@ const router = Router();
 
 // GET /api/stories
 router.get('/', (_req, res) => {
-  res.json(getStories());
+  const stories = getStories().map(s => ({
+    ...s,
+    summary: (s.description ?? '').slice(0, 200),
+  }));
+  res.json(stories);
 });
 
 // GET /api/stories/recent — 최근 진행한 스토리 목록

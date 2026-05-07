@@ -50,7 +50,7 @@
                 <span style="font-size:11px;color:var(--text-dim);">${timeAgo(s.updated_at)}</span>
               </div>
             </div>
-            <button onclick="event.stopPropagation();clearRecent('${s.name}')"
+            <button onclick="event.stopPropagation();clearRecent(decodeURIComponent('${encodeURIComponent(s.name)}'))"
               style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px;" title="세션 삭제">✕</button>
           </div>
         `).join('');
@@ -65,7 +65,7 @@
       grid.innerHTML = list.map(s => `
         <div class="story-card" onclick="location.href='/chat.html?story=${encodeURIComponent(s.name)}'">
           <h3>${s.name}</h3>
-          <div class="char">${s.char_name}</div>
+          <div class="desc">${s.summary ?? ''}</div>
         </div>
       `).join('');
     }

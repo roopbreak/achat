@@ -45,8 +45,13 @@ const renderer = new marked.Renderer();
 renderer.hr = () => '';
 
 renderer.image = ({ href, text }) => {
-  return `<img src="${href ?? ''}" alt="${text ?? ''}" loading="lazy" onerror="this.style.display='none'">`;
+  return `<img src="${href ?? ''}" alt="${text ?? ''}" loading="lazy" onerror="this.style.display='none'" onclick="openLightbox(this.src)" style="cursor:zoom-in;">`;
 };
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
 
 renderer.heading = ({ text, depth }) => {
   // 상태창 감지: 이모지로 시작하거나 대괄호 패턴 포함
@@ -68,9 +73,12 @@ renderer.heading = ({ text, depth }) => {
 };
 marked.use({ renderer, breaks: true, gfm: true });
 
-// {{user}} 치환 함수
+// 템플릿 변수 치환
+let charName = '';
 function replaceTemplateVars(text) {
-  return text.replace(/\{\{user\}\}/gi, '나');
+  return text
+    .replace(/\{\{user\}\}/gi, '나')
+    .replace(/\{\{char\}\}/gi, charName || '그녀');
 }
 
 const params    = new URLSearchParams(location.search);
@@ -93,6 +101,7 @@ document.title = `${storyName} — AChat`;
   const list = await res.json();
   const story = list.find(s => s.name === storyName);
   if (!story) { alert('스토리를 찾을 수 없습니다.'); location.href = '/'; return; }
+  charName = story.char_name ?? '';
 
 
   if (!sessionId) {
@@ -572,7 +581,7 @@ async function sendMessage(overrideText) {
 
 // 엔터 전송 (Shift+Enter 줄바꿈)
 document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); }
 });
 
 // textarea 자동 높이
@@ -580,6 +589,29 @@ document.getElementById('chat-input').addEventListener('input', function () {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 140) + 'px';
 });
+
+// ── 유저 노트 ────────────────────────────────────────
+
+async function toggleNotePanel() {
+  const panel = document.getElementById('note-panel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const res = await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/note`);
+    const data = await res.json();
+    document.getElementById('chat-note').value = data.content ?? '';
+  }
+}
+
+async function saveNoteFromChat() {
+  const content = document.getElementById('chat-note').value;
+  await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/note`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  document.getElementById('note-panel').style.display = 'none';
+}
 
 // ── 슬롯 ──────────────────────────────────────────────
 
