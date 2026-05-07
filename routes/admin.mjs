@@ -5,11 +5,13 @@ import fs from 'node:fs';
 import { parseAndImportCard } from '../lib/card-parser.mjs';
 import { saveImages, deleteStoryImageFiles, createMulter } from '../lib/upload-handler.mjs';
 import {
-  getStories, getStoryImageCount, deleteStory, deleteStoryImages,
+  getStories, getStory, getStoryImageCount, deleteStory, deleteStoryImages,
+  updateStory, createStoryManual,
   updateUrlMappings, getUrlMappings,
   getStoryNote, upsertStoryNote,
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
   setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
+  getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
 } from '../lib/db.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 
@@ -23,6 +25,80 @@ router.get('/stories', (_req, res) => {
     imageCount: getStoryImageCount(s.name),
   }));
   res.json(stories);
+});
+
+// POST /api/admin/stories — 신규 스토리 수동 생성
+router.post('/stories', (req, res) => {
+  try {
+    const { name, char_name, description, personality, scenario, first_mes } = req.body;
+    if (!name?.trim() || !char_name?.trim()) {
+      return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
+    }
+    const existing = getStory(name.trim());
+    if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
+    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/stories/:name — 단일 스토리 상세
+router.get('/stories/:name', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+  res.json(story);
+});
+
+// PUT /api/admin/stories/:name — 스토리 필드 수정
+router.put('/stories/:name', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const story = getStory(name);
+    if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+    updateStory(name, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/stories/:name/lore — 로어북 목록
+router.get('/stories/:name/lore', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  res.json(getAllLoreIncludeDisabled(name));
+});
+
+// POST /api/admin/stories/:name/lore — 로어 항목 추가
+router.post('/stories/:name/lore', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const result = insertSingleLoreEntry(name, req.body);
+    res.json({ ok: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/stories/:name/lore/:id — 로어 항목 수정
+router.put('/stories/:name/lore/:id', (req, res) => {
+  try {
+    updateLoreEntry(req.params.id, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/stories/:name/lore/:id — 로어 항목 삭제
+router.delete('/stories/:name/lore/:id', (req, res) => {
+  try {
+    deleteLoreEntry(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/admin/import/card

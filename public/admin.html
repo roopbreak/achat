@@ -149,7 +149,10 @@
 
     <!-- 스토리 목록 -->
     <div class="admin-section">
-      <h2>등록된 스토리</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin-bottom:0;">등록된 스토리</h2>
+        <a href="/story-edit.html" class="btn btn-primary" style="font-size:13px;padding:6px 14px;">+ 새 스토리</a>
+      </div>
       <table class="story-table">
         <thead><tr><th>이름</th><th>캐릭터</th><th>이미지</th><th>등록일</th><th></th></tr></thead>
         <tbody id="story-tbody"></tbody>
@@ -168,7 +171,10 @@
           <td>${s.char_name}</td>
           <td>${s.imageCount}</td>
           <td>${new Date(s.imported_at * 1000).toLocaleDateString('ko')}</td>
-          <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="deleteStory('${s.name}')">삭제</button></td>
+          <td style="display:flex;gap:6px;">
+            <a href="/story-edit.html?story=${encodeURIComponent(s.name)}" class="btn btn-secondary" style="padding:4px 12px;font-size:12px;">편집</a>
+            <button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="deleteStory('${s.name}')">삭제</button>
+          </td>
         </tr>
       `).join('') || '<tr><td colspan="5" style="color:var(--text-dim);">없음</td></tr>';
     }

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AChat — 스토리 편집</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .edit-page { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+    .edit-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .edit-section h2 { font-size: 16px; margin-bottom: 16px; color: var(--accent); }
+    .edit-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .lore-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .lore-item .lore-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .lore-item .lore-header .lore-title {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .lore-item .lore-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .lore-item .lore-row label {
+      font-size: 12px;
+      color: var(--text-dim);
+      min-width: 60px;
+      flex-shrink: 0;
+    }
+    .lore-item .lore-row input,
+    .lore-item .lore-row textarea {
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+    .lore-item textarea { min-height: 60px; resize: vertical; }
+    .lore-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .toggle-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+    .toggle-btn.active { border-color: var(--accent); color: var(--accent); }
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .page-title h2 { font-size: 18px; margin: 0; }
+    .page-title .back-link { color: var(--text-dim); font-size: 14px; }
+    #save-status {
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: none;
+    }
+    #save-status.success { display: inline-block; background: rgba(125,255,158,.1); color: #7dff9e; }
+    #save-status.error { display: inline-block; background: rgba(255,85,119,.1); color: var(--danger); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="logo"><a href="/" style="color:inherit;text-decoration:none;">AChat</a></span>
+    <div class="nav-links">
+      <a href="/history.html">히스토리</a>
+      <a href="/admin.html" style="color:var(--accent);">관리</a>
+    </div>
+  </nav>
+
+  <div class="edit-page">
+    <div class="page-title">
+      <a href="/admin.html" class="back-link">&larr; 관리</a>
+      <h2 id="page-heading">새 스토리 만들기</h2>
+    </div>
+
+    <!-- 스토리 기본 정보 -->
+    <div class="edit-section">
+      <h2>기본 정보</h2>
+      <div class="form-row">
+        <label>스토리명 (생성 후 변경 불가)</label>
+        <input type="text" id="story-name" placeholder="예: 퍼스트 러브">
+      </div>
+      <div class="form-row">
+        <label>캐릭터명</label>
+        <input type="text" id="char-name" placeholder="예: 윤서진">
+      </div>
+      <div class="form-row">
+        <label>설명 (Description)</label>
+        <textarea id="story-desc" rows="6" placeholder="캐릭터 및 스토리 설명..."></textarea>
+      </div>
+      <div class="form-row">
+        <label>성격 (Personality)</label>
+        <textarea id="story-personality" rows="4" placeholder="캐릭터 성격 묘사..."></textarea>
+      </div>
+      <div class="form-row">
+        <label>시나리오 (Scenario)</label>
+        <textarea id="story-scenario" rows="4" placeholder="배경 상황 및 설정..."></textarea>
+      </div>
+      <div class="form-row">
+        <label>첫 메시지 (First Message)</label>
+        <textarea id="story-first-mes" rows="6" placeholder="첫 번째 AI 응답..."></textarea>
+      </div>
+    </div>
+
+    <!-- 로어북 -->
+    <div class="edit-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin-bottom:0;">로어북</h2>
+        <button class="btn btn-secondary" style="font-size:13px;padding:6px 14px;" onclick="addLoreEntry()">+ 항목 추가</button>
+      </div>
+      <div id="lore-list"></div>
+      <div id="lore-empty" style="color:var(--text-dim);font-size:13px;display:none;">로어북 항목이 없습니다.</div>
+    </div>
+
+    <!-- 저장 -->
+    <div class="edit-actions">
+      <span id="save-status"></span>
+      <a href="/admin.html" class="btn btn-secondary">취소</a>
+      <button class="btn btn-primary" id="save-btn" onclick="save()">저장</button>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const editName = params.get('story');
+    const isEdit = !!editName;
+    let loreEntries = []; // { id?, name, keys, content, constant, enabled, insertion_order, priority, _deleted?, _new? }
+
+    if (isEdit) {
+      document.getElementById('page-heading').textContent = `"${editName}" 편집`;
+      document.title = `${editName} — 편집 — AChat`;
+      document.getElementById('story-name').value = editName;
+      document.getElementById('story-name').disabled = true;
+      loadStory();
+    }
+
+    async function loadStory() {
+      const [storyRes, loreRes] = await Promise.all([
+        fetch(`/api/admin/stories/${encodeURIComponent(editName)}`),
+        fetch(`/api/admin/stories/${encodeURIComponent(editName)}/lore`),
+      ]);
+      if (!storyRes.ok) { alert('스토리를 찾을 수 없습니다.'); location.href = '/admin.html'; return; }
+      const story = await storyRes.json();
+      document.getElementById('char-name').value = story.char_name ?? '';
+      document.getElementById('story-desc').value = story.description ?? '';
+      document.getElementById('story-personality').value = story.personality ?? '';
+      document.getElementById('story-scenario').value = story.scenario ?? '';
+      document.getElementById('story-first-mes').value = story.first_mes ?? '';
+
+      loreEntries = (await loreRes.json()).map(e => ({
+        ...e,
+        keys: typeof e.keys === 'string' ? JSON.parse(e.keys) : (e.keys ?? []),
+      }));
+      renderLore();
+    }
+
+    function renderLore() {
+      const list = document.getElementById('lore-list');
+      const visible = loreEntries.filter(e => !e._deleted);
+      document.getElementById('lore-empty').style.display = visible.length ? 'none' : 'block';
+
+      list.innerHTML = visible.map((e, vi) => {
+        const idx = loreEntries.indexOf(e);
+        const keysStr = (e.keys ?? []).join(', ');
+        return `
+        <div class="lore-item" data-idx="${idx}">
+          <div class="lore-header">
+            <span class="lore-title">${e.name || '(이름 없음)'}</span>
+            <div class="lore-controls">
+              <button class="toggle-btn ${e.constant ? 'active' : ''}" onclick="toggleLore(${idx},'constant')" title="항상 포함">Const</button>
+              <button class="toggle-btn ${e.enabled !== false && e.enabled !== 0 ? 'active' : ''}" onclick="toggleLore(${idx},'enabled')" title="활성화">On</button>
+              <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;" onclick="removeLore(${idx})">삭제</button>
+            </div>
+          </div>
+          <div class="lore-row">
+            <label>이름</label>
+            <input type="text" value="${esc(e.name ?? '')}" onchange="updateLoreField(${idx},'name',this.value)">
+          </div>
+          <div class="lore-row">
+            <label>키워드</label>
+            <input type="text" value="${esc(keysStr)}" onchange="updateLoreField(${idx},'keys',this.value)" placeholder="쉼표로 구분">
+          </div>
+          <div class="lore-row">
+            <label>내용</label>
+            <textarea onchange="updateLoreField(${idx},'content',this.value)">${esc(e.content ?? '')}</textarea>
+          </div>
+          <div class="lore-row" style="gap:16px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label style="min-width:auto;">순서</label>
+              <input type="number" value="${e.insertion_order ?? 100}" style="width:70px;" onchange="updateLoreField(${idx},'insertion_order',+this.value)">
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label style="min-width:auto;">우선순위</label>
+              <input type="number" value="${e.priority ?? 5}" style="width:70px;" onchange="updateLoreField(${idx},'priority',+this.value)">
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function esc(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function updateLoreField(idx, field, value) {
+      if (field === 'keys') {
+        loreEntries[idx].keys = value.split(',').map(k => k.trim()).filter(Boolean);
+      } else {
+        loreEntries[idx][field] = value;
+      }
+      loreEntries[idx]._dirty = true;
+    }
+
+    function toggleLore(idx, field) {
+      loreEntries[idx][field] = loreEntries[idx][field] ? 0 : 1;
+      loreEntries[idx]._dirty = true;
+      renderLore();
+    }
+
+    function removeLore(idx) {
+      if (!confirm('이 로어 항목을 삭제할까요?')) return;
+      loreEntries[idx]._deleted = true;
+      renderLore();
+    }
+
+    function addLoreEntry() {
+      loreEntries.push({
+        _new: true, _dirty: true,
+        name: '', keys: [], content: '',
+        constant: 0, enabled: 1, insertion_order: 100, priority: 5,
+      });
+      renderLore();
+      // 스크롤 아래로
+      const list = document.getElementById('lore-list');
+      list.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function save() {
+      const btn = document.getElementById('save-btn');
+      const status = document.getElementById('save-status');
+      btn.disabled = true;
+      status.className = '';
+      status.style.display = 'none';
+
+      try {
+        const name = document.getElementById('story-name').value.trim();
+        const charName = document.getElementById('char-name').value.trim();
+        if (!name || !charName) { throw new Error('스토리명과 캐릭터명은 필수입니다.'); }
+
+        const storyData = {
+          char_name: charName,
+          description: document.getElementById('story-desc').value,
+          personality: document.getElementById('story-personality').value || null,
+          scenario: document.getElementById('story-scenario').value || null,
+          first_mes: document.getElementById('story-first-mes').value || null,
+        };
+
+        // 1. 스토리 저장
+        if (isEdit) {
+          const res = await fetch(`/api/admin/stories/${encodeURIComponent(editName)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(storyData),
+          });
+          if (!res.ok) throw new Error((await res.json()).error);
+        } else {
+          const res = await fetch('/api/admin/stories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, ...storyData }),
+          });
+          if (!res.ok) throw new Error((await res.json()).error);
+        }
+
+        // 2. 로어북 변경 사항 적용
+        const storyName = isEdit ? editName : name;
+        for (const entry of loreEntries) {
+          if (entry._deleted && entry.id) {
+            await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/lore/${entry.id}`, { method: 'DELETE' });
+          } else if (entry._new && !entry._deleted) {
+            const res = await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/lore`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(entry),
+            });
+            const data = await res.json();
+            entry.id = data.id;
+            entry._new = false;
+          } else if (entry._dirty && !entry._deleted && entry.id) {
+            await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/lore/${entry.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(entry),
+            });
+          }
+          entry._dirty = false;
+        }
+
+        // 삭제된 항목 제거
+        loreEntries = loreEntries.filter(e => !e._deleted);
+
+        status.textContent = '저장 완료';
+        status.className = 'success';
+
+        // 새 스토리 생성이면 편집 모드로 전환
+        if (!isEdit) {
+          history.replaceState(null, '', `/story-edit.html?story=${encodeURIComponent(name)}`);
+          document.getElementById('story-name').disabled = true;
+          document.getElementById('page-heading').textContent = `"${name}" 편집`;
+          // isEdit는 const이므로 페이지 리로드
+          location.href = `/story-edit.html?story=${encodeURIComponent(name)}`;
+        }
+      } catch (err) {
+        status.textContent = err.message;
+        status.className = 'error';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
