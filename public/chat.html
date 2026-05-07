@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AChat</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div id="chat-wrap">
+    <header id="chat-header">
+      <a href="/" style="color:var(--text-dim);font-size:20px;line-height:1;">←</a>
+      <span class="story-title" id="story-title">로딩 중...</span>
+      <div class="session-actions">
+        <button class="btn btn-secondary" onclick="openSlots()" style="font-size:13px;padding:6px 12px;">
+          <span>💾</span><span>슬롯</span>
+        </button>
+        <button class="btn btn-secondary" onclick="resetSession()" style="font-size:13px;padding:6px 12px;">
+          <span>🔄</span><span>초기화</span>
+        </button>
+        <a href="/history.html" class="btn btn-secondary" style="font-size:13px;padding:6px 12px;">
+          <span>📖</span><span>히스토리</span>
+        </a>
+      </div>
+    </header>
+
+    <div id="chat-messages"></div>
+
+    <!-- 슬롯 패널 (숨김) -->
+    <div id="slot-panel" style="display:none;">
+      <span style="color:var(--text-dim);">슬롯:</span>
+      <input id="slot-name" placeholder="슬롯 이름" style="width:140px;height:32px;font-size:13px;">
+      <button class="btn btn-secondary" onclick="saveSlot()" style="font-size:12px;padding:5px 10px;">저장</button>
+      <div id="slot-list" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <button class="btn btn-secondary" onclick="document.getElementById('slot-panel').style.display='none'" style="font-size:12px;padding:5px 10px;margin-left:auto;">닫기</button>
+    </div>
+
+    <div id="chat-input-area">
+      <textarea id="chat-input" placeholder="메시지 입력... (~행동~ / 대사 / ~~ / ~~~)" rows="1"></textarea>
+      <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">전송</button>
+    </div>
+  </div>
+
+  <script src="/chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AChat — 관리</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <span class="logo"><a href="/" style="color:inherit;text-decoration:none;">AChat</a></span>
+    <div class="nav-links">
+      <a href="/history.html">히스토리</a>
+      <a href="/admin.html" style="color:var(--accent);">관리</a>
+    </div>
+  </nav>
+  <div class="page">
+    <h2 style="margin-bottom:20px;font-size:18px;">스토리 관리</h2>
+
+    <!-- ZIP 임포트 (권장) -->
+    <div class="admin-section">
+      <h2>📦 ZIP 임포트 (권장)</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
+        카드 JSON + images/ 폴더를 ZIP으로 묶어서 한 번에 업로드.
+      </p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text-dim);margin-bottom:14px;font-family:monospace;">
+        퍼스트 러브.zip<br>
+        ├── 윤서진.json<br>
+        └── images/<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;└── batch_*.png
+      </div>
+      <div class="form-row">
+        <label>스토리명</label>
+        <input type="text" id="zip-story-name" placeholder="예: 퍼스트 러브">
+      </div>
+      <div class="form-row">
+        <label>ZIP 파일</label>
+        <input type="file" id="zip-file" accept=".zip">
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-primary" onclick="importZip()">업로드</button>
+        <div id="zip-progress" style="font-size:13px;color:var(--text-dim);display:none;">
+          <span id="zip-progress-text"></span>
+        </div>
+      </div>
+      <div id="zip-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
+    <!-- 카드 임포트 -->
+    <div class="admin-section">
+      <h2>캐릭터 카드 임포트 (chara_card_v2 JSON)</h2>
+      <div class="form-row">
+        <label>스토리명 (폴더명)</label>
+        <input type="text" id="card-story-name" placeholder="예: 퍼스트 러브">
+      </div>
+      <div class="form-row">
+        <label>JSON 파일</label>
+        <input type="file" id="card-file" accept=".json">
+      </div>
+      <button class="btn btn-primary" onclick="importCard()">임포트</button>
+      <div id="card-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
+    <!-- 이미지 임포트 -->
+    <div class="admin-section">
+      <h2>이미지 임포트</h2>
+      <div class="form-row">
+        <label>스토리명</label>
+        <input type="text" id="img-story-name" placeholder="예: 퍼스트 러브">
+      </div>
+      <div class="form-row">
+        <label>이미지 파일들 (batch_*.png)</label>
+        <input type="file" id="img-files" accept="image/*" multiple>
+      </div>
+      <button class="btn btn-primary" onclick="importImages()">업로드</button>
+      <div id="img-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
+    </div>
+
+    <!-- 스토리 목록 -->
+    <div class="admin-section">
+      <h2>등록된 스토리</h2>
+      <table class="story-table">
+        <thead><tr><th>이름</th><th>캐릭터</th><th>이미지</th><th>등록일</th><th></th></tr></thead>
+        <tbody id="story-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadStories() {
+      const res  = await fetch('/api/admin/stories');
+      const list = await res.json();
+      const tbody = document.getElementById('story-tbody');
+      tbody.innerHTML = list.map(s => `
+        <tr>
+          <td>${s.name}</td>
+          <td>${s.char_name}</td>
+          <td>${s.imageCount}</td>
+          <td>${new Date(s.imported_at * 1000).toLocaleDateString('ko')}</td>
+          <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="deleteStory('${s.name}')">삭제</button></td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="color:var(--text-dim);">없음</td></tr>';
+    }
+
+    async function importZip() {
+      const name = document.getElementById('zip-story-name').value.trim();
+      const file = document.getElementById('zip-file').files[0];
+      const out  = document.getElementById('zip-result');
+      const prog = document.getElementById('zip-progress');
+      const progText = document.getElementById('zip-progress-text');
+
+      if (!name || !file) { out.textContent = '스토리명과 ZIP 파일을 선택하세요.'; return; }
+
+      const fd = new FormData();
+      fd.append('storyName', name);
+      fd.append('zip', file);
+
+      prog.style.display = 'block';
+      progText.textContent = `업로드 중... (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+      out.textContent = '';
+
+      const res  = await fetch('/api/admin/import/zip', { method: 'POST', body: fd });
+      const json = await res.json();
+      prog.style.display = 'none';
+
+      if (json.ok) {
+        out.style.color = '#7dff9e';
+        out.textContent = `완료: ${json.charName} | 로어북 ${json.loreCount}개 | 이미지 ${json.imagesSaved}장`;
+        loadStories();
+      } else {
+        out.style.color = 'var(--danger)';
+        out.textContent = json.error;
+      }
+    }
+
+    async function importCard() {
+      const name = document.getElementById('card-story-name').value.trim();
+      const file = document.getElementById('card-file').files[0];
+      const out  = document.getElementById('card-result');
+      if (!name || !file) { out.textContent = '스토리명과 파일을 선택하세요.'; return; }
+
+      const fd = new FormData();
+      fd.append('storyName', name);
+      fd.append('card', file);
+
+      out.textContent = '임포트 중...';
+      const res = await fetch('/api/admin/import/card', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.ok) {
+        out.style.color = '#7dff9e';
+        out.textContent = `완료: ${json.charName}, 로어북 ${json.loreCount}개`;
+        loadStories();
+      } else {
+        out.style.color = 'var(--danger)';
+        out.textContent = json.error;
+      }
+    }
+
+    async function importImages() {
+      const name  = document.getElementById('img-story-name').value.trim();
+      const files = document.getElementById('img-files').files;
+      const out   = document.getElementById('img-result');
+      if (!name || !files.length) { out.textContent = '스토리명과 파일을 선택하세요.'; return; }
+
+      const fd = new FormData();
+      fd.append('storyName', name);
+      for (const f of files) fd.append('images', f);
+
+      out.textContent = `업로드 중... (${files.length}개)`;
+      const res = await fetch('/api/admin/import/images', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.ok) {
+        out.style.color = '#7dff9e';
+        out.textContent = `완료: 저장 ${json.saved}개, 건너뜀 ${json.skipped}개`;
+        loadStories();
+      } else {
+        out.style.color = 'var(--danger)';
+        out.textContent = json.error;
+      }
+    }
+
+    async function deleteStory(name) {
+      if (!confirm(`"${name}" 스토리와 이미지를 모두 삭제할까요?`)) return;
+      await fetch(`/api/admin/stories/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      loadStories();
+    }
+
+    loadStories();
+  </script>
+</body>
+</html>

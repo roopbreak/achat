@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AChat — 로그인</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100dvh;">
+  <div style="width:320px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;">
+    <h1 style="font-size:20px;text-align:center;margin-bottom:24px;color:var(--accent);">AChat</h1>
+    <div class="form-row">
+      <label>접속 코드</label>
+      <input type="password" id="secret" placeholder="접속 코드 입력" autofocus>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="login()">입장</button>
+    <div id="err" style="color:var(--danger);font-size:13px;text-align:center;margin-top:10px;"></div>
+  </div>
+
+  <script>
+    document.getElementById('secret').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login();
+    });
+
+    function login() {
+      const val = document.getElementById('secret').value.trim();
+      if (!val) return;
+      // 쿠키에 저장 (세션 유지)
+      document.cookie = `achat_token=${encodeURIComponent(val)};path=/;max-age=2592000`;
+      // 검증: /api/stories 호출
+      fetch('/api/stories', {
+        headers: { Authorization: `Bearer ${val}` }
+      }).then(r => {
+        if (r.ok) {
+          location.href = '/';
+        } else {
+          document.cookie = 'achat_token=;path=/;max-age=0';
+          document.getElementById('err').textContent = '코드가 맞지 않습니다.';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

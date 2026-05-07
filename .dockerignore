@@ -1,0 +1,7 @@
+node_modules
+.env
+data
+.omc
+docs
+*.md
+.git

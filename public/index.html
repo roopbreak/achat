@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AChat</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <span class="logo">AChat</span>
+    <div class="nav-links">
+      <a href="/history.html">히스토리</a>
+      <a href="/admin.html">관리</a>
+    </div>
+  </nav>
+  <div class="page">
+    <h2 style="margin-bottom:8px;font-size:18px;">스토리</h2>
+    <p style="color:var(--text-dim);font-size:14px;margin-bottom:0;">채팅을 시작할 스토리를 선택하세요.</p>
+    <div class="story-grid" id="story-grid">
+      <div style="color:var(--text-dim);font-size:14px;padding:20px 0;">불러오는 중...</div>
+    </div>
+  </div>
+
+  <script>
+    async function load() {
+      const res  = await fetch('/api/stories');
+      const list = await res.json();
+      const grid = document.getElementById('story-grid');
+
+      if (!list.length) {
+        grid.innerHTML = '<div style="color:var(--text-dim);font-size:14px;padding:20px 0;">스토리가 없습니다. <a href="/admin.html">관리 페이지</a>에서 임포트하세요.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map(s => `
+        <div class="story-card" onclick="location.href='/chat.html?story=${encodeURIComponent(s.name)}'">
+          <h3>${s.char_name}</h3>
+          <div class="char">${s.name}</div>
+        </div>
+      `).join('');
+    }
+    load();
+  </script>
+</body>
+</html>
