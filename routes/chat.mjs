@@ -97,6 +97,19 @@ router.post('/:name/chat', async (req, res) => {
   });
 });
 
+// PUT /api/stories/:name/messages/:exchangeNum — 유저 메시지 수정
+router.put('/:name/messages/:exchangeNum', (req, res) => {
+  const { sessionId, content } = req.body;
+  if (!sessionId || !content) return res.status(400).json({ error: 'sessionId, content 필요' });
+  const exchNum = parseInt(req.params.exchangeNum, 10);
+  const db = getDB();
+  db.prepare('UPDATE messages SET content=? WHERE session_id=? AND exchange_number=? AND role=?')
+    .run(content, sessionId, exchNum, 'user');
+  // 이후 메시지 삭제
+  db.prepare('DELETE FROM messages WHERE session_id=? AND exchange_number>?').run(sessionId, exchNum);
+  res.json({ ok: true });
+});
+
 // DELETE /api/stories/:name/messages/:exchangeNumber — 특정 턴 삭제
 router.delete('/:name/messages/:exchangeNum', (req, res) => {
   const { sessionId } = req.body;

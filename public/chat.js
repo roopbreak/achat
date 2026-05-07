@@ -162,6 +162,14 @@ function appendMessage(role, content, streaming = false, exchangeNumber = null) 
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
 
+    if (role === 'user') {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'msg-action-btn';
+      editBtn.textContent = '✏ 수정';
+      editBtn.onclick = () => editMessage(div, exchangeNumber, content);
+      actions.appendChild(editBtn);
+    }
+
     if (role === 'assistant') {
       const regenBtn = document.createElement('button');
       regenBtn.className = 'msg-action-btn';
@@ -169,6 +177,12 @@ function appendMessage(role, content, streaming = false, exchangeNumber = null) 
       regenBtn.onclick = () => showRegenPanel(div, exchangeNumber);
       actions.appendChild(regenBtn);
     }
+
+    const forkBtn = document.createElement('button');
+    forkBtn.className = 'msg-action-btn';
+    forkBtn.textContent = '⑃ 분기';
+    forkBtn.onclick = () => forkFromHere(exchangeNumber);
+    actions.appendChild(forkBtn);
 
     const delBtn = document.createElement('button');
     delBtn.className = 'msg-action-btn';
@@ -328,6 +342,116 @@ async function doRegen(exchangeNumber, btn) {
   }
 }
 
+// ── 메시지 수정 ──────────────────────────────────────
+function editMessage(msgDiv, exchangeNumber, originalContent) {
+  const body = msgDiv.querySelector('.msg-body');
+  if (!body) return;
+  const existing = msgDiv.querySelector('.edit-panel');
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement('div');
+  panel.className = 'edit-panel';
+  panel.style.cssText = 'margin-top:8px;display:flex;gap:8px;';
+  panel.innerHTML = `
+    <textarea style="flex:1;font-size:14px;padding:8px;min-height:60px;">${originalContent}</textarea>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <button class="btn btn-primary" style="font-size:12px;padding:4px 12px;" onclick="submitEdit(this, ${exchangeNumber})">저장+재생성</button>
+      <button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="this.closest('.edit-panel').remove()">취소</button>
+    </div>
+  `;
+  msgDiv.appendChild(panel);
+  panel.querySelector('textarea').focus();
+}
+
+async function submitEdit(btn, exchangeNumber) {
+  const panel = btn.closest('.edit-panel');
+  const newContent = panel.querySelector('textarea').value.trim();
+  if (!newContent) return;
+
+  // 서버에 수정 요청
+  await fetch(`/api/stories/${encodeURIComponent(storyName)}/messages/${exchangeNumber}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, content: newContent }),
+  });
+
+  // 이후 메시지 DOM에서 제거
+  const msgs = document.getElementById('chat-messages');
+  [...msgs.querySelectorAll('[data-exchange]')].forEach(el => {
+    if (parseInt(el.dataset.exchange) > exchangeNumber) el.remove();
+  });
+  // assistant 메시지도 제거
+  [...msgs.querySelectorAll('[data-exchange]')].forEach(el => {
+    if (parseInt(el.dataset.exchange) === exchangeNumber && el.classList.contains('msg-assistant')) el.remove();
+  });
+
+  // 수정된 메시지 표시 업데이트
+  const userDiv = msgs.querySelector(`[data-exchange="${exchangeNumber}"].msg-user`);
+  if (userDiv) {
+    const body = userDiv.querySelector('.msg-body');
+    if (body) body.textContent = newContent;
+  }
+  panel.remove();
+
+  // 재생성 (수정된 메시지 기반)
+  await sendMessage(newContent);
+}
+
+// ── 분기 ─────────────────────────────────────────────
+async function forkFromHere(exchangeNumber) {
+  if (!confirm(`이 지점에서 새 분기를 만들까요?`)) return;
+
+  const res = await fetch(`/api/stories/${encodeURIComponent(storyName)}/fork`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, exchangeNumber }),
+  });
+  const json = await res.json();
+  if (!json.ok) { alert('분기 실패'); return; }
+
+  // 새 세션으로 전환
+  sessionId = json.sessionId;
+  sessionStorage.setItem(`session_${storyName}`, sessionId);
+
+  document.getElementById('chat-messages').innerHTML = '';
+  await loadMessages(sessionId);
+  const el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── 내보내기 ─────────────────────────────────────────
+async function exportChat() {
+  if (!sessionId) return alert('세션 없음');
+
+  // 전체 메시지 가져오기 (페이지네이션 없이)
+  const res = await fetch(`/api/sessions/${sessionId}/messages?limit=9999`);
+  const data = await res.json();
+  const msgs = data.messages ?? data;
+
+  const format = prompt('형식 선택:\\n1 = 텍스트 (.txt)\\n2 = JSON (.json)', '1');
+
+  if (format === '2') {
+    const blob = new Blob([JSON.stringify(msgs, null, 2)], { type: 'application/json' });
+    download(blob, `${storyName}_${sessionId.slice(0,8)}.json`);
+  } else {
+    const text = msgs.map(m => {
+      const role = m.role === 'user' ? '[유저]' : '[서술자]';
+      return `${role}\n${m.content}`;
+    }).join('\n\n---\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    download(blob, `${storyName}_${sessionId.slice(0,8)}.txt`);
+  }
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── 삭제 ─────────────────────────────────────────────
 async function deleteFromHere(exchangeNumber, msgDiv) {
   if (!confirm('이 턴부터 이후 메시지를 모두 삭제할까요?')) return;
 
@@ -346,18 +470,17 @@ async function deleteFromHere(exchangeNumber, msgDiv) {
 
 // ── 전송 ──────────────────────────────────────────────
 
-async function sendMessage() {
+async function sendMessage(overrideText) {
   if (isStreaming) return;
   const input = document.getElementById('chat-input');
-  const text  = input.value.trim();
+  const text  = overrideText ?? input.value.trim();
   if (!text) return;
 
-  input.value = '';
-  input.style.height = '';
+  if (!overrideText) { input.value = ''; input.style.height = ''; }
   isStreaming = true;
   document.getElementById('send-btn').disabled = true;
 
-  appendMessage('user', text);
+  if (!overrideText) appendMessage('user', text);
 
   const assistantDiv = appendMessage('assistant', '', true, null);
   let fullText = '';
@@ -422,6 +545,15 @@ async function sendMessage() {
           actions.appendChild(regenBtn);
           actions.appendChild(delBtn);
           assistantDiv.appendChild(actions);
+        } else if (evt === 'token_info') {
+          const bar = document.getElementById('token-bar');
+          bar.style.display = 'block';
+          const parts = [];
+          if (data.cacheRead)    parts.push(`캐시↩ ${data.cacheRead.toLocaleString()}`);
+          if (data.cacheCreated) parts.push(`캐시↑ ${data.cacheCreated.toLocaleString()}`);
+          if (data.input)        parts.push(`입력 ${data.input.toLocaleString()}`);
+          if (data.output)       parts.push(`출력 ${data.output.toLocaleString()}`);
+          bar.textContent = `토큰: ${parts.join(' | ')}`;
         } else if (evt === 'error') {
           assistantDiv.innerHTML += `<span style="color:var(--danger)">[오류: ${data.message}]</span>`;
           assistantDiv.classList.remove('cursor');

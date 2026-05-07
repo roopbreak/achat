@@ -20,6 +20,9 @@
         <button class="btn btn-secondary" onclick="resetSession()" style="font-size:13px;padding:6px 12px;">
           <span>🔄</span><span>초기화</span>
         </button>
+        <button class="btn btn-secondary" onclick="exportChat()" style="font-size:13px;padding:6px 12px;" title="내보내기">
+          <span>📥</span><span>내보내기</span>
+        </button>
         <a href="/history.html" class="btn btn-secondary" style="font-size:13px;padding:6px 12px;">
           <span>📖</span><span>히스토리</span>
         </a>
@@ -60,6 +63,8 @@
       <div id="slot-list" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       <button class="btn btn-secondary" onclick="document.getElementById('slot-panel').style.display='none'" style="font-size:12px;padding:5px 10px;margin-left:auto;">닫기</button>
     </div>
+
+    <div id="token-bar" style="display:none;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:4px 16px;font-size:11px;color:var(--text-dim);font-family:monospace;"></div>
 
     <div id="chat-input-area">
       <textarea id="chat-input" placeholder="메시지 입력... (~행동~ / 대사 / ~~ / ~~~)" rows="1"></textarea>

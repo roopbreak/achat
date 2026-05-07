@@ -31,6 +31,34 @@ storySessionsRouter.delete('/:name/sessions', (req, res) => {
   res.json({ ok: true, deleted: sessions.length });
 });
 
+// POST /api/stories/:name/fork — 특정 지점에서 분기 (새 세션 생성)
+storySessionsRouter.post('/:name/fork', (req, res) => {
+  const storyName = decodeURIComponent(req.params.name);
+  const { sessionId: srcSessionId, exchangeNumber } = req.body;
+  if (!srcSessionId) return res.status(400).json({ error: 'sessionId 필요' });
+
+  const db = getDB();
+  const exchNum = exchangeNumber ?? db.prepare(
+    'SELECT MAX(exchange_number) as mx FROM messages WHERE session_id=?'
+  ).get(srcSessionId)?.mx ?? 0;
+
+  const srcMessages = db.prepare(
+    'SELECT * FROM messages WHERE session_id=? AND exchange_number<=? ORDER BY exchange_number'
+  ).all(srcSessionId, exchNum);
+
+  const newSessionId = randomUUID();
+  createSession(newSessionId, storyName);
+
+  const stmt = db.prepare(
+    'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
+  );
+  db.transaction(() => {
+    for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number);
+  })();
+
+  res.json({ ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
+});
+
 // GET /api/stories/:name/slots
 storySessionsRouter.get('/:name/slots', (req, res) => {
   const storyName = decodeURIComponent(req.params.name);

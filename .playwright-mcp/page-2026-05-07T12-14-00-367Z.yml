@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "캐릭터챗 외부이미지 미리보기" [level=1] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: 캐릭터 코드
+          - textbox "코드는 쉼표로 구분되며, a1..10 형식으로 범위 표현이 가능합니다." [ref=e9]:
+            - /placeholder: ""
+            - text: A,B,C,D,E,F,G,H,I,EV
+        - generic [ref=e10]:
+          - generic [ref=e11]: 의상 코드 (없으면 빈칸)
+          - textbox "코드는 쉼표로 구분되며, a1..10 형식으로 범위 표현이 가능합니다." [ref=e12]:
+            - /placeholder: ""
+            - text: X
+        - generic [ref=e13]:
+          - generic [ref=e14]: 상황 코드
+          - textbox "코드는 쉼표로 구분되며, a1..10 형식으로 범위 표현이 가능합니다." [ref=e15]:
+            - /placeholder: ""
+            - text: 1..106
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: "템플릿 URL (키워드: 캐릭터, 의상, 상황)"
+          - textbox "열람할 외부이미지의 주소 형식입니다.<br>위 코드가 들어갈 부분을 캐릭터/의상/상황 키워드로 채우세요." [ref=e19]:
+            - /placeholder: ""
+            - text: https://ri4.org/NRE/캐릭터상황.webp
+        - generic [ref=e20]:
+          - button " 바로가기 파일" [ref=e21] [cursor=pointer]:
+            - generic [ref=e22]: 
+            - text: 바로가기 파일
+          - button " 목록생성" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: 
+            - text: 목록생성
+    - generic [ref=e25]:
+      - img "A-X" [ref=e27] [cursor=pointer]
+      - img "B-X" [ref=e29] [cursor=pointer]
+      - img "C-X" [ref=e31] [cursor=pointer]
+      - img "D-X" [ref=e33] [cursor=pointer]
+      - img "E-X" [ref=e35] [cursor=pointer]
+      - img "F-X" [ref=e37] [cursor=pointer]
+      - img "G-X" [ref=e39] [cursor=pointer]
+      - img "H-X" [ref=e41] [cursor=pointer]
+      - img "I-X" [ref=e43] [cursor=pointer]
+      - img "EV-X" [ref=e45] [cursor=pointer]
+    - text: 
+  - text:   
+  - contentinfo [ref=e46]:
+    - separator [ref=e47]
+    - generic [ref=e49]:
+      - text: "사이트 개발: 시란 (새벽제작) |"
+      - link "이용 가이드" [ref=e50] [cursor=pointer]:
+        - /url: https://arca.live/b/dawncraft/149404969
