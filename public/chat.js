@@ -219,8 +219,11 @@ function appendMessage(role, content, streaming = false, exchangeNumber = null) 
   return div;
 }
 
-function autoScroll() {
-  // 자동 스크롤 비활성화
+function autoScroll(el) {
+  if (!el) el = document.getElementById('chat-messages');
+  // 하단 100px 이내일 때만 자동 스크롤
+  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  if (atBottom) el.scrollTop = el.scrollHeight;
 }
 
 // ── 페이지네이션 메시지 로드 ─────────────────────────
@@ -349,7 +352,7 @@ async function doRegen(exchangeNumber, btn) {
         if (evt === 'token' && body) {
           fullText += data.text;
           body.innerHTML = marked.parse(replaceTemplateVars(fullText));
-          msgs.scrollTop = msgs.scrollHeight;
+          autoScroll(msgs);
         } else if (evt === 'done') {
           if (msgDiv) msgDiv.classList.remove('cursor');
         }
