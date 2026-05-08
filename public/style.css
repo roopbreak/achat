@@ -129,7 +129,6 @@ input:focus, textarea:focus { border-color: var(--accent); }
 #chat-messages {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 40px;
   display: flex;
   flex-direction: column;
@@ -181,8 +180,6 @@ input:focus, textarea:focus { border-color: var(--accent); }
   align-self: flex-start;
   width: 100%;
   line-height: 1.85;
-  overflow-wrap: break-word;
-  word-break: break-word;
 }
 
 /* 상태창 */

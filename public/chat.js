@@ -380,16 +380,9 @@ async function doRegen(exchangeNumber, btn) {
         const data = JSON.parse(dataLine.slice(5).trim());
         if (evt === 'token' && body) {
           fullText += data.text;
-          if (!_renderPending) {
-            _renderPending = true;
-            requestAnimationFrame(() => {
-              body.innerHTML = marked.parse(replaceTemplateVars(fullText));
-              autoScroll(msgs);
-              _renderPending = false;
-            });
-          }
+          body.innerHTML = marked.parse(replaceTemplateVars(fullText));
+          autoScroll(msgs);
         } else if (evt === 'done') {
-          if (body) body.innerHTML = marked.parse(replaceTemplateVars(fullText));
           if (msgDiv) msgDiv.classList.remove('cursor');
         }
       }
@@ -529,7 +522,6 @@ async function deleteFromHere(exchangeNumber, msgDiv) {
 }
 
 // ── 전송 ──────────────────────────────────────────────
-let _renderPending = false;
 
 async function sendMessage(overrideText) {
   if (isStreaming) return;
@@ -585,17 +577,10 @@ async function sendMessage(overrideText) {
 
         if (evt === 'token') {
           fullText += data.text;
-          if (!_renderPending) {
-            _renderPending = true;
-            requestAnimationFrame(() => {
-              assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
-              assistantDiv.classList.add('cursor');
-              autoScroll(document.getElementById('chat-messages'));
-              _renderPending = false;
-            });
-          }
-        } else if (evt === 'done') {
           assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
+          assistantDiv.classList.add('cursor');
+          autoScroll(document.getElementById('chat-messages'));
+        } else if (evt === 'done') {
           exchangeNum = data.exchangeNumber;
           assistantDiv.classList.remove('cursor');
           assistantDiv.dataset.exchange = exchangeNum;
