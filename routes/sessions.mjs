@@ -15,6 +15,16 @@ storySessionsRouter.get('/:name/sessions', (req, res) => {
   res.json(getSessionsByStory(storyName));
 });
 
+// GET /api/stories/:name/sessions/latest — 가장 최근 세션 ID
+storySessionsRouter.get('/:name/sessions/latest', (req, res) => {
+  const storyName = decodeURIComponent(req.params.name);
+  const db = getDB();
+  const row = db.prepare(
+    'SELECT id FROM chat_sessions WHERE story_name = ? ORDER BY updated_at DESC LIMIT 1'
+  ).get(storyName);
+  res.json({ sessionId: row?.id ?? null });
+});
+
 // DELETE /api/stories/:name/sessions — 스토리의 모든 세션+메시지 삭제
 storySessionsRouter.delete('/:name/sessions', (req, res) => {
   const storyName = decodeURIComponent(req.params.name);

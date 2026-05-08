@@ -133,6 +133,18 @@ document.title = `${storyName} — AChat`;
   await loadPersonaSelect();
 
 
+  // sessionStorage에 없으면 서버에서 최신 세션 복원
+  if (!sessionId) {
+    try {
+      const latestRes = await fetch(`/api/stories/${encodeURIComponent(storyName)}/sessions/latest`);
+      const latest = await latestRes.json();
+      if (latest.sessionId) {
+        sessionId = latest.sessionId;
+        sessionStorage.setItem(`session_${storyName}`, sessionId);
+      }
+    } catch {}
+  }
+
   if (!sessionId) {
     await newSession(false);
   } else {
