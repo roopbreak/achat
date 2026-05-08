@@ -137,11 +137,15 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* 메시지 액션 버튼 */
 .msg-actions {
-  display: none;
+  display: flex;
   gap: 6px;
   margin-top: 6px;
+  opacity: 0;
+  transition: opacity .15s;
 }
-.msg:hover .msg-actions { display: flex; }
+.msg:hover .msg-actions,
+.msg-actions:focus-within { opacity: 1; }
+@media (hover: none) { .msg-actions { opacity: 0.7; } }
 .msg-action-btn {
   background: none;
   border: 1px solid var(--border);
