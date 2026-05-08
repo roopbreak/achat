@@ -168,7 +168,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 }
 
 .msg { max-width: 100%; }
-.msg-body { overflow-wrap: break-word; word-break: break-word; }
+.msg-body { overflow-wrap: anywhere; word-break: break-all; }
 .msg-user {
   align-self: flex-end;
   background: var(--surface2);
