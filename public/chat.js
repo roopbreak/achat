@@ -595,7 +595,7 @@ async function sendMessage(overrideText) {
 }
 
 // ~ 버튼: 행동 입력
-function insertAction() {
+document.getElementById('action-btn').addEventListener('click', () => {
   const input = document.getElementById('chat-input');
   const start = input.selectionStart;
   const end = input.selectionEnd;
@@ -603,7 +603,7 @@ function insertAction() {
   input.value = val.slice(0, start) + '~~' + val.slice(end);
   input.focus();
   input.selectionStart = input.selectionEnd = start + 1;
-}
+});
 
 // 엔터 전송 (Shift+Enter 줄바꿈)
 // iPad Safari에서 isComposing이 한글 입력 후 해제 안 되는 문제 대응

@@ -84,7 +84,7 @@
 
     <div id="chat-input-area">
       <div style="display:flex;gap:4px;align-items:flex-end;flex:1;min-width:0;">
-        <button class="btn btn-secondary" onclick="insertAction()" title="행동 입력 (~행동~)" style="padding:6px 10px;font-size:14px;flex-shrink:0;">~</button>
+        <button class="btn btn-secondary" id="action-btn" title="행동 입력 (~행동~)" style="padding:8px 14px;font-size:18px;font-weight:bold;flex-shrink:0;line-height:1;">~</button>
         <textarea id="chat-input" placeholder="메시지 입력... (~행동~ / 대사 / ~~ / ~~~)" rows="1" style="flex:1;"></textarea>
       </div>
       <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">전송</button>
