@@ -23,7 +23,15 @@
     </div>
 
     <!-- 전체 스토리 -->
-    <h2 style="margin-bottom:8px;font-size:16px;color:var(--text-dim);">전체 스토리</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h2 style="font-size:16px;color:var(--text-dim);margin:0;">전체 스토리</h2>
+      <select id="sort-select" onchange="sortStories()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+        <option value="date-desc">최신순</option>
+        <option value="date-asc">오래된순</option>
+        <option value="name-asc">이름 ↑</option>
+        <option value="name-desc">이름 ↓</option>
+      </select>
+    </div>
     <div class="story-grid" id="story-grid">
       <div style="color:var(--text-dim);font-size:14px;padding:20px 0;">불러오는 중...</div>
     </div>
@@ -73,12 +81,30 @@
         grid.innerHTML = '<div style="color:var(--text-dim);font-size:14px;padding:20px 0;">스토리가 없습니다. <a href="/admin.html">관리 페이지</a>에서 임포트하세요.</div>';
         return;
       }
+      window._storyList = list;
+      renderStories(list);
+    }
+
+    function renderStories(list) {
+      const grid = document.getElementById('story-grid');
       grid.innerHTML = list.map(s => `
         <div class="story-card" onclick="location.href='/chat.html?story=${encodeURIComponent(s.name)}'">
           <h3>${s.name}</h3>
           <div class="desc">${s.summary ?? ''}</div>
         </div>
       `).join('');
+    }
+
+    function sortStories() {
+      const list = [...(window._storyList || [])];
+      const val = document.getElementById('sort-select').value;
+      switch (val) {
+        case 'date-desc': list.sort((a, b) => b.imported_at - a.imported_at); break;
+        case 'date-asc':  list.sort((a, b) => a.imported_at - b.imported_at); break;
+        case 'name-asc':  list.sort((a, b) => a.name.localeCompare(b.name, 'ko')); break;
+        case 'name-desc': list.sort((a, b) => b.name.localeCompare(a.name, 'ko')); break;
+      }
+      renderStories(list);
     }
 
     async function clearRecent(storyName) {
