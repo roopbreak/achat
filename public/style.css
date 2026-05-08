@@ -331,4 +331,5 @@ input:focus, textarea:focus { border-color: var(--accent); }
 }
 
 #chat-messages.hide-images .msg-assistant img { display: none; }
-html, body { overflow-x: hidden; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+#chat-wrap, #chat-messages, .msg, .msg-body, .msg-assistant, .page { max-width: 100%; }
