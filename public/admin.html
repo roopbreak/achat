@@ -101,11 +101,12 @@
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
         플레이어 캐릭터 프리셋. 여러 개 만들고 스토리별로 선택할 수 있습니다.
       </p>
-      <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;">
         <input type="text" id="persona-name" placeholder="이름 (예: 정태원)" style="width:160px;">
-        <button class="btn btn-primary" onclick="addPersona()">추가</button>
+        <button class="btn btn-primary" id="persona-save-btn" onclick="addPersona()">추가</button>
+        <button class="btn btn-secondary" id="persona-cancel-btn" onclick="cancelEditPersona()" style="display:none;font-size:12px;padding:5px 10px;">취소</button>
       </div>
-      <textarea id="persona-content" rows="5" placeholder="캐릭터 설정을 입력하세요.&#10;예: 정태원, 27세, IT 스타트업 개발자. 성격 온화하고 다정함..." style="margin-bottom:10px;"></textarea>
+      <textarea id="persona-content" rows="8" placeholder="캐릭터 설정을 입력하세요.&#10;예: 정태원, 27세, IT 스타트업 개발자. 성격 온화하고 다정함..." style="margin-bottom:10px;"></textarea>
       <div id="persona-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
@@ -335,20 +336,41 @@
       loadPersonas();
     }
 
+    let _editingPersonaId = null;
+
     async function editPersona(id) {
       const res = await fetch('/api/admin/personas');
       const list = await res.json();
       const p = list.find(x => x.id === id);
       if (!p) return;
-      const name = prompt('이름', p.name);
-      if (!name) return;
-      const content = prompt('설정', p.content);
-      if (!content) return;
-      await fetch(`/api/admin/personas/${id}`, {
+      _editingPersonaId = id;
+      document.getElementById('persona-name').value = p.name;
+      document.getElementById('persona-content').value = p.content;
+      document.getElementById('persona-save-btn').textContent = '저장';
+      document.getElementById('persona-save-btn').onclick = saveEditPersona;
+      document.getElementById('persona-cancel-btn').style.display = '';
+      document.getElementById('persona-name').focus();
+    }
+
+    async function saveEditPersona() {
+      const name = document.getElementById('persona-name').value.trim();
+      const content = document.getElementById('persona-content').value.trim();
+      if (!name || !content) return;
+      await fetch(`/api/admin/personas/${_editingPersonaId}`, {
         method: 'PUT', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, content })
       });
+      cancelEditPersona();
       loadPersonas();
+    }
+
+    function cancelEditPersona() {
+      _editingPersonaId = null;
+      document.getElementById('persona-name').value = '';
+      document.getElementById('persona-content').value = '';
+      document.getElementById('persona-save-btn').textContent = '추가';
+      document.getElementById('persona-save-btn').onclick = addPersona;
+      document.getElementById('persona-cancel-btn').style.display = 'none';
     }
 
     async function setDefault(id) {
