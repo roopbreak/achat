@@ -36,7 +36,7 @@
       </div>
       <div class="form-row">
         <label>ZIP 파일</label>
-        <input type="file" id="zip-file" accept=".zip" onchange="autoFillZipName(this)">
+        <input type="file" id="zip-file" accept=".zip">
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="btn btn-primary" onclick="importZip()">업로드</button>
@@ -56,7 +56,7 @@
       </div>
       <div class="form-row">
         <label>JSON 파일</label>
-        <input type="file" id="card-file" accept=".json" onchange="autoFillCardName(this)">
+        <input type="file" id="card-file" accept=".json">
       </div>
       <button class="btn btn-primary" onclick="importCard()">임포트</button>
       <div id="card-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
@@ -259,32 +259,34 @@
     }
 
     // ── 파일명 자동 채움 ──────────────────────
-    async function autoFillZipName(input) {
-      if (!input.files[0]) return;
+    document.getElementById('zip-file').addEventListener('change', async function() {
+      const file = this.files[0];
+      if (!file) return;
       const nameField = document.getElementById('zip-story-name');
       if (nameField.value.trim()) return;
-      const file = input.files[0];
-      // ZIP 내부 JSON에서 name 추출 시도
+      // ZIP 내부 JSON에서 name 추출
       try {
-        const zip = await JSZip.loadAsync(file);
-        const jsonFile = Object.values(zip.files).find(f =>
-          !f.dir && f.name.endsWith('.json') && !f.name.split('/').pop().startsWith('_')
-        );
-        if (jsonFile) {
-          const text = await jsonFile.async('text');
-          const card = JSON.parse(text);
-          const data = card.data ?? card;
-          if (data.name) { nameField.value = data.name; return; }
+        if (typeof JSZip !== 'undefined') {
+          const zip = await JSZip.loadAsync(file);
+          const jsonFile = Object.values(zip.files).find(f =>
+            !f.dir && f.name.endsWith('.json') && !f.name.split('/').pop().startsWith('_')
+          );
+          if (jsonFile) {
+            const text = await jsonFile.async('text');
+            const card = JSON.parse(text);
+            const data = card.data ?? card;
+            if (data.name) { nameField.value = data.name; return; }
+          }
         }
-      } catch {}
+      } catch (e) { console.warn('ZIP 파싱 실패:', e); }
       nameField.value = file.name.replace(/\.zip$/i, '');
-    }
+    });
 
-    function autoFillCardName(input) {
-      if (!input.files[0]) return;
+    document.getElementById('card-file').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
       const nameField = document.getElementById('card-story-name');
       if (nameField.value.trim()) return;
-      const file = input.files[0];
       const reader = new FileReader();
       reader.onload = () => {
         try {
@@ -297,7 +299,7 @@
         }
       };
       reader.readAsText(file);
-    }
+    });
 
     // ── 페르소나 ──────────────────────────────
     async function loadPersonas() {
