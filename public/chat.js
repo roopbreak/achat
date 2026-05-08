@@ -380,9 +380,16 @@ async function doRegen(exchangeNumber, btn) {
         const data = JSON.parse(dataLine.slice(5).trim());
         if (evt === 'token' && body) {
           fullText += data.text;
-          body.innerHTML = marked.parse(replaceTemplateVars(fullText));
-          autoScroll(msgs);
+          if (!_renderPending) {
+            _renderPending = true;
+            requestAnimationFrame(() => {
+              body.innerHTML = marked.parse(replaceTemplateVars(fullText));
+              autoScroll(msgs);
+              _renderPending = false;
+            });
+          }
         } else if (evt === 'done') {
+          if (body) body.innerHTML = marked.parse(replaceTemplateVars(fullText));
           if (msgDiv) msgDiv.classList.remove('cursor');
         }
       }
@@ -522,6 +529,7 @@ async function deleteFromHere(exchangeNumber, msgDiv) {
 }
 
 // ── 전송 ──────────────────────────────────────────────
+let _renderPending = false;
 
 async function sendMessage(overrideText) {
   if (isStreaming) return;
@@ -577,10 +585,18 @@ async function sendMessage(overrideText) {
 
         if (evt === 'token') {
           fullText += data.text;
-          assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
-          assistantDiv.classList.add('cursor');
-          autoScroll(document.getElementById('chat-messages'));
+          if (!_renderPending) {
+            _renderPending = true;
+            requestAnimationFrame(() => {
+              assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
+              assistantDiv.classList.add('cursor');
+              autoScroll(document.getElementById('chat-messages'));
+              _renderPending = false;
+            });
+          }
         } else if (evt === 'done') {
+          // 최종 렌더링 보장
+          assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
           exchangeNum = data.exchangeNumber;
           assistantDiv.classList.remove('cursor');
           assistantDiv.dataset.exchange = exchangeNum;
