@@ -183,7 +183,6 @@ input:focus, textarea:focus { border-color: var(--accent); }
   line-height: 1.85;
   overflow-wrap: break-word;
   word-break: break-word;
-  overflow-x: hidden;
 }
 
 /* 상태창 */
