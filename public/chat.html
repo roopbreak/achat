@@ -83,7 +83,10 @@
     <div id="token-bar" style="display:none;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:4px 16px;font-size:11px;color:var(--text-dim);font-family:monospace;"></div>
 
     <div id="chat-input-area">
-      <textarea id="chat-input" placeholder="메시지 입력... (~행동~ / 대사 / ~~ / ~~~)" rows="1"></textarea>
+      <div style="display:flex;gap:4px;align-items:flex-end;flex:1;min-width:0;">
+        <button class="btn btn-secondary" onclick="insertAction()" title="행동 입력 (~행동~)" style="padding:6px 10px;font-size:14px;flex-shrink:0;">~</button>
+        <textarea id="chat-input" placeholder="메시지 입력... (~행동~ / 대사 / ~~ / ~~~)" rows="1" style="flex:1;"></textarea>
+      </div>
       <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">전송</button>
     </div>
   </div>

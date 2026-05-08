@@ -594,6 +594,17 @@ async function sendMessage(overrideText) {
   }
 }
 
+// ~ 버튼: 행동 입력
+function insertAction() {
+  const input = document.getElementById('chat-input');
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const val = input.value;
+  input.value = val.slice(0, start) + '~~' + val.slice(end);
+  input.focus();
+  input.selectionStart = input.selectionEnd = start + 1;
+}
+
 // 엔터 전송 (Shift+Enter 줄바꿈)
 document.getElementById('chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); }
