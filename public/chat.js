@@ -606,8 +606,13 @@ function insertAction() {
 }
 
 // 엔터 전송 (Shift+Enter 줄바꿈)
-document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); }
+// iPad Safari에서 isComposing이 한글 입력 후 해제 안 되는 문제 대응
+let _composing = false;
+const _chatInput = document.getElementById('chat-input');
+_chatInput.addEventListener('compositionstart', () => _composing = true);
+_chatInput.addEventListener('compositionend', () => _composing = false);
+_chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !_composing) { e.preventDefault(); sendMessage(); }
 });
 
 // textarea 자동 높이
