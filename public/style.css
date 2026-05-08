@@ -185,7 +185,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* 상태창 */
 .msg-assistant .status-bar {
-  display: inline-block;
+  display: block;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -193,6 +193,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
   color: var(--text-dim);
   line-height: 1.8;
   margin: 6px 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* 마크다운 이미지 */
