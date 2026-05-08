@@ -35,7 +35,7 @@
       </div>
       <div class="form-row">
         <label>ZIP 파일</label>
-        <input type="file" id="zip-file" accept=".zip">
+        <input type="file" id="zip-file" accept=".zip" onchange="autoFillZipName(this)">
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="btn btn-primary" onclick="importZip()">업로드</button>
@@ -55,7 +55,7 @@
       </div>
       <div class="form-row">
         <label>JSON 파일</label>
-        <input type="file" id="card-file" accept=".json">
+        <input type="file" id="card-file" accept=".json" onchange="autoFillCardName(this)">
       </div>
       <button class="btn btn-primary" onclick="importCard()">임포트</button>
       <div id="card-result" style="margin-top:10px;font-size:13px;color:var(--text-dim);"></div>
@@ -254,6 +254,33 @@
         out.style.color = 'var(--danger)';
         out.textContent = json.error;
       }
+    }
+
+    // ── 파일명 자동 채움 ──────────────────────
+    function autoFillZipName(input) {
+      if (!input.files[0]) return;
+      const nameField = document.getElementById('zip-story-name');
+      if (nameField.value.trim()) return; // 이미 입력된 경우 덮어쓰지 않음
+      nameField.value = input.files[0].name.replace(/\.zip$/i, '');
+    }
+
+    function autoFillCardName(input) {
+      if (!input.files[0]) return;
+      const nameField = document.getElementById('card-story-name');
+      if (nameField.value.trim()) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const card = JSON.parse(reader.result);
+          const data = card.data ?? card;
+          if (data.name) nameField.value = data.name;
+          else nameField.value = file.name.replace(/\.json$/i, '');
+        } catch {
+          nameField.value = file.name.replace(/\.json$/i, '');
+        }
+      };
+      reader.readAsText(file);
     }
 
     // ── 페르소나 ──────────────────────────────
