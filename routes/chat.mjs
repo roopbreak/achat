@@ -4,6 +4,7 @@ import {
   getStory, createSession, getSession,
   insertMessage, getNextExchangeNumber,
   updateEmbedding, touchSession, upsertSaveSlot, getDB,
+  getPersona, getDefaultPersona,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
 import { streamToSSE } from '../lib/claude-stream.mjs';
@@ -33,10 +34,14 @@ router.post('/:name/chat', async (req, res) => {
 
     // first_mes 삽입
     if (story.first_mes) {
+      const persona = story.persona_id
+        ? getPersona(story.persona_id)
+        : getDefaultPersona();
+      const userName = persona?.name || '유저';
       insertMessage({
         session_id:      sessionId,
         role:            'assistant',
-        content:         story.first_mes,
+        content:         story.first_mes.replaceAll('{{user}}', userName),
         exchange_number: 0,
       });
     }
@@ -206,10 +211,14 @@ router.delete('/:name/chat', (req, res) => {
   createSession(newSessionId, storyName);
 
   if (story.first_mes) {
+    const persona = story.persona_id
+      ? getPersona(story.persona_id)
+      : getDefaultPersona();
+    const userName = persona?.name || '유저';
     insertMessage({
       session_id:      newSessionId,
       role:            'assistant',
-      content:         story.first_mes,
+      content:         story.first_mes.replaceAll('{{user}}', userName),
       exchange_number: 0,
     });
   }
