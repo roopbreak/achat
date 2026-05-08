@@ -155,7 +155,7 @@
 
   <script>
     const params = new URLSearchParams(location.search);
-    const editName = params.get('story');
+    let editName = params.get('story');
     const isEdit = !!editName;
     let loreEntries = []; // { id?, name, keys, content, constant, enabled, insertion_order, priority, _deleted?, _new? }
 
@@ -163,7 +163,6 @@
       document.getElementById('page-heading').textContent = `"${editName}" 편집`;
       document.title = `${editName} — 편집 — AChat`;
       document.getElementById('story-name').value = editName;
-      document.getElementById('story-name').disabled = true;
       loadStory();
     }
 
@@ -288,9 +287,22 @@
           first_mes: document.getElementById('story-first-mes').value || null,
         };
 
-        // 1. 스토리 저장
+        // 1. 이름 변경 체크
+        let currentName = editName;
+        if (isEdit && name !== editName) {
+          const renameRes = await fetch(`/api/admin/stories/${encodeURIComponent(editName)}/rename`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newName: name }),
+          });
+          if (!renameRes.ok) throw new Error((await renameRes.json()).error);
+          currentName = name;
+          editName = name;
+        }
+
+        // 2. 스토리 저장
         if (isEdit) {
-          const res = await fetch(`/api/admin/stories/${encodeURIComponent(editName)}`, {
+          const res = await fetch(`/api/admin/stories/${encodeURIComponent(currentName)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(storyData),
@@ -305,8 +317,8 @@
           if (!res.ok) throw new Error((await res.json()).error);
         }
 
-        // 2. 로어북 변경 사항 적용
-        const storyName = isEdit ? editName : name;
+        // 3. 로어북 변경 사항 적용
+        const storyName = isEdit ? currentName : name;
         for (const entry of loreEntries) {
           if (entry._deleted && entry.id) {
             await fetch(`/api/admin/stories/${encodeURIComponent(storyName)}/lore/${entry.id}`, { method: 'DELETE' });
@@ -334,6 +346,13 @@
 
         status.textContent = '저장 완료';
         status.className = 'success';
+
+        // 이름 변경 시 URL + 헤딩 업데이트
+        if (isEdit && currentName !== new URLSearchParams(location.search).get('story')) {
+          history.replaceState(null, '', `/story-edit.html?story=${encodeURIComponent(currentName)}`);
+          document.getElementById('page-heading').textContent = `"${currentName}" 편집`;
+          document.title = `${currentName} — 편집 — AChat`;
+        }
 
         // 새 스토리 생성이면 편집 모드로 전환
         if (!isEdit) {

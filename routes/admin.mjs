@@ -6,7 +6,7 @@ import { parseAndImportCard } from '../lib/card-parser.mjs';
 import { saveImages, deleteStoryImageFiles, createMulter } from '../lib/upload-handler.mjs';
 import {
   getStories, getStory, getStoryImageCount, deleteStory, deleteStoryImages,
-  updateStory, createStoryManual,
+  updateStory, createStoryManual, renameStory,
   updateUrlMappings, getUrlMappings,
   getStoryNote, upsertStoryNote,
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
@@ -258,6 +258,29 @@ router.get('/stories/:name/persona', (req, res) => {
   const story = getDB().prepare('SELECT persona_id, persona_override FROM stories WHERE name=?').get(name);
   const persona = story?.persona_id ? getPersona(story.persona_id) : null;
   res.json({ persona_id: story?.persona_id, persona_override: story?.persona_override, persona });
+});
+
+// POST /api/admin/stories/:name/rename
+router.post('/stories/:name/rename', (req, res) => {
+  try {
+    const oldName = decodeURIComponent(req.params.name);
+    const newName = req.body.newName?.trim();
+    if (!newName) return res.status(400).json({ error: 'newName 필요' });
+    if (oldName === newName) return res.json({ ok: true });
+    if (getStory(newName)) return res.status(409).json({ error: '이미 존재하는 스토리명' });
+
+    renameStory(oldName, newName);
+
+    // 이미지 디렉토리 rename
+    const DATA_DIR = process.env.DATA_DIR ?? path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data');
+    const oldDir = path.join(DATA_DIR, 'stories', oldName);
+    const newDir = path.join(DATA_DIR, 'stories', newName);
+    if (fs.existsSync(oldDir)) fs.renameSync(oldDir, newDir);
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE /api/admin/stories/:name
