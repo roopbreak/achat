@@ -332,4 +332,5 @@ input:focus, textarea:focus { border-color: var(--accent); }
   #settings-panel select { width: 100% !important; }
 }
 
+#chat-messages.hide-images .msg-assistant img { display: none; }
 html, body { overflow-x: hidden; }

@@ -4,6 +4,7 @@ const FONT_MIN = 12, FONT_MAX = 24, FONT_DEFAULT = 15;
 let fontSize = parseInt(localStorage.getItem('chat_font_size') ?? FONT_DEFAULT, 10);
 let currentModel = localStorage.getItem('chat_model') ?? 'claude-sonnet-4-6';
 let maxTokens = parseInt(localStorage.getItem('chat_max_tokens') ?? '4096', 10);
+let imagesEnabled = localStorage.getItem('chat_images') !== 'off';
 
 function applyFontSize() {
   document.getElementById('chat-messages').style.fontSize = fontSize + 'px';
@@ -35,10 +36,26 @@ function toggleSettings() {
     document.getElementById('model-select').value = currentModel;
     document.getElementById('max-tokens-select').value = maxTokens;
     applyFontSize();
+    applyImageToggle();
   }
 }
 
+function toggleImages() {
+  imagesEnabled = document.getElementById('img-toggle').checked;
+  localStorage.setItem('chat_images', imagesEnabled ? 'on' : 'off');
+  applyImageToggle();
+}
+
+function applyImageToggle() {
+  const el = document.getElementById('img-toggle');
+  if (el) el.checked = imagesEnabled;
+  const msgs = document.getElementById('chat-messages');
+  if (imagesEnabled) msgs.classList.remove('hide-images');
+  else msgs.classList.add('hide-images');
+}
+
 applyFontSize();
+applyImageToggle();
 
 // marked 설정 — 상태창/헤딩 커스텀 렌더링
 const renderer = new marked.Renderer();
