@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AChat — 관리</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
   <nav class="nav">
@@ -257,11 +258,25 @@
     }
 
     // ── 파일명 자동 채움 ──────────────────────
-    function autoFillZipName(input) {
+    async function autoFillZipName(input) {
       if (!input.files[0]) return;
       const nameField = document.getElementById('zip-story-name');
-      if (nameField.value.trim()) return; // 이미 입력된 경우 덮어쓰지 않음
-      nameField.value = input.files[0].name.replace(/\.zip$/i, '');
+      if (nameField.value.trim()) return;
+      const file = input.files[0];
+      // ZIP 내부 JSON에서 name 추출 시도
+      try {
+        const zip = await JSZip.loadAsync(file);
+        const jsonFile = Object.values(zip.files).find(f =>
+          !f.dir && f.name.endsWith('.json') && !f.name.split('/').pop().startsWith('_')
+        );
+        if (jsonFile) {
+          const text = await jsonFile.async('text');
+          const card = JSON.parse(text);
+          const data = card.data ?? card;
+          if (data.name) { nameField.value = data.name; return; }
+        }
+      } catch {}
+      nameField.value = file.name.replace(/\.zip$/i, '');
     }
 
     function autoFillCardName(input) {
