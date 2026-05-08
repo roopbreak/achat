@@ -543,8 +543,7 @@ async function sendMessage(overrideText) {
 
   if (!overrideText) appendMessage('user', text);
 
-  const assistantMsg = appendMessage('assistant', '', true, null);
-  const assistantDiv = assistantMsg.querySelector('.msg-body');
+  const assistantDiv = appendMessage('assistant', '', true, null);
   let fullText = '';
 
   try {
@@ -590,30 +589,30 @@ async function sendMessage(overrideText) {
             _renderPending = true;
             requestAnimationFrame(() => {
               assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
+              assistantDiv.classList.add('cursor');
               autoScroll(document.getElementById('chat-messages'));
               _renderPending = false;
             });
           }
         } else if (evt === 'done') {
-          // 최종 렌더링 보장
           assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
           exchangeNum = data.exchangeNumber;
-          assistantMsg.classList.remove('cursor');
-          assistantMsg.dataset.exchange = exchangeNum;
+          assistantDiv.classList.remove('cursor');
+          assistantDiv.dataset.exchange = exchangeNum;
           // 액션 버튼 추가
           const actions = document.createElement('div');
           actions.className = 'msg-actions';
           const regenBtn = document.createElement('button');
           regenBtn.className = 'msg-action-btn';
           regenBtn.textContent = '↺ 재생성';
-          regenBtn.onclick = () => showRegenPanel(assistantMsg, exchangeNum);
+          regenBtn.onclick = () => showRegenPanel(assistantDiv, exchangeNum);
           const delBtn = document.createElement('button');
           delBtn.className = 'msg-action-btn';
           delBtn.textContent = '✕ 삭제';
-          delBtn.onclick = () => deleteFromHere(exchangeNum, assistantMsg);
+          delBtn.onclick = () => deleteFromHere(exchangeNum, assistantDiv);
           actions.appendChild(regenBtn);
           actions.appendChild(delBtn);
-          assistantMsg.appendChild(actions);
+          assistantDiv.appendChild(actions);
         } else if (evt === 'token_info') {
           const bar = document.getElementById('token-bar');
           bar.style.display = 'block';
@@ -625,13 +624,13 @@ async function sendMessage(overrideText) {
           bar.textContent = `토큰: ${parts.join(' | ')}`;
         } else if (evt === 'error') {
           assistantDiv.innerHTML += `<span style="color:var(--danger)">[오류: ${data.message}]</span>`;
-          assistantMsg.classList.remove('cursor');
+          assistantDiv.classList.remove('cursor');
         }
       }
     }
   } catch (err) {
     assistantDiv.innerHTML += `<span style="color:var(--danger)">[오류: ${err.message}]</span>`;
-    assistantMsg.classList.remove('cursor');
+    assistantDiv.classList.remove('cursor');
   } finally {
     isStreaming = false;
     document.getElementById('send-btn').disabled = false;
