@@ -323,7 +323,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
   .msg-user { max-width: 90%; }
   .msg-assistant img { max-width: 100%; }
   .story-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-  #chat-header .session-actions .btn span { display: none; }
+  #chat-header .session-actions .btn span:not(:first-child) { display: none; }
   #settings-panel { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
   #settings-panel select { width: 100% !important; }
 }
