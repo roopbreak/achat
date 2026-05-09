@@ -28,19 +28,14 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// React SPA 정적 파일 (public/dist/)
+// React SPA 정적 파일 (public/dist/) — 인증 없이 서빙
 const distDir = path.join(__dirname, 'public', 'dist');
-
-// 에셋은 인증 없이 서빙 (Vite 해시 파일명)
-app.use('/assets', express.static(path.join(distDir, 'assets')));
-app.use('/favicon.svg', express.static(path.join(distDir, 'favicon.svg')));
+app.use(express.static(distDir));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 
-// 인증 미들웨어 (APP_SECRET 설정 시 활성화)
-app.use(authMiddleware);
-
-// 인증 후 정적 파일
-app.use(express.static(distDir));
+// 인증 미들웨어 (APP_SECRET 설정 시 API에만 적용)
+app.use('/api', authMiddleware);
+app.use('/images', authMiddleware);
 
 // 라우트
 app.use('/api/admin',          adminRouter);
