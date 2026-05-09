@@ -9,7 +9,9 @@ interface Props {
 
 export default function StreamingText({ text, charName, isStreaming }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const renderedHtmlRef = useRef('')
+  const stableRef = useRef<HTMLDivElement | null>(null)
+  const tailRef = useRef<HTMLDivElement | null>(null)
+  const lastStableCut = useRef('')
   const rafRef = useRef<number>(0)
   const pendingTextRef = useRef('')
 
@@ -18,43 +20,60 @@ export default function StreamingText({ text, charName, isStreaming }: Props) {
   const doRender = useCallback(() => {
     const el = containerRef.current
     if (!el) return
-    const html = renderMarkdown(pendingTextRef.current)
-    if (html === renderedHtmlRef.current) return
-    renderedHtmlRef.current = html
+    const text = pendingTextRef.current
 
-    // 기존 이미지 src 목록 저장
-    const existingImgs = new Map<string, HTMLImageElement>()
-    el.querySelectorAll('img').forEach(img => {
-      if (img.src && img.naturalWidth > 0) {
-        existingImgs.set(img.src, img)
-      }
-    })
-
-    el.innerHTML = html
-
-    // 이미 로드된 이미지는 깜빡임 방지를 위해 로드 상태 유지
-    if (existingImgs.size > 0) {
-      el.querySelectorAll('img').forEach(img => {
-        if (existingImgs.has(img.src)) {
-          // 이미 로드된 이미지 — 브라우저 캐시에서 즉시 로드되므로 깜빡임 최소화
-          img.loading = 'eager'
-        }
-      })
+    if (!stableRef.current) {
+      // 최초 — stable + tail 구조 생성
+      stableRef.current = document.createElement('div')
+      tailRef.current = document.createElement('div')
+      el.innerHTML = ''
+      el.appendChild(stableRef.current)
+      el.appendChild(tailRef.current)
     }
+
+    // 이미지 마크다운이 완결된 지점을 찾아 stable/tail 분리
+    // 마지막 완결된 이미지 이후의 줄바꿈까지를 stable로 고정
+    const imgPattern = /!\[[^\]]*\]\([^)]+\)/g
+    let lastImgEnd = 0
+    let match
+    while ((match = imgPattern.exec(text)) !== null) {
+      // 이미지 마크다운 다음 줄바꿈까지 포함
+      const afterImg = text.indexOf('\n', match.index + match[0].length)
+      lastImgEnd = afterImg === -1 ? match.index + match[0].length : afterImg + 1
+    }
+
+    if (lastImgEnd > 0 && text.substring(0, lastImgEnd) !== lastStableCut.current) {
+      // stable 영역 업데이트 (이미지 포함 — 이후 변경 안 됨)
+      lastStableCut.current = text.substring(0, lastImgEnd)
+      stableRef.current.innerHTML = renderMarkdown(lastStableCut.current)
+    } else if (lastImgEnd === 0 && lastStableCut.current === '') {
+      // 이미지 없음 — stable 비우고 tail에만 렌더
+      stableRef.current.innerHTML = ''
+    }
+
+    // tail 영역 — 이미지 이후 텍스트만 매번 업데이트 (이미지 없으므로 깜빡임 없음)
+    const tailText = lastImgEnd > 0 ? text.substring(lastImgEnd) : text
+    tailRef.current!.innerHTML = renderMarkdown(tailText)
   }, [])
 
   useEffect(() => {
     pendingTextRef.current = processed
 
     if (!isStreaming) {
-      // 스트리밍 완료 — 즉시 최종 렌더
+      // 스트리밍 완료 — stable/tail 구조 해제, 전체 렌더
       cancelAnimationFrame(rafRef.current)
-      doRender()
+      rafRef.current = 0
+      const el = containerRef.current
+      if (el) {
+        el.innerHTML = renderMarkdown(processed)
+        stableRef.current = null
+        tailRef.current = null
+        lastStableCut.current = ''
+      }
       return
     }
 
-    // 스트리밍 중 — throttle (rAF 기반, ~16ms)
-    // 이미 예약된 rAF가 있으면 스킵 (다음 프레임에서 최신 텍스트로 렌더)
+    // 스트리밍 중 — rAF throttle
     if (!rafRef.current) {
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0
@@ -63,7 +82,6 @@ export default function StreamingText({ text, charName, isStreaming }: Props) {
     }
   }, [processed, isStreaming, doRender])
 
-  // cleanup
   useEffect(() => {
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
