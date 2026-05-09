@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom'
 import Nav from '../components/common/Nav'
 import { api, apiRaw } from '../lib/api'
 
+interface GenerationJob {
+  id?: string
+  status: string
+  total?: number
+  completed?: number
+  failed?: number
+  qa_retries?: number
+  error?: string
+}
+
 interface StoryInfo {
   name: string
   char_name: string
@@ -50,6 +60,44 @@ export default function Admin() {
   const [spPersona, setSpPersona] = useState('')
   const [spOverride, setSpOverride] = useState('')
   const [spResult, setSpResult] = useState('')
+
+  // 이미지 생성 상태
+  const [genJobs, setGenJobs] = useState<Record<string, GenerationJob>>({})
+  const [genLoading, setGenLoading] = useState<string | null>(null)
+
+  const checkGenStatus = useCallback(async (storyName: string) => {
+    try {
+      const job = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
+      setGenJobs(prev => ({ ...prev, [storyName]: job }))
+    } catch {}
+  }, [])
+
+  const triggerGenerate = async (storyName: string) => {
+    setGenLoading(storyName)
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, { method: 'POST' })
+      // SSE로 진행 추적
+      const es = new EventSource(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/progress`)
+      es.onmessage = (e) => {
+        const job = JSON.parse(e.data) as GenerationJob
+        setGenJobs(prev => ({ ...prev, [storyName]: job }))
+        if (job.status === 'completed' || job.status === 'failed') {
+          es.close()
+          setGenLoading(null)
+          loadStories()
+        }
+      }
+      es.onerror = () => { es.close(); setGenLoading(null); checkGenStatus(storyName) }
+    } catch (e: any) {
+      alert(e.message || '생성 실패')
+      setGenLoading(null)
+    }
+  }
+
+  // 스토리 로드 시 생성 상태도 확인 + running 상태면 SSE 자동 구독
+  useEffect(() => {
+    stories.forEach(s => checkGenStatus(s.name))
+  }, [stories, checkGenStatus])
 
   // 유저 노트
   const [noteStory, setNoteStory] = useState('')
@@ -284,22 +332,49 @@ export default function Admin() {
           </div>
           <div className="story-table-wrap">
           <table className="story-table">
-            <thead><tr><th>이름</th><th>캐릭터</th><th>이미지</th><th>등록일</th><th></th></tr></thead>
+            <thead><tr><th>이름</th><th>캐릭터</th><th>이미지</th><th>이미지 생성</th><th>등록일</th><th></th></tr></thead>
             <tbody>
               {stories.length === 0 ? (
-                <tr><td colSpan={5} style={{ color: 'var(--text-dim)' }}>없음</td></tr>
-              ) : stories.map(s => (
+                <tr><td colSpan={6} style={{ color: 'var(--text-dim)' }}>없음</td></tr>
+              ) : stories.map(s => {
+                const job = genJobs[s.name]
+                const isRunning = job?.status === 'running' || genLoading === s.name
+                return (
                 <tr key={s.name}>
                   <td>{s.name}</td>
                   <td>{s.char_name}</td>
                   <td>{s.imageCount}</td>
+                  <td style={{ minWidth: 160 }}>
+                    {isRunning ? (
+                      <div style={{ fontSize: 12 }}>
+                        <div style={{ background: 'var(--border)', borderRadius: 4, height: 8, marginBottom: 4 }}>
+                          <div style={{ background: 'var(--accent)', borderRadius: 4, height: 8, width: `${((job?.completed || 0) / (job?.total || 100)) * 100}%`, transition: 'width 0.3s' }} />
+                        </div>
+                        <span style={{ color: 'var(--text-dim)' }}>{job?.completed || 0}/{job?.total || '?'}</span>
+                      </div>
+                    ) : job?.status === 'completed' ? (
+                      <span style={{ fontSize: 12, color: 'var(--accent)' }}>
+                        {job.completed}/{job.total} 완료
+                      </span>
+                    ) : job?.status === 'failed' ? (
+                      <span style={{ fontSize: 12 }}>
+                        <span style={{ color: '#e55' }}>실패</span>
+                        {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>재시도</button>
+                      </span>
+                    ) : s.imageCount === 0 ? (
+                      <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>자동 생성</button>
+                    ) : (
+                      <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>재생성</button>
+                    )}
+                  </td>
                   <td>{new Date(s.imported_at * 1000).toLocaleDateString('ko')}</td>
                   <td style={{ display: 'flex', gap: 6 }}>
                     <Link to={`/story-edit?story=${encodeURIComponent(s.name)}`} className="btn btn-secondary" style={{ padding: '4px 12px', fontSize: 12 }}>편집</Link>
                     <button className="btn btn-danger" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => deleteStory(s.name)}>삭제</button>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
           </div>

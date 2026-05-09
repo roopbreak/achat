@@ -840,6 +840,18 @@ ALTER TABLE story_images ADD COLUMN seed INTEGER;
 
 ---
 
+## 13. Codex 리뷰 이슈 & 대응 (2026-05-10)
+
+| # | 심각도 | 이슈 | 대응 |
+|---|--------|------|------|
+| 1 | Critical | QA 실패 이미지가 `getRandomImage()`로 채팅에 노출 | QA 실패 이미지는 `story_images`에 등록 안 함 (파일만 보관). `source='qa_failed'` 이미지는 서빙 제외 |
+| 2 | Critical | `callClaude` 시그니처 불일치 — 현재 문자열만 받음 | Vision QA + composition 생성용 별도 Claude 클라이언트 함수 `callClaudeMultimodal()` 신규 작성 |
+| 3 | Critical | `generation_jobs` CRUD 등 필수 함수 미정의 | Phase 1 DB 마이그레이션 시 CRUD 함수 모두 `lib/db.mjs`에 추가 |
+| 4 | Warning | scene_key 다중 파일 누적 | 재생성 시 기존 동일 scene_key 이미지 삭제 후 재등록 (1 scene_key = 1 파일 정책) |
+| 5 | Warning | 전역 큐 없음 + 의존성 미체크 | 전역 생성 큐 (동시 1스토리만), 트리거 시 NAI+Claude+Python 의존성 전부 확인 |
+
+---
+
 ## TODO 체크리스트
 
 ### Phase 1: RAG 이식 + 코어 엔진
@@ -849,11 +861,16 @@ ALTER TABLE story_images ADD COLUMN seed INTEGER;
 - [ ] RAG 초기 색인 실행 확인 (`python3 scripts/rag-index.py`)
 - [ ] `lib/nai-client.mjs` 작성 — babechat-studio `studio.mjs`에서 `generateNAI()`, `encodeVibe()`, `extractPngFromZip()` 추출, 카를린 무선화 스타일 프리셋 내장
 - [ ] babechat-studio `.env`에서 `NAI_API_TOKEN` → achat `.env`에 추가
-- [ ] DB 마이그레이션 — `generation_jobs` 테이블 생성, `story_images`에 source/prompt/seed 컬럼 추가
+- [ ] DB 마이그레이션 — `generation_jobs` 테이블 + CRUD 함수, `story_images`에 source/prompt/seed 컬럼 추가
+- [ ] [Codex#2] `callClaudeMultimodal()` — Vision QA + composition용 멀티모달 Claude 클라이언트 신규 작성
+- [ ] [Codex#4] `getRandomImage()` 수정 — `source='qa_failed'` 이미지 서빙 제외
+- [ ] [Codex#5] 전역 생성 큐 구현 (동시 1스토리만) + 트리거 시 NAI/Claude/Python 의존성 전체 검증
 
 ### Phase 2: 자동 생성 파이프라인
 - [ ] `lib/composition-builder.mjs` — RAG 검색 + Claude API로 composition.json 자동 생성 (글래머 체형, 크롭 표정, 카를린 화풍 규칙 포함)
 - [ ] `lib/image-generator.mjs` — autoGenerate() 오케스트레이터 (배치 생성 + Claude Vision QA + 재생성 + 학습 루프)
+- [ ] [Codex#1] QA 실패 이미지 `story_images` 미등록 (파일만 보관)
+- [ ] [Codex#4] 재생성 시 기존 동일 scene_key 이미지 삭제 후 재등록
 
 ### Phase 3: API + 트리거
 - [ ] `routes/generation.mjs` — `POST /api/admin/stories/:name/generate` + `GET .../progress` (SSE)

@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { initDB } from './lib/db.mjs';
 
-import adminRouter    from './routes/admin.mjs';
-import storiesRouter  from './routes/stories.mjs';
-import imagesRouter   from './routes/images.mjs';
-import chatRouter     from './routes/chat.mjs';
+import adminRouter      from './routes/admin.mjs';
+import storiesRouter    from './routes/stories.mjs';
+import imagesRouter     from './routes/images.mjs';
+import chatRouter       from './routes/chat.mjs';
 import { storySessionsRouter, sessionMessagesRouter } from './routes/sessions.mjs';
 import { authMiddleware } from './lib/auth.mjs';
 import rateLimit from 'express-rate-limit';
