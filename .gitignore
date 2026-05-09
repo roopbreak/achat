@@ -11,3 +11,5 @@ package-lock.json
 scheduling-api-design.md
 public/dist/
 frontend/node_modules/
+.playwright-mcp/
+.claude/settings.local.json
