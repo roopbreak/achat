@@ -260,7 +260,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* 스트리밍 커서 */
 .cursor::after {
-  content: '\25CC';
+  content: '\2588';
   animation: blink .7s step-end infinite;
   color: var(--accent);
 }
