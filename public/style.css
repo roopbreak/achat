@@ -169,7 +169,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 .msg { max-width: 100%; }
 .msg-body { overflow-wrap: anywhere; word-break: break-all; }
-.msg-body pre { white-space: pre-wrap; word-break: break-all; overflow-x: hidden; }
+.msg-body pre, .msg-body pre code { white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; max-width: 100%; }
 .msg-user {
   align-self: flex-end;
   background: var(--surface2);
