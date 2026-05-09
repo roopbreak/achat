@@ -28,30 +28,19 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// React 빌드 감지 (public/dist/ 존재 여부)
+// React SPA 정적 파일 (public/dist/)
 const distDir = path.join(__dirname, 'public', 'dist');
-const useReact = fs.existsSync(path.join(distDir, 'index.html'));
 
-// 정적 파일 (login.html, style.css는 인증 없이 제공)
-if (useReact) {
-  // React SPA: 빌드 에셋은 인증 없이 서빙 (Vite 해시 파일명)
-  app.use('/assets', express.static(path.join(distDir, 'assets')));
-  app.use('/favicon.svg', express.static(path.join(distDir, 'favicon.svg')));
-} else {
-  app.use('/style.css',  express.static(path.join(__dirname, 'public', 'style.css')));
-  app.use('/login.html', express.static(path.join(__dirname, 'public', 'login.html')));
-}
+// 에셋은 인증 없이 서빙 (Vite 해시 파일명)
+app.use('/assets', express.static(path.join(distDir, 'assets')));
+app.use('/favicon.svg', express.static(path.join(distDir, 'favicon.svg')));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 
 // 인증 미들웨어 (APP_SECRET 설정 시 활성화)
 app.use(authMiddleware);
 
 // 인증 후 정적 파일
-if (useReact) {
-  app.use(express.static(distDir));
-} else {
-  app.use(express.static(path.join(__dirname, 'public')));
-}
+app.use(express.static(distDir));
 
 // 라우트
 app.use('/api/admin',          adminRouter);
@@ -63,11 +52,7 @@ app.use('/api/sessions',       sessionMessagesRouter); // /:id/messages
 
 // SPA fallback → index.html
 app.get('/{*path}', (_req, res) => {
-  if (useReact) {
-    res.sendFile(path.join(distDir, 'index.html'));
-  } else {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  }
+  res.sendFile(path.join(distDir, 'index.html'));
 });
 
 app.listen(PORT, () => {
