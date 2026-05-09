@@ -91,6 +91,18 @@ renderer.heading = ({ text, depth }) => {
   // 상태창이 아닌 헤딩 → 일반 단락으로 처리 (AI가 잘못 쓴 ## 처리)
   return `<p>${text}</p>`;
 };
+// 코드블록 → 스테이터스 패턴이면 일반 텍스트로 렌더링
+renderer.code = ({ text }) => {
+  // 스테이터스 패턴 감지: ━━━, 📍, 🎬, [캐릭터명], 이모지 등
+  const isStatus = /━━|📍|🎬|👗|💭|💲|🖤|❤️|💛|💜|🔥|💝|💟/.test(text) ||
+                   /\[.+?\].*?[👗💭📍🎬]/.test(text);
+  if (isStatus) {
+    const escaped = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<p>${escaped.replace(/\n/g, '<br>')}</p>`;
+  }
+  return `<pre><code>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+};
+
 marked.use({ renderer, breaks: true, gfm: true });
 
 // 템플릿 변수 치환
