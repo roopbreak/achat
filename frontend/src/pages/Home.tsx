@@ -27,6 +27,7 @@ export default function Home() {
   const [stories, setStories] = useState<Story[]>([])
   const [recent, setRecent] = useState<RecentStory[]>([])
   const [sort, setSort] = useState('date-desc')
+  const [search, setSearch] = useState('')
   const [noPersona, setNoPersona] = useState(false)
 
   useEffect(() => {
@@ -44,7 +45,8 @@ export default function Home() {
   }, [])
 
   const sorted = useMemo(() => {
-    const list = [...stories]
+    const q = search.trim().toLowerCase()
+    let list = q ? stories.filter(s => s.name.toLowerCase().includes(q)) : [...stories]
     switch (sort) {
       case 'date-desc': list.sort((a, b) => b.imported_at - a.imported_at); break
       case 'date-asc': list.sort((a, b) => a.imported_at - b.imported_at); break
@@ -52,7 +54,7 @@ export default function Home() {
       case 'name-desc': list.sort((a, b) => b.name.localeCompare(a.name, 'ko')); break
     }
     return list
-  }, [stories, sort])
+  }, [stories, sort, search])
 
   const clearRecent = async (name: string) => {
     if (!confirm(`"${name}" 의 모든 채팅 기록을 삭제할까요?`)) return
@@ -101,8 +103,17 @@ export default function Home() {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: 16, color: 'var(--text-dim)', margin: 0 }}>전체 스토리</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
+            <input
+              type="text"
+              placeholder="검색..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width: 140, fontSize: 12, padding: '4px 8px', borderRadius: 6 }}
+            />
+          </div>
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
