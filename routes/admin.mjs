@@ -30,17 +30,64 @@ router.get('/stories', (_req, res) => {
 // POST /api/admin/stories — 신규 스토리 수동 생성
 router.post('/stories', (req, res) => {
   try {
-    const { name, char_name, description, personality, scenario, first_mes } = req.body;
+    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags } = req.body;
     if (!name?.trim() || !char_name?.trim()) {
       return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
     }
     const existing = getStory(name.trim());
     if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
-    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes });
+    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/admin/stories/:name/export — chara_card_v2 JSON 익스포트 (/:name보다 먼저 매칭)
+router.get('/stories/:name/export', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+
+  const loreEntries = getAllLoreIncludeDisabled(name);
+
+  const card = {
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: {
+      name: story.char_name,
+      description: story.description ?? '',
+      personality: story.personality ?? '',
+      scenario: story.scenario ?? '',
+      first_mes: story.first_mes ?? '',
+      post_history_instructions: story.post_history_instructions ?? '',
+      character_book: {
+        entries: loreEntries.map((e, i) => ({
+          id: i,
+          name: e.name ?? '',
+          keys: typeof e.keys === 'string' ? JSON.parse(e.keys) : (e.keys ?? []),
+          content: e.content ?? '',
+          enabled: !!e.enabled,
+          constant: !!e.constant,
+          insertion_order: e.insertion_order ?? 100,
+          priority: e.priority ?? 5,
+          scan_depth: e.scan_depth ?? 4,
+        })),
+      },
+      tags: story.tags ? JSON.parse(story.tags) : [],
+      extensions: {
+        achat: {
+          category: story.category ?? null,
+          story_name: name,
+        },
+      },
+    },
+  };
+
+  const safeName = encodeURIComponent(name).replace(/'/g, '%27');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${safeName}.json`);
+  res.json(card);
 });
 
 // GET /api/admin/stories/:name — 단일 스토리 상세
