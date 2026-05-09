@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 
 interface Props {
   disabled: boolean
@@ -9,6 +9,19 @@ export default function ChatInput({ disabled, onSend }: Props) {
   const [value, setValue] = useState('')
   const composing = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const cursorPos = useRef<number | null>(null)
+
+  // 커서 위치 복원 (setValue 후 DOM 반영 시점에 실행)
+  useEffect(() => {
+    if (cursorPos.current !== null) {
+      const el = textareaRef.current
+      if (el) {
+        el.focus()
+        el.selectionStart = el.selectionEnd = cursorPos.current
+      }
+      cursorPos.current = null
+    }
+  }, [value])
 
   const handleSend = useCallback(() => {
     const text = value.trim()
@@ -38,11 +51,8 @@ export default function ChatInput({ disabled, onSend }: Props) {
     const start = el.selectionStart
     const end = el.selectionEnd
     const next = value.slice(0, start) + '~~' + value.slice(end)
+    cursorPos.current = start + 1 // ~ 와 ~ 사이
     setValue(next)
-    requestAnimationFrame(() => {
-      el.focus()
-      el.selectionStart = el.selectionEnd = start + 1
-    })
   }
 
   return (
