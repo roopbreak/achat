@@ -84,16 +84,28 @@ export default function ChatMessages({
     scrollToBottom()
   }, [messages.length, scrollToBottom])
 
-  // 깨진 이미지 숨김 (DOMPurify가 onerror 제거하므로 이벤트 위임)
+  // 이미지 로드/에러 처리 (스크롤 보정 + 깨진 이미지 숨김)
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const handler = (e: Event) => {
+    const onError = (e: Event) => {
       const img = e.target as HTMLImageElement
       if (img.tagName === 'IMG') img.style.display = 'none'
     }
-    el.addEventListener('error', handler, true)
-    return () => el.removeEventListener('error', handler, true)
+    const onLoad = (e: Event) => {
+      const img = e.target as HTMLImageElement
+      if (img.tagName === 'IMG' && isAtBottom.current) {
+        // 이미지 로드로 높이 변경 시 스크롤 보정
+        el.scrollTop = el.scrollHeight
+        prevScrollHeight.current = el.scrollHeight
+      }
+    }
+    el.addEventListener('error', onError, true)
+    el.addEventListener('load', onLoad, true)
+    return () => {
+      el.removeEventListener('error', onError, true)
+      el.removeEventListener('load', onLoad, true)
+    }
   }, [])
 
   return (

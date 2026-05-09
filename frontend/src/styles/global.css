@@ -207,7 +207,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
   margin: 10px 0;
   border: 1px solid var(--border);
 }
-.msg-assistant .chat-img { cursor: zoom-in; }
+.msg-assistant .chat-img { cursor: zoom-in; min-height: 200px; object-fit: contain; }
 .msg-assistant .chat-img[src=""], .msg-assistant .chat-img:not([src]) { display: none; }
 .msg-assistant p { margin-bottom: 0.6em; }
 .msg-assistant p:last-child { margin-bottom: 0; }
@@ -260,9 +260,10 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* 스트리밍 커서 */
 .cursor::after {
-  content: '\2588';
+  content: '\258C';
   animation: blink .7s step-end infinite;
   color: #00ff41;
+  font-size: 1.1em;
 }
 @keyframes blink { 50% { opacity: 0; } }
 
