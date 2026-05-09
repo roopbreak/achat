@@ -9,3 +9,5 @@ tmp/
 package-lock.json
 *.iml
 scheduling-api-design.md
+public/dist/
+frontend/node_modules/

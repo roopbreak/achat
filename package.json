@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.mjs",
-    "dev": "node --watch index.mjs"
+    "dev": "node --watch index.mjs",
+    "build:frontend": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
     "adm-zip": "^0.5.17",
