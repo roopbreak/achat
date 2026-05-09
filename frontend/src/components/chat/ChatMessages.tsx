@@ -127,7 +127,7 @@ export default function ChatMessages({
         const isStreamingMsg = isStreaming && msg.exchange_number === streamingExchange && msg.role === 'assistant'
         return (
           <ChatMessage
-            key={`${msg.exchange_number}-${msg.role}`}
+            key={msg._id}
             message={msg}
             charName={charName}
             isStreaming={isStreamingMsg}

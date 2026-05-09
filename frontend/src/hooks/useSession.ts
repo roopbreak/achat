@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { api } from '../lib/api'
 
+let _msgId = 0
+
 export interface Message {
   role: 'user' | 'assistant'
   content: string
   exchange_number: number
+  _id: number // 안정적인 React key용
 }
 
 interface MessagesResponse {
@@ -36,7 +39,8 @@ export function useSession(storyName: string) {
       ? `/api/sessions/${sid}/messages?limit=50&before=${before}`
       : `/api/sessions/${sid}/messages?limit=50`
     const data = await api<MessagesResponse>(url)
-    const msgs = data.messages ?? []
+    const rawMsgs = data.messages ?? []
+    const msgs = rawMsgs.map(m => ({ ...m, _id: ++_msgId }))
     setHasMore(data.hasMore ?? false)
 
     if (before != null) {
@@ -64,8 +68,8 @@ export function useSession(storyName: string) {
     return res.sessionId
   }, [storyName, persistSessionId, loadMessages])
 
-  const addMessage = useCallback((msg: Message) => {
-    setMessages(prev => [...prev, msg])
+  const addMessage = useCallback((msg: Omit<Message, '_id'>) => {
+    setMessages(prev => [...prev, { ...msg, _id: ++_msgId }])
   }, [])
 
   const updateLastAssistant = useCallback((content: string, exchangeNumber?: number) => {
