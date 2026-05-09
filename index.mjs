@@ -10,6 +10,7 @@ import imagesRouter   from './routes/images.mjs';
 import chatRouter     from './routes/chat.mjs';
 import { storySessionsRouter, sessionMessagesRouter } from './routes/sessions.mjs';
 import { authMiddleware } from './lib/auth.mjs';
+import rateLimit from 'express-rate-limit';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,6 +37,8 @@ app.use('/favicon.ico', (_req, res) => res.status(204).end());
 // 인증 미들웨어 (APP_SECRET 설정 시 API에만 적용)
 // /images는 <img> 태그에서 직접 로드하므로 인증 제외
 app.use('/api', authMiddleware);
+
+// Rate limiting — AI API 호출 비용 보호 (routes/chat.mjs에서 route-level 적용)
 
 // 라우트
 app.use('/api/admin',          adminRouter);

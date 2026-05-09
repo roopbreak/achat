@@ -10,13 +10,23 @@ import { buildContext } from '../lib/context-builder.mjs';
 import { streamToSSE } from '../lib/claude-stream.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
+// AI API 호출 엔드포인트 전용 rate limiter
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Too many requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/stories/:name/chat
-router.post('/:name/chat', async (req, res) => {
+router.post('/:name/chat', chatLimiter, async (req, res) => {
   const storyName = decodeURIComponent(req.params.name);
-  const { message, sessionId: reqSessionId, model, maxTokens } = req.body;
+  const { message, sessionId: reqSessionId, model, maxTokens, loreDebug } = req.body;
 
   if (!message?.trim()) return res.status(400).json({ error: 'message 필요' });
 
@@ -26,6 +36,11 @@ router.post('/:name/chat', async (req, res) => {
   // 세션 확보
   let sessionId = reqSessionId;
   let session   = sessionId ? getSession(sessionId) : null;
+
+  // 스토리 경계 검증
+  if (session && session.story_name !== storyName) {
+    return res.status(403).json({ error: 'Session does not belong to this story' });
+  }
 
   if (!session) {
     sessionId = randomUUID();
@@ -57,7 +72,13 @@ router.post('/:name/chat', async (req, res) => {
   let assistantText = '';
 
   try {
-    const { systemBlocks, messages } = await buildContext(storyName, sessionId, message.trim(), maxTokens || 4096);
+    const { systemBlocks, messages, matchedLore } = await buildContext(storyName, sessionId, message.trim(), maxTokens || 4096, { model });
+
+    if (loreDebug && matchedLore.length) {
+      const loreInfo = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
+      res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
+    }
+
     assistantText = await streamToSSE(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
   } catch (err) {
     if (!res.writableEnded) {
@@ -67,70 +88,104 @@ router.post('/:name/chat', async (req, res) => {
     return;
   }
 
-  // 메시지 저장
-  const exchNum = getNextExchangeNumber(sessionId);
-  insertMessage({ session_id: sessionId, role: 'user',      content: message.trim(), exchange_number: exchNum });
-  insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText,  exchange_number: exchNum });
-  touchSession(sessionId);
+  // 메시지 저장 (단일 트랜잭션)
+  const db = getDB();
+  const saveTurn = db.transaction(() => {
+    const exchNum = getNextExchangeNumber(sessionId);
+    insertMessage({ session_id: sessionId, role: 'user', content: message.trim(), exchange_number: exchNum });
+    const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: exchNum });
+    touchSession(sessionId);
 
-  // 자동저장 (_autosave 슬롯)
-  const turnCount = getDB().prepare(
-    'SELECT COUNT(*) as cnt FROM messages WHERE session_id=? AND role=?'
-  ).get(sessionId, 'assistant').cnt;
-  upsertSaveSlot({ story_name: storyName, slot_name: '_autosave', session_id: sessionId, max_exchange: exchNum, turn_count: turnCount });
+    const turnCount = db.prepare(
+      'SELECT COUNT(*) as cnt FROM messages WHERE session_id=? AND role=?'
+    ).get(sessionId, 'assistant').cnt;
+    upsertSaveSlot({ story_name: storyName, slot_name: '_autosave', session_id: sessionId, max_exchange: exchNum, turn_count: turnCount });
+
+    return { exchNum, assistantRowId: assistantResult.id };
+  });
+  const { exchNum, assistantRowId } = saveTurn();
 
   // done 이벤트
   res.write(`event: done\ndata: ${JSON.stringify({ sessionId, exchangeNumber: exchNum })}\n\n`);
   res.end();
 
-  // 비동기 후처리 (스트리밍 완료 후)
-  const assistantMsgId = getNextExchangeNumber(sessionId) - 1; // 방금 저장된 assistant 메시지 id 근사
+  // 비동기 후처리
   setImmediate(async () => {
-    // 임베딩 (HypaMemory)
     const vec = await embed(assistantText.slice(0, 2000));
-    if (vec) {
-      // 마지막 삽입된 assistant 메시지 id 조회
-      const { getDB } = await import('../lib/db.mjs');
-      const row = getDB().prepare(
-        'SELECT id FROM messages WHERE session_id=? AND role=? ORDER BY id DESC LIMIT 1'
-      ).get(sessionId, 'assistant');
-      if (row) updateEmbedding(row.id, vec);
-    }
-
-    // SupaMemory 요약 트리거
+    if (vec) updateEmbedding(assistantRowId, vec);
     await maybeRunSummary(sessionId);
   });
 });
 
 // PUT /api/stories/:name/messages/:exchangeNum — 유저 메시지 수정
 router.put('/:name/messages/:exchangeNum', (req, res) => {
+  const storyName = decodeURIComponent(req.params.name);
   const { sessionId, content } = req.body;
   if (!sessionId || !content) return res.status(400).json({ error: 'sessionId, content 필요' });
+
+  // 스토리 경계 검증
+  const session = getSession(sessionId);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  if (session.story_name !== storyName) {
+    return res.status(403).json({ error: 'Session does not belong to this story' });
+  }
+
   const exchNum = parseInt(req.params.exchangeNum, 10);
   const db = getDB();
-  db.prepare('UPDATE messages SET content=? WHERE session_id=? AND exchange_number=? AND role=?')
-    .run(content, sessionId, exchNum, 'user');
-  // 이후 메시지 삭제
-  db.prepare('DELETE FROM messages WHERE session_id=? AND exchange_number>?').run(sessionId, exchNum);
+
+  const editTurn = db.transaction(() => {
+    // 유저 메시지 수정
+    db.prepare('UPDATE messages SET content=? WHERE session_id=? AND exchange_number=? AND role=?')
+      .run(content, sessionId, exchNum, 'user');
+    // 같은 턴 assistant + 이후 메시지 삭제
+    db.prepare('DELETE FROM messages WHERE session_id=? AND exchange_number>=? AND NOT (exchange_number=? AND role=?)')
+      .run(sessionId, exchNum, exchNum, 'user');
+    // 요약 무효화
+    db.prepare('UPDATE messages SET summarized = 0 WHERE session_id = ? AND exchange_number >= ? AND summarized = 1')
+      .run(sessionId, exchNum);
+    db.prepare('UPDATE chat_sessions SET summary = NULL WHERE id = ?').run(sessionId);
+  });
+  editTurn();
+
   res.json({ ok: true });
 });
 
 // DELETE /api/stories/:name/messages/:exchangeNumber — 특정 턴 삭제
 router.delete('/:name/messages/:exchangeNum', (req, res) => {
+  const storyName = decodeURIComponent(req.params.name);
   const { sessionId } = req.body;
   const exchNum = parseInt(req.params.exchangeNum, 10);
   if (!sessionId) return res.status(400).json({ error: 'sessionId 필요' });
 
+  // 스토리 경계 검증
+  const session = getSession(sessionId);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  if (session.story_name !== storyName) {
+    return res.status(403).json({ error: 'Session does not belong to this story' });
+  }
+
   const db = getDB();
-  db.prepare('DELETE FROM messages WHERE session_id = ? AND exchange_number >= ?').run(sessionId, exchNum);
+  const deleteTurn = db.transaction(() => {
+    db.prepare('DELETE FROM messages WHERE session_id = ? AND exchange_number >= ?').run(sessionId, exchNum);
+    db.prepare('UPDATE chat_sessions SET summary = NULL WHERE id = ?').run(sessionId);
+  });
+  deleteTurn();
+
   res.json({ ok: true });
 });
 
 // POST /api/stories/:name/regen — 마지막 응답 재생성
-router.post('/:name/regen', async (req, res) => {
+router.post('/:name/regen', chatLimiter, async (req, res) => {
   const storyName = decodeURIComponent(req.params.name);
-  const { sessionId, feedback, model, maxTokens } = req.body;
+  const { sessionId, feedback, model, maxTokens, loreDebug } = req.body;
   if (!sessionId) return res.status(400).json({ error: 'sessionId 필요' });
+
+  // 스토리 경계 검증
+  const session = getSession(sessionId);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  if (session.story_name !== storyName) {
+    return res.status(403).json({ error: 'Session does not belong to this story' });
+  }
 
   const db = getDB();
 
@@ -148,7 +203,10 @@ router.post('/:name/regen', async (req, res) => {
 
   if (!lastUser) return res.status(400).json({ error: '유저 메시지 없음' });
 
-  // 마지막 턴(assistant) 삭제
+  // 마지막 턴(assistant) 백업 후 삭제 — 실패 시 복원용
+  const prevAssistant = db.prepare(
+    'SELECT * FROM messages WHERE session_id = ? AND exchange_number = ? AND role = ?'
+  ).get(sessionId, lastExch, 'assistant');
   db.prepare('DELETE FROM messages WHERE session_id = ? AND exchange_number = ? AND role = ?').run(sessionId, lastExch, 'assistant');
 
   // SSE 헤더
@@ -165,9 +223,19 @@ router.post('/:name/regen', async (req, res) => {
   // 컨텍스트 조립 (마지막 턴 제거된 상태에서)
   let assistantText = '';
   try {
-    const { systemBlocks, messages } = await buildContext(storyName, sessionId, userContent, maxTokens || 4096);
+    const { systemBlocks, messages, matchedLore } = await buildContext(storyName, sessionId, userContent, maxTokens || 4096, { model });
+
+    if (loreDebug && matchedLore.length) {
+      const loreInfo = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
+      res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
+    }
+
     assistantText = await streamToSSE(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
   } catch (err) {
+    // 실패 시 기존 assistant 복원
+    if (prevAssistant) {
+      insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch });
+    }
     if (!res.writableEnded) {
       res.write(`event: error\ndata: ${JSON.stringify({ message: err.message })}\n\n`);
       res.end();
@@ -175,15 +243,19 @@ router.post('/:name/regen', async (req, res) => {
     return;
   }
 
-  // 새 assistant 메시지 저장
-  insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: lastExch });
-  touchSession(sessionId);
+  // 새 assistant 메시지 저장 (단일 트랜잭션)
+  const saveRegen = db.transaction(() => {
+    const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: lastExch });
+    touchSession(sessionId);
 
-  // 자동저장
-  const turnCount = db.prepare(
-    'SELECT COUNT(*) as cnt FROM messages WHERE session_id=? AND role=?'
-  ).get(sessionId, 'assistant').cnt;
-  upsertSaveSlot({ story_name: storyName, slot_name: '_autosave', session_id: sessionId, max_exchange: lastExch, turn_count: turnCount });
+    const turnCount = db.prepare(
+      'SELECT COUNT(*) as cnt FROM messages WHERE session_id=? AND role=?'
+    ).get(sessionId, 'assistant').cnt;
+    upsertSaveSlot({ story_name: storyName, slot_name: '_autosave', session_id: sessionId, max_exchange: lastExch, turn_count: turnCount });
+
+    return assistantResult.id;
+  });
+  const assistantRowId = saveRegen();
 
   res.write(`event: done\ndata: ${JSON.stringify({ sessionId, exchangeNumber: lastExch })}\n\n`);
   res.end();
@@ -191,12 +263,7 @@ router.post('/:name/regen', async (req, res) => {
   // 비동기 임베딩 + 요약
   setImmediate(async () => {
     const vec = await embed(assistantText.slice(0, 2000));
-    if (vec) {
-      const row = getDB().prepare(
-        'SELECT id FROM messages WHERE session_id=? AND role=? AND exchange_number=? ORDER BY id DESC LIMIT 1'
-      ).get(sessionId, 'assistant', lastExch);
-      if (row) updateEmbedding(row.id, vec);
-    }
+    if (vec) updateEmbedding(assistantRowId, vec);
     await maybeRunSummary(sessionId);
   });
 });
