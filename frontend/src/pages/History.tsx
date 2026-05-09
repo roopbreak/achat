@@ -50,8 +50,8 @@ export default function History() {
   return (
     <>
       <Nav />
-      <div className="page" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <div style={{ width: 260, flexShrink: 0 }}>
+      <div className="page history-layout">
+        <div className="history-sidebar">
           <h3 style={{ fontSize: 15, marginBottom: 12 }}>스토리</h3>
           <div>
             {stories.map(s => (
@@ -85,7 +85,7 @@ export default function History() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="history-content">
           {sessionTitle ? (
             <div style={{ marginBottom: 16 }}>
               <h3 style={{ fontSize: 15 }}>{sessionTitle}</h3>

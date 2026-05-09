@@ -123,8 +123,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.chat-header .story-title { font-weight: 600; font-size: 15px; }
-.chat-header .session-actions { display: flex; gap: 8px; margin-left: auto; }
+.chat-header .story-title { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.chat-header .session-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
 
 .chat-messages {
   flex: 1;
@@ -277,7 +277,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .form-row { margin-bottom: 12px; }
 .form-row label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
 
-.story-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.story-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.story-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 500px; }
 .story-table th, .story-table td {
   text-align: left;
   padding: 10px 12px;
@@ -322,6 +323,11 @@ input:focus, textarea:focus { border-color: var(--accent); }
   border-radius: 8px;
 }
 
+/* -- 히스토리 레이아웃 -- */
+.history-layout { display: flex; gap: 20px; align-items: flex-start; }
+.history-sidebar { width: 260px; flex-shrink: 0; }
+.history-content { flex: 1; min-width: 0; }
+
 /* -- 반응형 -- */
 @media (max-width: 600px) {
   .chat-messages { padding: 16px; gap: 14px; }
@@ -331,6 +337,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
   .chat-header .session-actions .btn span:not(:first-child) { display: none; }
   .settings-panel { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
   .settings-panel select { width: 100% !important; }
+  .history-layout { flex-direction: column; }
+  .history-sidebar { width: 100%; }
 }
 
 .chat-messages.hide-images .msg-assistant img { display: none; }

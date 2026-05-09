@@ -282,6 +282,7 @@ export default function Admin() {
             <h2 style={{ marginBottom: 0 }}>등록된 스토리</h2>
             <Link to="/story-edit" className="btn btn-primary" style={{ fontSize: 13, padding: '6px 14px' }}>+ 새 스토리</Link>
           </div>
+          <div className="story-table-wrap">
           <table className="story-table">
             <thead><tr><th>이름</th><th>캐릭터</th><th>이미지</th><th>등록일</th><th></th></tr></thead>
             <tbody>
@@ -301,6 +302,7 @@ export default function Admin() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </>
