@@ -34,8 +34,8 @@ app.use(express.static(distDir));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 
 // 인증 미들웨어 (APP_SECRET 설정 시 API에만 적용)
+// /images는 <img> 태그에서 직접 로드하므로 인증 제외
 app.use('/api', authMiddleware);
-app.use('/images', authMiddleware);
 
 // 라우트
 app.use('/api/admin',          adminRouter);
