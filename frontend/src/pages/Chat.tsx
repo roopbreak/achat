@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
-import { useSSEStream, type TokenInfo } from '../hooks/useSSEStream'
+import { useSSEStream, type TokenInfo, type LoreDebugEntry } from '../hooks/useSSEStream'
 import { api } from '../lib/api'
 import ChatHeader from '../components/chat/ChatHeader'
 import ChatMessages from '../components/chat/ChatMessages'
@@ -29,6 +29,7 @@ export default function Chat() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingExchange, setStreamingExchange] = useState<number | null>(null)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
+  const [matchedLore, setMatchedLore] = useState<LoreDebugEntry[] | null>(null)
   const streamingRef = useRef(false) // 동기 guard (더블 클릭 방지)
 
   // 패널 토글
@@ -73,6 +74,7 @@ export default function Chat() {
     if (streamingRef.current) return
     streamingRef.current = true
     setIsStreaming(true)
+    setMatchedLore(null)
     setStreamingExchange(-1) // placeholder exchange_number와 일치
 
     // 유저 메시지 추가
@@ -83,7 +85,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(storyName)}/chat`,
-        { message: text, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens },
+        { message: text, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             session.updateLastAssistant(fullText)
@@ -103,6 +105,7 @@ export default function Chat() {
             })
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          onLore: (entries) => setMatchedLore(entries),
           onError: (message) => {
             session.updateLastAssistant(`[오류: ${message}]`)
           },
@@ -116,13 +119,14 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, stream, storyName, settings.model, settings.maxTokens])
+  }, [session, stream, storyName, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 재생성 ──
   const handleRegen = useCallback(async (exchangeNumber: number, feedback: string) => {
     if (streamingRef.current) return
     streamingRef.current = true
     setIsStreaming(true)
+    setMatchedLore(null)
     setStreamingExchange(exchangeNumber)
 
     // 기존 어시스턴트 메시지 비우기
@@ -131,7 +135,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(storyName)}/regen`,
-        { sessionId: session.sessionId, feedback, model: settings.model, maxTokens: settings.maxTokens },
+        { sessionId: session.sessionId, feedback, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             session.replaceAssistantByExchange(exchangeNumber, fullText)
@@ -141,6 +145,7 @@ export default function Chat() {
             setStreamingExchange(null)
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          onLore: (entries) => setMatchedLore(entries),
           onError: (message) => {
             session.replaceAssistantByExchange(exchangeNumber, `[오류: ${message}]`)
           },
@@ -153,13 +158,14 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, stream, storyName, settings.model, settings.maxTokens])
+  }, [session, stream, storyName, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 수정 ──
   const handleEdit = useCallback(async (exchangeNumber: number, newContent: string) => {
     if (!newContent || streamingRef.current) return
     streamingRef.current = true
     setIsStreaming(true)
+    setMatchedLore(null)
 
     await api(`/api/stories/${encodeURIComponent(storyName)}/messages/${exchangeNumber}`, {
       method: 'PUT',
@@ -180,7 +186,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(storyName)}/chat`,
-        { message: newContent, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens },
+        { message: newContent, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => session.updateLastAssistant(fullText),
           onDone: (exNum, fullText) => {
@@ -188,6 +194,7 @@ export default function Chat() {
             setStreamingExchange(null)
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          onLore: (entries) => setMatchedLore(entries),
           onError: (message) => session.updateLastAssistant(`[오류: ${message}]`),
           onSessionId: (sid) => session.persistSessionId(sid),
         },
@@ -199,7 +206,7 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, storyName, stream, settings.model, settings.maxTokens])
+  }, [session, storyName, stream, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 분기 ──
   const handleFork = useCallback(async (exchangeNumber: number) => {
@@ -301,12 +308,14 @@ export default function Chat() {
         model={settings.model}
         maxTokens={settings.maxTokens}
         imagesEnabled={settings.imagesEnabled}
+        loreDebug={settings.loreDebug}
         personas={personas}
         selectedPersonaId={selectedPersonaId}
         onChangeFontSize={settings.changeFontSize}
         onChangeModel={settings.changeModel}
         onChangeMaxTokens={settings.changeMaxTokens}
         onToggleImages={settings.toggleImages}
+        onToggleLoreDebug={settings.toggleLoreDebug}
         onChangePersona={changePersona}
         onClose={() => setSettingsOpen(false)}
       />
@@ -329,6 +338,15 @@ export default function Chat() {
             tokenInfo.input && `입력 ${tokenInfo.input.toLocaleString()}`,
             tokenInfo.output && `출력 ${tokenInfo.output.toLocaleString()}`,
           ].filter(Boolean).join(' | ')}
+        </div>
+      )}
+
+      {settings.loreDebug && matchedLore && matchedLore.length > 0 && (
+        <div style={{
+          flexShrink: 0, background: 'var(--surface)', borderTop: '1px solid var(--border)',
+          padding: '4px 16px', fontSize: 11, color: 'var(--accent)', fontFamily: 'monospace',
+        }}>
+          로어북: {matchedLore.map(e => e.name).join(', ')}
         </div>
       )}
 

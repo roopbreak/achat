@@ -11,6 +11,7 @@ export interface Settings {
   model: string
   maxTokens: number
   imagesEnabled: boolean
+  loreDebug: boolean
 }
 
 export function useSettings() {
@@ -18,6 +19,7 @@ export function useSettings() {
   const [model, setModel] = useState(() => read('chat_model', 'claude-sonnet-4-6'))
   const [maxTokens, setMaxTokens] = useState(() => parseInt(read('chat_max_tokens', '4096'), 10))
   const [imagesEnabled, setImagesEnabled] = useState(() => read('chat_images', 'on') !== 'off')
+  const [loreDebug, setLoreDebug] = useState(() => read('chat_lore_debug', 'off') === 'on')
 
   const changeFontSize = useCallback((delta: number) => {
     setFontSize(prev => {
@@ -45,8 +47,16 @@ export function useSettings() {
     })
   }, [])
 
+  const toggleLoreDebug = useCallback(() => {
+    setLoreDebug(prev => {
+      const next = !prev
+      localStorage.setItem('chat_lore_debug', next ? 'on' : 'off')
+      return next
+    })
+  }, [])
+
   return {
-    fontSize, model, maxTokens, imagesEnabled,
-    changeFontSize, changeModel, changeMaxTokens, toggleImages,
+    fontSize, model, maxTokens, imagesEnabled, loreDebug,
+    changeFontSize, changeModel, changeMaxTokens, toggleImages, toggleLoreDebug,
   }
 }

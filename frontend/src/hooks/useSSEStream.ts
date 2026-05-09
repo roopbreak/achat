@@ -7,12 +7,18 @@ export interface TokenInfo {
   output?: number
 }
 
+export interface LoreDebugEntry {
+  name: string
+  keys: string[]
+}
+
 interface SSECallbacks {
   onToken: (text: string, fullText: string) => void
   onDone: (exchangeNumber: number, fullText: string) => void
   onTokenInfo: (info: TokenInfo) => void
   onError: (message: string) => void
   onSessionId?: (sessionId: string) => void
+  onLore?: (entries: LoreDebugEntry[]) => void
 }
 
 function getAuthToken(): string | null {
@@ -75,7 +81,13 @@ export function useSSEStream() {
           if (!dataLine) continue
 
           const evt = evtLine ? evtLine.slice(7).trim() : 'token'
-          const data = JSON.parse(dataLine.slice(5).trim())
+          let data: any
+          try {
+            data = JSON.parse(dataLine.slice(5).trim())
+          } catch {
+            console.warn('[SSE] Invalid JSON chunk, skipping:', dataLine.slice(0, 100))
+            continue
+          }
 
           if (evt === 'token') {
             fullText += data.text
@@ -84,6 +96,8 @@ export function useSSEStream() {
             callbacks.onDone(data.exchangeNumber, fullText)
           } else if (evt === 'token_info') {
             callbacks.onTokenInfo(data)
+          } else if (evt === 'lore') {
+            callbacks.onLore?.(data)
           } else if (evt === 'error') {
             callbacks.onError(data.message)
           }

@@ -10,21 +10,23 @@ interface Props {
   model: string
   maxTokens: number
   imagesEnabled: boolean
+  loreDebug: boolean
   personas: Persona[]
   selectedPersonaId: number | null
   onChangeFontSize: (delta: number) => void
   onChangeModel: (model: string) => void
   onChangeMaxTokens: (tokens: number) => void
   onToggleImages: () => void
+  onToggleLoreDebug: () => void
   onChangePersona: (id: number) => void
   onClose: () => void
 }
 
 export default function SettingsPanel({
-  open, fontSize, model, maxTokens, imagesEnabled,
+  open, fontSize, model, maxTokens, imagesEnabled, loreDebug,
   personas, selectedPersonaId,
   onChangeFontSize, onChangeModel, onChangeMaxTokens,
-  onToggleImages, onChangePersona, onClose,
+  onToggleImages, onToggleLoreDebug, onChangePersona, onClose,
 }: Props) {
   if (!open) return null
 
@@ -78,6 +80,15 @@ export default function SettingsPanel({
           onChange={onToggleImages}
           style={{ accentColor: 'var(--accent)' }}
         />이미지
+      </label>
+
+      <label style={{ fontSize: 13, color: 'var(--text-dim)', marginLeft: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={loreDebug}
+          onChange={onToggleLoreDebug}
+          style={{ accentColor: 'var(--accent)' }}
+        />로어북 디버그
       </label>
 
       <button className="btn btn-secondary" onClick={onClose} style={{ fontSize: 12, padding: '4px 10px', marginLeft: 'auto' }}>닫기</button>
