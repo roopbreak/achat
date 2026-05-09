@@ -6,7 +6,7 @@ interface Props {
   visible: LoreEntry[]
   updateLore: (targetId: string, field: string, value: unknown) => void
   addLore: () => string
-  removeLore: (targetId: string) => void
+  removeLore: (targetId: string) => boolean
 }
 
 function getLoreId(e: LoreEntry): string {
