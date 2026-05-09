@@ -392,9 +392,11 @@ async function doRegen(exchangeNumber, btn) {
         const data = JSON.parse(dataLine.slice(5).trim());
         if (evt === 'token' && body) {
           fullText += data.text;
-          body.innerHTML = marked.parse(replaceTemplateVars(fullText));
+          body.textContent = replaceTemplateVars(fullText);
+          body.style.whiteSpace = 'pre-wrap';
           autoScroll(msgs);
         } else if (evt === 'done') {
+          if (body) { body.style.whiteSpace = ''; body.innerHTML = marked.parse(replaceTemplateVars(fullText)); }
           if (msgDiv) msgDiv.classList.remove('cursor');
         }
       }
@@ -589,10 +591,15 @@ async function sendMessage(overrideText) {
 
         if (evt === 'token') {
           fullText += data.text;
-          assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
+          // 스트리밍 중에는 textContent로 추가 (DOM 파괴 없음, 깜빡임 방지)
+          assistantDiv.textContent = replaceTemplateVars(fullText);
+          assistantDiv.style.whiteSpace = 'pre-wrap';
           assistantDiv.classList.add('cursor');
           autoScroll(document.getElementById('chat-messages'));
         } else if (evt === 'done') {
+          // 완료 시 마크다운 렌더링 (1회만)
+          assistantDiv.style.whiteSpace = '';
+          assistantDiv.innerHTML = marked.parse(replaceTemplateVars(fullText));
           exchangeNum = data.exchangeNumber;
           assistantDiv.classList.remove('cursor');
           assistantDiv.dataset.exchange = exchangeNum;
