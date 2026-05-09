@@ -20,7 +20,10 @@ const CATEGORIES = ['전체', '현대 로맨스', '사극/무협', '판타지']
 
 function parseTags(tags?: string): string[] {
   if (!tags) return []
-  try { return JSON.parse(tags) } catch { return [] }
+  try {
+    const parsed = JSON.parse(tags)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+  } catch { return [] }
 }
 
 function timeAgo(unixSec: number): string {
@@ -196,7 +199,7 @@ export default function Home() {
         <div className="story-grid">
           {sorted.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 14, padding: '20px 0' }}>
-              {search ? '검색 결과가 없습니다.' : '스토리가 없습니다.'}
+              {(search || category !== '전체' || selectedTag) ? '조건에 맞는 스토리가 없습니다.' : '스토리가 없습니다.'}
             </div>
           ) : sorted.map(s => {
             const storyTags = parseTags(s.tags)
