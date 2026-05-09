@@ -65,7 +65,7 @@ export default function Chat() {
 
   // 타이틀
   useEffect(() => {
-    document.title = `${storyName} — AChat`
+    document.title = `${storyName} — achat-v2`
   }, [storyName])
 
   // ── 전송 ──

@@ -27,7 +27,7 @@ export default function Login() {
 
   return (
     <div className="page" style={{ maxWidth: 400, marginTop: '20vh' }}>
-      <h1 style={{ marginBottom: 24, color: 'var(--accent)' }}>AChat</h1>
+      <h1 style={{ marginBottom: 24, color: 'var(--accent)' }}>achat-v2</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="password"
