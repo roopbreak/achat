@@ -43,6 +43,18 @@ export default function ChatMessages({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length === 0])
 
+  // 깨진 이미지 숨김 (DOMPurify가 onerror 제거하므로 이벤트 위임)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handler = (e: Event) => {
+      const img = e.target as HTMLImageElement
+      if (img.tagName === 'IMG') img.style.display = 'none'
+    }
+    el.addEventListener('error', handler, true)
+    return () => el.removeEventListener('error', handler, true)
+  }, [ref])
+
   return (
     <div
       ref={ref}
