@@ -95,8 +95,14 @@ export default function Gallery() {
     return list
   }, [images, activeCategory, activeChar])
 
-  // 필터 변경 시 selected 초기화
-  useEffect(() => { setSelected(new Set()) }, [activeCategory, activeChar])
+  // 페이지네이션
+  const PAGE_SIZE = 24
+  const [page, setPage] = useState(0)
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  // 필터 변경 시 selected/page 초기화
+  useEffect(() => { setSelected(new Set()); setPage(0) }, [activeCategory, activeChar])
 
   const handleStoryChange = (name: string) => {
     if (name) navigate(`/gallery/${encodeURIComponent(name)}`)
@@ -307,13 +313,14 @@ export default function Gallery() {
                 해당 카테고리에 이미지가 없습니다.
               </div>
             ) : (
-              /* 이미지 그리드 */
+              <>
+              {/* 이미지 그리드 */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                 gap: 12,
               }}>
-                {filtered.map((img, idx) => {
+                {paged.map((img, idx) => {
                   const isSelected = selected.has(selKey(img))
                   return (
                   <div
@@ -364,6 +371,15 @@ export default function Gallery() {
                   )
                 })}
               </div>
+              {/* 페이지네이션 */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16, alignItems: 'center' }}>
+                  <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>이전</button>
+                  <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>{page + 1} / {totalPages}</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>다음</button>
+                </div>
+              )}
+              </>
             )}
           </>
         )}

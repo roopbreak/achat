@@ -18,7 +18,7 @@ import {
 } from '../lib/db.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
-import { autoGenerate, checkDependencies, cleanupOrphanImages } from '../lib/image-generator.mjs';
+import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength } from '../lib/image-generator.mjs';
 import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
@@ -76,8 +76,8 @@ async function triggerAutoGenerate(storyName, hasImages = false) {
       console.log(`[AutoGen] ${storyName}: 컴포지션 자동 생성 시작`);
       buildComposition(storyName);
     }
-    console.log(`[AutoGen] ${storyName}: 이미지 자동 생성 시작`);
-    await autoGenerate(storyName);
+    console.log(`[AutoGen] ${storyName}: 이미지 자동 생성 큐 추가`);
+    await enqueueGenerate(() => autoGenerate(storyName));
   } catch (err) {
     console.error(`[AutoGen] ${storyName} 실패:`, err.message);
   }
@@ -220,9 +220,6 @@ router.post('/stories/:name/generate', (req, res) => {
   const issues = checkDependencies();
   if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
 
-  const running = getAnyRunningJob();
-  if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
-
   let { sceneIds, retryFailed } = req.body || {};
 
   if (sceneIds && retryFailed) {
@@ -240,8 +237,10 @@ router.post('/stories/:name/generate', (req, res) => {
     sceneIds = missing;
   }
 
-  res.json({ status: 'started', storyName: name, total: sceneIds?.length || composition.images?.length || 0 });
-  autoGenerate(name, { sceneIds }).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
+  const total = sceneIds?.length || composition.images?.length || 0;
+  const queuePos = getQueueLength();
+  res.json({ status: 'queued', storyName: name, total, queuePosition: queuePos });
+  enqueueGenerate(() => autoGenerate(name, { sceneIds })).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
 });
 
 // POST /api/admin/stories/:name/cleanup — 좀비 이미지 정리
@@ -492,11 +491,9 @@ router.post('/stories/:name/images/:sceneKey/regenerate', (req, res) => {
   const issues = checkDependencies();
   if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
 
-  const running = getAnyRunningJob();
-  if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
-
-  res.json({ status: 'started', storyName: name, sceneKey });
-  autoGenerate(name, { sceneIds: [sceneKey] }).catch(err => console.error(`[Regen] ${name}/${sceneKey} 실패:`, err.message));
+  const queuePos = getQueueLength();
+  res.json({ status: 'queued', storyName: name, sceneKey, queuePosition: queuePos });
+  enqueueGenerate(() => autoGenerate(name, { sceneIds: [sceneKey] })).catch(err => console.error(`[Regen] ${name}/${sceneKey} 실패:`, err.message));
 });
 
 // ── Story Notes ──────────────────────────────────────
