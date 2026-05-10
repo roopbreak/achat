@@ -270,7 +270,7 @@ export default function Admin() {
                   const job = genJobs[s.name]
                   const isRunning = job?.status === 'running' || genLoading === s.name
                   const comp = compStatus[s.name] || 'none'
-                  const isBusy = !!genLoading || !!compLoading
+                  const isBusy = genLoading === s.name || compLoading === s.name
                   // 컴포지션 total 대비 생성된 이미지가 부족한 경우 미생성 장면 존재
                   const total = compTotal[s.name] ?? 0
                   const hasMissing = comp === 'exists' && total > 0 && s.imageCount < total
