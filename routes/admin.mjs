@@ -201,7 +201,7 @@ router.post('/stories/:name/composition', (req, res) => {
 router.get('/stories/:name/composition', (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const composition = loadComposition(name);
-  if (!composition) return res.status(404).json({ error: '컴포지션 없음' });
+  if (!composition) return res.json({ exists: false, images: [] });
   res.json(composition);
 });
 
