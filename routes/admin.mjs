@@ -300,6 +300,17 @@ router.get('/stories/:name/lore', (req, res) => {
   res.json(getAllLoreIncludeDisabled(name));
 });
 
+// POST /api/admin/stories/:name/lore/embed-all — 미임베딩 로어 일괄 임베딩 (/:id보다 먼저 매칭)
+router.post('/stories/:name/lore/embed-all', async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const result = await embedLoreForStory(name);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/admin/stories/:name/lore — 로어 항목 추가
 router.post('/stories/:name/lore', (req, res) => {
   try {
@@ -329,17 +340,6 @@ router.delete('/stories/:name/lore/:id', (req, res) => {
   try {
     deleteLoreEntry(req.params.id);
     res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/admin/stories/:name/lore/embed-all — 미임베딩 로어 일괄 임베딩
-router.post('/stories/:name/lore/embed-all', async (req, res) => {
-  try {
-    const name = decodeURIComponent(req.params.name);
-    const result = await embedLoreForStory(name);
-    res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
