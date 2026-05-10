@@ -15,7 +15,7 @@ router.get('/', (_req, res) => {
 // GET /api/stories/recent — 최근 진행한 스토리 목록
 router.get('/recent', (_req, res) => {
   const rows = getDB().prepare(`
-    SELECT s.name, s.char_name, cs.updated_at, cs.id as session_id
+    SELECT s.name, s.title, s.char_name, cs.updated_at, cs.id as session_id
     FROM stories s
     JOIN (
       SELECT story_name, MAX(updated_at) as updated_at, id
