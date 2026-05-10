@@ -127,6 +127,14 @@ router.post('/stories/:name/composition', (req, res) => {
 
   try {
     const { basePrompt, baseNegative, characters } = req.body || {};
+    // characters 입력 검증
+    if (characters) {
+      const keys = Object.keys(characters);
+      if (keys.length > 10) return res.status(400).json({ error: '캐릭터는 최대 10명까지 지원합니다' });
+      for (const k of keys) {
+        if (!/^[a-zA-Z0-9_]+$/.test(k)) return res.status(400).json({ error: `캐릭터 키는 영문/숫자/밑줄만 허용: ${k}` });
+      }
+    }
     const composition = buildComposition(name, { basePrompt, baseNegative, characters });
     res.json({ ok: true, total: composition.images?.length || 0 });
   } catch (err) {
