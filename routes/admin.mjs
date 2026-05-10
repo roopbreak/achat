@@ -300,8 +300,8 @@ router.get('/stories/:name/lore', (req, res) => {
   res.json(getAllLoreIncludeDisabled(name));
 });
 
-// POST /api/admin/stories/:name/lore/embed-all — 미임베딩 로어 일괄 임베딩 (/:id보다 먼저 매칭)
-router.post('/stories/:name/lore/embed-all', async (req, res) => {
+// POST /api/admin/stories/:name/embed-lore — 미임베딩 로어 일괄 임베딩
+router.post('/stories/:name/embed-lore', async (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name);
     const result = await embedLoreForStory(name);
