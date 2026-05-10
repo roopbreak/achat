@@ -45,7 +45,11 @@ async function embedLoreForStory(storyName) {
       if (vec) {
         updateLoreEmbedding(entry.id, vec, entry.content);
         embedded++;
+      } else {
+        console.warn(`[lore-embed] id=${entry.id} 임베딩 null 반환`);
       }
+      // rate limit 방지 딜레이
+      if (entries.length > 3) await new Promise(r => setTimeout(r, 500));
     } catch (err) {
       console.error(`[lore-embed] id=${entry.id} 실패:`, err.message);
     }
