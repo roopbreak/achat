@@ -33,7 +33,7 @@ async function triggerAutoGenerate(storyName, hasImages = false) {
     // composition 없으면 먼저 생성
     if (!loadComposition(storyName)) {
       console.log(`[AutoGen] ${storyName}: 컴포지션 자동 생성 시작`);
-      await buildComposition(storyName);
+      buildComposition(storyName);
     }
     console.log(`[AutoGen] ${storyName}: 이미지 자동 생성 시작`);
     await autoGenerate(storyName);
@@ -120,13 +120,14 @@ router.get('/stories/:name/export', (req, res) => {
 // ── Composition 라우트 (/:name보다 먼저 매칭되어야 함) ──
 
 // POST /api/admin/stories/:name/composition — 컴포지션 생성
-router.post('/stories/:name/composition', async (req, res) => {
+router.post('/stories/:name/composition', (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const story = getStory(name);
   if (!story) return res.status(404).json({ error: '스토리 없음' });
 
   try {
-    const composition = await buildComposition(name);
+    const { basePrompt, baseNegative } = req.body || {};
+    const composition = buildComposition(name, { basePrompt, baseNegative });
     res.json({ ok: true, total: composition.images?.length || 0 });
   } catch (err) {
     console.error(`[Composition] ${name} 실패:`, err.message);

@@ -112,6 +112,11 @@ Agent(
 )
 ```
 
+**페이즈 시스템 판단:** 프롬프트 작성 후, 스토리가 페이즈 시스템이 필요한지 판단한다.
+- `prompt-guidelines.md`의 "페이즈 시스템 > 적용 기준"을 참조
+- 필요하다면 post_history_instructions에 페이즈를 설계하여 포함
+- 필요 없으면 생략
+
 **[Phase 3 게이트]** 프롬프트 + 로어북 결과 요약:
 
 ```
@@ -122,9 +127,15 @@ Agent(
 - personality: {요약}
 - scenario: {요약}
 - first_mes: {글자수}자
+- post_history_instructions: {페이즈 시스템 적용 여부 + 요약}
 
 **first_mes 미리보기**
 > {첫 대사 일부}
+
+**페이즈 시스템** (해당 시 표시)
+> Phase 1: {단계명} → 전환 조건: {트리거}
+> Phase 2: {단계명} → 전환 조건: {트리거}
+> Phase 3: {단계명}
 
 ### 로어북
 - 상시 로어: {N}개
@@ -176,9 +187,9 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 
 ---
 
-### Phase 5: DB 등록
+### Phase 5: DB 등록 + Composition 생성
 
-유저 승인 후 AChat API를 통해 스토리를 등록한다.
+유저 승인 후 AChat API를 통해 스토리를 등록하고, 이미지 생성용 composition을 함께 만든다.
 
 1. `POST /api/admin/stories` — 스토리 생성
    ```json
@@ -191,6 +202,21 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
    - 상시 규칙 로어: `constant: 1` (캐시됨, 매 턴 주입)
    - 명령어 트리거: `scan_depth: 1` (현재 턴만 스캔)
    - 키워드 AND: `"키1+키2"`, NOT: `"-제외어"`
+3. **Composition 생성** — 캐릭터 외모를 danbooru 태그로 변환하여 `base_prompt` 작성
+   - `01_concept.md`의 외모 설명을 기반으로 NovelAI danbooru 태그로 변환
+   - 태그 형식: `1girl, solo, {머리색}, {머리길이}, {머리스타일}, {눈색}, {체형}, {피부}, {고유 특징}`
+   - 글래머 체형 기본: `huge breasts, large breasts, sagging breasts, heavy breasts, narrow waist, wide hips, hourglass figure, thick thighs, detailed skin texture, silky skin, collarbone`
+   - `base_negative`: 캐릭터에서 제외할 태그 (예: `pointy ears, animal ears, tail`)
+   - `docs/stories/{name}/04_composition_base.json`에 저장
+   - `PUT /api/admin/stories/{name}/composition`으로 업로드
+   ```json
+   {
+     "characters": { "main": { "name": "{char_name}", "base_prompt": "{danbooru 태그}", "base_negative": "{제외 태그}" } },
+     "defaults": { "model": "nai-diffusion-4-5-full", "aspect_ratio": "3:4", "steps": 28, "scale": 8, "rescale": 0, "sampler": "k_euler_ancestral" },
+     "images": [ ... 100장 템플릿 장면 (서버가 자동 생성한 것 사용) ... ]
+   }
+   ```
+   - 워크플로우: `POST /api/admin/stories/{name}/composition`에 `{ "basePrompt": "{태그}", "baseNegative": "{제외 태그}" }`를 body로 전달하면 서버가 템플릿 100장 + base_prompt를 합쳐서 composition.json을 자동 생성
 
 ```
 ## 제작 완료!
@@ -199,12 +225,14 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 
 - 스토리명: {name}
 - 로어북: {N}개 항목
+- composition: base_prompt 포함 {N}장 장면
 - 채팅 URL: /chat/{name}
 
 ### 산출물
 - `docs/stories/{name}/01_concept.md`
 - `docs/stories/{name}/02_prompt.md`
 - `docs/stories/{name}/03_qa_report.md`
+- `docs/stories/{name}/04_composition_base.json`
 ```
 
 ## 데이터 흐름
@@ -220,7 +248,7 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
     ↓ (승인)
 [Phase 4] story-qa → 03_qa_report.md → 게이트: QA 결과
     ↓ (PASS 또는 수정 후 PASS)
-[Phase 5] API 호출 → DB 등록 → 완료
+[Phase 5] API 호출 → DB 등록 + composition 생성/업로드 → 완료
 ```
 
 ## 에러 핸들링
