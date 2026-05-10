@@ -93,6 +93,9 @@ export default function Gallery() {
     return list
   }, [images, activeCategory, activeChar])
 
+  // 필터 변경 시 selected 초기화
+  useEffect(() => { setSelected(new Set()) }, [activeCategory, activeChar])
+
   const handleStoryChange = (name: string) => {
     if (name) navigate(`/gallery/${encodeURIComponent(name)}`)
     else navigate('/gallery')
@@ -144,13 +147,16 @@ export default function Gallery() {
     if (!confirm(`선택한 ${selected.size}장을 재생성할까요?`)) return
     setBulkLoading(true)
     try {
-      const sceneIds = [...selected].map(k => k.split('::')[1])
+      // filtered 범위 내 선택만 전송
+      const sceneIds = filtered.filter(img => selected.has(selKey(img))).map(img => img.scene_key)
+      if (sceneIds.length === 0) { setBulkLoading(false); return }
       await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
         method: 'POST',
         body: JSON.stringify({ sceneIds }),
       })
       exitSelectMode()
-      // 폴링
+      // 기존 폴링 정리 후 새로 시작
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       pollRef.current = setInterval(async () => {
         try {
           const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
@@ -185,7 +191,8 @@ export default function Gallery() {
     try {
       await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}/regenerate`, { method: 'POST' })
       setModal(null)
-      // 완료 대기 후 새로고침
+      // 기존 폴링 정리 후 새로고침
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       pollRef.current = setInterval(async () => {
         try {
           const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
