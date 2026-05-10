@@ -6,6 +6,7 @@ import Story from './pages/Story'
 import StoryEdit from './pages/StoryEdit'
 import History from './pages/History'
 import Login from './pages/Login'
+import Gallery from './pages/Gallery'
 
 export default function App() {
   return (
@@ -17,6 +18,8 @@ export default function App() {
       <Route path="/story-edit" element={<StoryEdit />} />
       <Route path="/history" element={<History />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/gallery" element={<Gallery />} />
+      <Route path="/gallery/:storyName" element={<Gallery />} />
     </Routes>
   )
 }

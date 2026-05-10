@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Nav from '../components/common/Nav'
 import { api } from '../lib/api'
 
@@ -27,6 +28,7 @@ interface Persona {
 }
 
 export default function Admin() {
+  const navigate = useNavigate()
   const [stories, setStories] = useState<StoryInfo[]>([])
   const [personas, setPersonas] = useState<Persona[]>([])
 
@@ -55,6 +57,7 @@ export default function Admin() {
   const [genJobs, setGenJobs] = useState<Record<string, GenerationJob>>({})
   const [genLoading, setGenLoading] = useState<string | null>(null)
   const [compStatus, setCompStatus] = useState<Record<string, 'none' | 'exists' | 'building'>>({})
+  const [compTotal, setCompTotal] = useState<Record<string, number>>({})
   const [compLoading, setCompLoading] = useState<string | null>(null)
 
   const loadStories = useCallback(async () => {
@@ -135,8 +138,9 @@ export default function Admin() {
   // ── 컴포지션 ──
   const checkCompStatus = useCallback(async (storyName: string) => {
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`)
+      const comp = await api<{ images?: unknown[] }>(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`)
       setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
+      setCompTotal(prev => ({ ...prev, [storyName]: comp.images?.length ?? 0 }))
     } catch {
       setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
     }
@@ -146,8 +150,9 @@ export default function Admin() {
     setCompLoading(storyName)
     setCompStatus(prev => ({ ...prev, [storyName]: 'building' }))
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`, { method: 'POST' })
+      const res = await api<{ ok: boolean; total?: number }>(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`, { method: 'POST' })
       setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
+      if (res.total !== undefined) setCompTotal(prev => ({ ...prev, [storyName]: res.total! }))
     } catch (e: any) {
       alert(e.message || '컴포지션 생성 실패')
       setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
@@ -162,10 +167,13 @@ export default function Admin() {
     } catch {}
   }, [])
 
-  const triggerGenerate = async (storyName: string) => {
+  const triggerGenerate = async (storyName: string, options?: { retryFailed?: boolean }) => {
     setGenLoading(storyName)
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, { method: 'POST' })
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
+        method: 'POST',
+        body: options ? JSON.stringify(options) : undefined,
+      })
       const es = new EventSource(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/progress`)
       let noneCount = 0
       es.onmessage = (e) => {
@@ -263,10 +271,23 @@ export default function Admin() {
                   const isRunning = job?.status === 'running' || genLoading === s.name
                   const comp = compStatus[s.name] || 'none'
                   const isBusy = !!genLoading || !!compLoading
+                  // 컴포지션 total 대비 생성된 이미지가 부족한 경우 미생성 장면 존재
+                  const total = compTotal[s.name] ?? 0
+                  const hasMissing = comp === 'exists' && total > 0 && s.imageCount < total
                   return (
                   <tr key={s.name}>
                     <td>{s.name}</td>
-                    <td>{s.imageCount}</td>
+                    <td>
+                      {s.imageCount > 0 ? (
+                        <button
+                          className="btn btn-secondary"
+                          style={{ fontSize: 12, padding: '2px 8px' }}
+                          onClick={() => navigate(`/gallery/${encodeURIComponent(s.name)}`)}
+                        >{s.imageCount}{total > 0 ? `/${total}` : ''}</button>
+                      ) : (
+                        <span>{s.imageCount}{total > 0 ? `/${total}` : ''}</span>
+                      )}
+                    </td>
                     <td style={{ minWidth: 100 }}>
                       {comp === 'building' ? (
                         <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>생성 중...</span>
@@ -288,14 +309,27 @@ export default function Admin() {
                           <span style={{ color: 'var(--text-dim)' }}>{job?.completed || 0}/{job?.total || '?'}</span>
                         </div>
                       ) : job?.status === 'completed' ? (
-                        <span style={{ fontSize: 12, color: 'var(--accent)' }}>{job.completed}/{job.total} 완료</span>
+                        <span style={{ fontSize: 12 }}>
+                          <span style={{ color: 'var(--accent)' }}>{job.completed}/{job.total} 완료</span>
+                          {hasMissing && (
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                          )}
+                        </span>
                       ) : job?.status === 'failed' ? (
                         <span style={{ fontSize: 12 }}>
                           <span style={{ color: '#e55' }}>실패</span>
                           {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy || comp !== 'exists'}>재시도</button>
+                          {hasMissing && (
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                          )}
                         </span>
                       ) : comp === 'exists' ? (
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy}>이미지 생성</button>
+                        <span style={{ fontSize: 12 }}>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy}>이미지 생성</button>
+                          {hasMissing && (
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                          )}
+                        </span>
                       ) : (
                         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>컴포지션 필요</span>
                       )}

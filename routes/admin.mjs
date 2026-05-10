@@ -13,9 +13,10 @@ import {
   setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
   getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
   getRunningJob, getLatestJob, getAnyRunningJob,
+  getExistingSceneKeys,
 } from '../lib/db.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
-import { autoGenerate, checkDependencies } from '../lib/image-generator.mjs';
+import { autoGenerate, checkDependencies, cleanupOrphanImages } from '../lib/image-generator.mjs';
 import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
@@ -182,9 +183,39 @@ router.post('/stories/:name/generate', (req, res) => {
   const running = getAnyRunningJob();
   if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
 
-  const { sceneIds } = req.body || {};
+  let { sceneIds, retryFailed } = req.body || {};
+
+  if (sceneIds && retryFailed) {
+    return res.status(400).json({ error: 'sceneIds와 retryFailed는 동시에 사용할 수 없습니다' });
+  }
+
+  // retryFailed: 아직 생성되지 않은 장면만 대상으로 설정
+  if (retryFailed) {
+    const existing = new Set(getExistingSceneKeys(name));
+    const allIds = (composition.images || []).map(img => img.id);
+    const missing = allIds.filter(id => !existing.has(id));
+    if (missing.length === 0) {
+      return res.status(400).json({ error: '재시도할 장면이 없습니다. 모든 장면이 이미 생성되어 있습니다.' });
+    }
+    sceneIds = missing;
+  }
+
   res.json({ status: 'started', storyName: name, total: sceneIds?.length || composition.images?.length || 0 });
   autoGenerate(name, { sceneIds }).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
+});
+
+// POST /api/admin/stories/:name/cleanup — 좀비 이미지 정리
+router.post('/stories/:name/cleanup', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리 없음' });
+
+  try {
+    const result = cleanupOrphanImages(name);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET /api/admin/stories/:name/generate/progress — SSE
@@ -351,6 +382,18 @@ router.post('/stories/:name/url-mappings', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Story Images (갤러리용) ──────────────────────────
+
+// GET /api/admin/stories/:name/images — 스토리 이미지 목록
+router.get('/stories/:name/images', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const db = getDB();
+  const rows = db.prepare(
+    "SELECT char_dir, scene_key, filename, prompt, seed, source FROM story_images WHERE story_name = ? AND (source IS NULL OR source != 'qa_failed') ORDER BY char_dir, scene_key"
+  ).all(name);
+  res.json(rows);
 });
 
 // ── Story Notes ──────────────────────────────────────
