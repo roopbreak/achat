@@ -6,6 +6,7 @@ export default function Nav() {
       <Link to="/" className="logo">achat-v2</Link>
       <div className="nav-links">
         <Link to="/">Home</Link>
+        <Link to="/story">Story</Link>
         <Link to="/admin">Admin</Link>
       </div>
     </nav>
