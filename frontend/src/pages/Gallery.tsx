@@ -50,6 +50,9 @@ export default function Gallery() {
   const [activeChar, setActiveChar] = useState('전체')
   const [modal, setModal] = useState<ImageItem | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [selectMode, setSelectMode] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // 폴링 cleanup on unmount
@@ -93,6 +96,73 @@ export default function Gallery() {
   const handleStoryChange = (name: string) => {
     if (name) navigate(`/gallery/${encodeURIComponent(name)}`)
     else navigate('/gallery')
+  }
+
+  // 선택 키
+  const selKey = (img: ImageItem) => `${img.char_dir}::${img.scene_key}`
+
+  const toggleSelect = (img: ImageItem) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      const k = selKey(img)
+      if (next.has(k)) next.delete(k); else next.add(k)
+      return next
+    })
+  }
+
+  const selectAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(filtered.map(selKey)))
+    }
+  }
+
+  const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()) }
+
+  // 대량 삭제
+  const handleBulkDelete = async () => {
+    if (!storyName || selected.size === 0) return
+    if (!confirm(`선택한 ${selected.size}장을 삭제할까요?`)) return
+    setBulkLoading(true)
+    try {
+      for (const k of selected) {
+        const [charDir, sceneKey] = k.split('::')
+        const charParam = charDir ? `?charDir=${encodeURIComponent(charDir)}` : ''
+        await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(sceneKey)}${charParam}`, { method: 'DELETE' })
+      }
+      const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+      setImages(list)
+      exitSelectMode()
+    } catch (e: any) { alert(e.message || '삭제 실패') }
+    finally { setBulkLoading(false) }
+  }
+
+  // 대량 재생성
+  const handleBulkRegenerate = async () => {
+    if (!storyName || selected.size === 0) return
+    if (!confirm(`선택한 ${selected.size}장을 재생성할까요?`)) return
+    setBulkLoading(true)
+    try {
+      const sceneIds = [...selected].map(k => k.split('::')[1])
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
+        method: 'POST',
+        body: JSON.stringify({ sceneIds }),
+      })
+      exitSelectMode()
+      // 폴링
+      pollRef.current = setInterval(async () => {
+        try {
+          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
+          if (job.status === 'completed' || job.status === 'failed' || job.status === 'none') {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+            setBulkLoading(false)
+            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+            setImages(list)
+          }
+        } catch { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }; setBulkLoading(false) }
+      }, 2000)
+    } catch (e: any) { alert(e.message || '재생성 실패'); setBulkLoading(false) }
   }
 
   // 이미지 삭제
@@ -201,6 +271,27 @@ export default function Gallery() {
               ))}
             </div>
 
+            {/* 선택 모드 툴바 */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className={`btn ${selectMode ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: 12, padding: '4px 12px' }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}>
+                {selectMode ? '선택 취소' : '선택'}
+              </button>
+              {selectMode && (
+                <>
+                  <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 12px' }} onClick={selectAll}>
+                    {selected.size === filtered.length ? '전체 해제' : '전체 선택'}
+                  </button>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{selected.size}장 선택</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} disabled={selected.size === 0 || bulkLoading} onClick={handleBulkRegenerate}>
+                    {bulkLoading ? '처리 중...' : '선택 재생성'}
+                  </button>
+                  <button className="btn btn-danger" style={{ fontSize: 12, padding: '4px 10px' }} disabled={selected.size === 0 || bulkLoading} onClick={handleBulkDelete}>
+                    선택 삭제
+                  </button>
+                </>
+              )}
+            </div>
+
             {filtered.length === 0 ? (
               <div style={{ color: 'var(--text-dim)', fontSize: 14, paddingTop: 20, textAlign: 'center' }}>
                 해당 카테고리에 이미지가 없습니다.
@@ -212,31 +303,43 @@ export default function Gallery() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                 gap: 12,
               }}>
-                {filtered.map((img, idx) => (
+                {filtered.map((img, idx) => {
+                  const isSelected = selected.has(selKey(img))
+                  return (
                   <div
                     key={`${img.char_dir}-${img.scene_key}-${idx}`}
-                    onClick={() => setModal(img)}
+                    onClick={() => selectMode ? toggleSelect(img) : setModal(img)}
                     style={{
                       background: 'var(--surface)',
-                      border: '1px solid var(--border)',
+                      border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
                       borderRadius: 10,
                       overflow: 'hidden',
                       cursor: 'pointer',
                       transition: 'border-color .15s, transform .15s',
+                      position: 'relative',
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent)'
-                      ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
+                      if (!selectMode) {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent)'
+                        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
+                      }
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'
-                      ;(e.currentTarget as HTMLDivElement).style.transform = ''
+                      if (!selectMode && !isSelected) {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'
+                        ;(e.currentTarget as HTMLDivElement).style.transform = ''
+                      }
                     }}
                   >
+                    {selectMode && (
+                      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, width: 22, height: 22, borderRadius: 4, background: isSelected ? 'var(--accent)' : 'rgba(0,0,0,.5)', border: '2px solid rgba(255,255,255,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff' }}>
+                        {isSelected ? '✓' : ''}
+                      </div>
+                    )}
                     <img
                       src={buildImageUrl(storyName, img.char_dir, img.scene_key)}
                       alt={img.scene_key}
-                      style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }}
+                      style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: selectMode && isSelected ? 0.7 : 1 }}
                       loading="lazy"
                     />
                     <div style={{ padding: '8px 10px' }}>
@@ -248,7 +351,8 @@ export default function Gallery() {
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </>
