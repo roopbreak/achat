@@ -1,0 +1,21 @@
+{
+  "characters": {
+    "main": {
+      "name": "백시아",
+      "base_prompt": "1girl, solo, black hair, very long hair, straight hair, hair past waist, sharp eyes, narrow eyes, red eyes, high nose, dimples, fair skin, pale skin, collarbone, huge breasts, sagging breasts, heavy breasts, cleavage, narrow waist, wide hips, hourglass figure, thick thighs, large ass, navel piercing, toned abs, tall female, beautiful detailed eyes, long eyelashes",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, flat chest, small breasts, muscular, scar, tattoo, freckles"
+    }
+  },
+  "defaults": {
+    "model": "nai-diffusion-4-5-full",
+    "aspect_ratio": "3:4",
+    "steps": 28,
+    "scale": 8,
+    "rescale": 0,
+    "sampler": "k_euler_ancestral"
+  },
+  "notes": {
+    "total_images": 124,
+    "special_scenes": "RAG 검색으로 추후 추가 예정"
+  }
+}

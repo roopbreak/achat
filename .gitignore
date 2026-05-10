@@ -18,3 +18,6 @@ docs/rag/converted/
 docs/rag/inbox/
 docs/rag/guides/nai-art-fundamentals-1400styles/
 docs/rag/tips/
+*.db
+.mcp.json
+export/
