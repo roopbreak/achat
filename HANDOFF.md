@@ -2,3 +2,4 @@
 |------|------|---------|----------------|
 | 배포 방식 전환 (Docker → git pull) | 완료 | docs/handoff/deploy-git-pull.md | 2026-05-08 |
 | React 프론트엔드 전환 | 활성 | docs/handoff/react-migration.md | 2026-05-09 |
+| NAI 이미지 완전 자동 생성 | 활성 | docs/handoff/nai-image-generation.md | 2026-05-10 |

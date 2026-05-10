@@ -12,10 +12,26 @@ import {
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
   setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
   getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
+  getRunningJob, getLatestJob, getAnyRunningJob,
 } from '../lib/db.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
+import { autoGenerate, checkDependencies } from '../lib/image-generator.mjs';
 
 const router = Router();
+
+// 이미지 자동 생성 트리거 (비동기, 응답 차단 안 함)
+function triggerAutoGenerate(storyName, hasImages = false) {
+  if (hasImages) {
+    console.log(`[AutoGen] ${storyName}: 이미지 포함 → 자동 생성 스킵`);
+    return;
+  }
+  if (checkDependencies().length > 0) return;
+
+  console.log(`[AutoGen] ${storyName}: 자동 이미지 생성 시작`);
+  autoGenerate(storyName).catch(err =>
+    console.error(`[AutoGen] ${storyName} 실패:`, err.message)
+  );
+}
 const upload = createMulter(multer);
 
 // GET /api/admin/stories
@@ -30,13 +46,13 @@ router.get('/stories', (_req, res) => {
 // POST /api/admin/stories — 신규 스토리 수동 생성
 router.post('/stories', (req, res) => {
   try {
-    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags } = req.body;
+    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source } = req.body;
     if (!name?.trim() || !char_name?.trim()) {
       return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
     }
     const existing = getStory(name.trim());
     if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
-    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags });
+    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -79,6 +95,8 @@ router.get('/stories/:name/export', (req, res) => {
         achat: {
           category: story.category ?? null,
           story_name: name,
+          narration_style: story.narration_style ?? '',
+          narration_style_source: story.narration_style_source ?? 'unset',
         },
       },
     },
@@ -88,6 +106,46 @@ router.get('/stories/:name/export', (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${safeName}.json`);
   res.json(card);
+});
+
+// ── 이미지 자동 생성 라우트 (/:name보다 먼저 매칭되어야 함) ──
+
+// POST /api/admin/stories/:name/generate — 수동 트리거
+router.post('/stories/:name/generate', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리 없음' });
+
+  const issues = checkDependencies();
+  if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
+
+  const running = getAnyRunningJob();
+  if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
+
+  res.json({ status: 'started', storyName: name });
+  autoGenerate(name).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
+});
+
+// GET /api/admin/stories/:name/generate/progress — SSE
+router.get('/stories/:name/generate/progress', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+
+  const interval = setInterval(() => {
+    const job = getLatestJob(name);
+    if (!job) { res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`); return; }
+    res.write(`data: ${JSON.stringify(job)}\n\n`);
+    if (job.status === 'completed' || job.status === 'failed') { clearInterval(interval); res.end(); }
+  }, 1000);
+
+  req.on('close', () => clearInterval(interval));
+});
+
+// GET /api/admin/stories/:name/generate/status — 단순 조회
+router.get('/stories/:name/generate/status', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const job = getLatestJob(name);
+  res.json(job || { status: 'none' });
 });
 
 // GET /api/admin/stories/:name — 단일 스토리 상세
@@ -161,6 +219,8 @@ router.post('/import/card', upload.single('card'), (req, res) => {
 
     const result = parseAndImportCard(storyName, jsonData);
     res.json({ ok: true, ...result });
+    // Card에는 이미지 없으므로 항상 트리거
+    triggerAutoGenerate(storyName, false);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -192,6 +252,8 @@ router.post('/import/zip', upload.single('zip'), (req, res) => {
     const result = importFromZip(storyName, req.file.path);
     fs.unlinkSync(req.file.path);
     res.json({ ok: true, ...result });
+    // 이미지 포함 시 스킵
+    triggerAutoGenerate(storyName, (result.imagesSaved || 0) > 0);
   } catch (err) {
     if (req.file?.path) try { fs.unlinkSync(req.file.path); } catch {}
     res.status(500).json({ error: err.message });

@@ -11,3 +11,10 @@ package-lock.json
 scheduling-api-design.md
 public/dist/
 frontend/node_modules/
+.playwright-mcp/
+.claude/settings.local.json
+docs/rag/.vectordb/
+docs/rag/converted/
+docs/rag/inbox/
+docs/rag/guides/nai-art-fundamentals-1400styles/
+docs/rag/tips/
