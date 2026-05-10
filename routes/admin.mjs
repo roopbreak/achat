@@ -38,18 +38,21 @@ async function embedLoreEntry(id, content) {
 async function embedLoreForStory(storyName) {
   const entries = getUnembeddedLore(storyName);
   let embedded = 0;
+  let rpmCount = 0;
   for (const entry of entries) {
     if (!entry.content?.trim()) continue;
     try {
+      // Voyage 무료 플랜 3 RPM 제한 대응
+      if (rpmCount >= 3) {
+        await new Promise(r => setTimeout(r, 20000));
+        rpmCount = 0;
+      }
       const vec = await embed(entry.content.slice(0, 2000));
+      rpmCount++;
       if (vec) {
         updateLoreEmbedding(entry.id, vec, entry.content);
         embedded++;
-      } else {
-        console.warn(`[lore-embed] id=${entry.id} 임베딩 null 반환`);
       }
-      // rate limit 방지 딜레이
-      if (entries.length > 3) await new Promise(r => setTimeout(r, 500));
     } catch (err) {
       console.error(`[lore-embed] id=${entry.id} 실패:`, err.message);
     }
