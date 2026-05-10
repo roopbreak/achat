@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 
 interface Story {
   name: string
+  title?: string
   char_name?: string
   summary?: string
   imported_at: number
@@ -79,7 +80,7 @@ export default function Home() {
     if (selectedTag) list = list.filter(s => parseTags(s.tags).includes(selectedTag))
 
     // 검색
-    if (q) list = list.filter(s => s.name.toLowerCase().includes(q))
+    if (q) list = list.filter(s => (s.title || s.name).toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
 
     switch (sort) {
       case 'date-desc': list.sort((a, b) => b.imported_at - a.imported_at); break
@@ -120,7 +121,7 @@ export default function Home() {
               {recent.map(s => (
                 <div key={s.name} className="story-card" style={{ position: 'relative' }}>
                   <div onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}>
-                    <h3>{s.name}</h3>
+                    <h3>{s.title || s.name}</h3>
                     <div className="char" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{s.char_name}</span>
                       <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{timeAgo(s.updated_at)}</span>
@@ -205,7 +206,7 @@ export default function Home() {
             const storyTags = parseTags(s.tags)
             return (
               <div key={s.name} className="story-card" onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}>
-                <h3>{s.name}</h3>
+                <h3>{s.title || s.name}</h3>
                 {storyTags.length > 0 && (
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
                     {storyTags.map(t => (
