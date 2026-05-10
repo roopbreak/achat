@@ -18,6 +18,7 @@ interface StoryInfo {
   char_name: string
   imageCount: number
   imported_at: number
+  hasExternalImages?: boolean
 }
 
 interface Persona {
@@ -259,7 +260,10 @@ export default function Admin() {
 
         {/* NAI 이미지 생성 */}
         <div className="admin-section">
-          <h2>NAI 이미지 자동 생성</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>NAI 이미지 자동 생성</h2>
+            <button className="btn btn-secondary" style={{ fontSize: 11, padding: '4px 10px', color: '#e55' }} onClick={async () => { if (!confirm('진행 중인 배치를 중지할까요?')) return; const r = await api<{ok:boolean,cleared:number}>('/api/admin/generate/stop', { method: 'POST' }); alert(`큐 ${r.cleared}개 중지됨`); stories.forEach(s => checkGenStatus(s.name)) }}>배치 중지</button>
+          </div>
           {stories.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>등록된 스토리가 없습니다.</div>
           ) : (
@@ -274,6 +278,7 @@ export default function Admin() {
                   const isGenerating = isQueued || isRunning || genLoading === s.name
                   const comp = compStatus[s.name] || 'none'
                   const isBusy = genLoading === s.name || compLoading === s.name
+                  const isExternal = s.hasExternalImages
                   // 컴포지션 total 대비 생성된 이미지가 부족한 경우 미생성 장면 존재
                   const total = compTotal[s.name] ?? 0
                   const hasMissing = comp === 'exists' && total > 0 && s.imageCount < total
@@ -304,7 +309,9 @@ export default function Admin() {
                       )}
                     </td>
                     <td style={{ minWidth: 160 }}>
-                      {isGenerating ? (
+                      {isExternal ? (
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>외부 이미지</span>
+                      ) : isGenerating ? (
                         <div style={{ fontSize: 12 }}>
                           {isQueued ? (
                             <span style={{ color: 'var(--text-dim)' }}>대기 중...</span>

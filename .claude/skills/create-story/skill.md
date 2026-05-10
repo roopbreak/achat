@@ -191,6 +191,13 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 
 유저 승인 후 AChat API를 통해 스토리를 등록하고, 이미지 생성용 composition을 함께 만든다.
 
+**중요: 원격 서버(58.232.136.138)에 등록해야 한다.**
+- 원격 서버 접속: `ssh -i ~/.ssh/id_github_external shepard@58.232.136.138`
+- API 엔드포인트: `http://localhost:8080` (서버 내부에서)
+- 인증: `Authorization: Bearer {APP_SECRET}` 헤더 필수 (APP_SECRET은 서버의 .env에서 확인)
+- 로컬 DB(localhost:3001)는 개발/테스트용이며, 실제 서비스는 원격 서버에서 운영됨
+- 등록 순서: 스토리 JSON을 scp로 전송 → 서버 내부에서 curl로 API 호출
+
 1. `POST /api/admin/stories` — 스토리 생성
    ```json
    { "name": "{name}", "char_name": "{char_name}", "description": "...", "personality": "...", "scenario": "...", "first_mes": "...", "post_history_instructions": "..." }
@@ -218,6 +225,27 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
    ```
    - 워크플로우: `POST /api/admin/stories/{name}/composition`에 `{ "basePrompt": "{태그}", "baseNegative": "{제외 태그}" }`를 body로 전달하면 서버가 템플릿 100장 + base_prompt를 합쳐서 composition.json을 자동 생성
 
+4. **RAG 검색으로 스토리별 특화 장면 추가**
+   - `01_concept.md`의 이미지 키워드(scene_key)와 시나리오를 기반으로 RAG 검색 쿼리를 구성
+   - MCP `local-rag` 서버의 `search` 도구로 danbooru 태그/포즈/구도 레퍼런스 검색
+   - 검색 쿼리 예시: "수영복 풀사이드 포즈", "란제리 피팅 거울", "야간 수영 물속", "루프탑 드레스 야경"
+   - 검색 결과에서 관련 태그 조합·구도·포즈 정보를 추출하여 특화 장면 프롬프트 구성
+   - 특화 장면을 `composition.json`의 `images` 배열에 추가 (기존 100장 템플릿 + 특화 장면 N장)
+   - 특화 장면 형식:
+   ```json
+   {
+     "key": "{scene_key}",
+     "prompt": "{base_prompt}, {RAG에서 검색한 포즈/구도/의상 태그}",
+     "negative": "{base_negative}, {장면별 제외 태그}",
+     "aspect_ratio": "{장면에 맞는 비율 (3:4, 4:3, 1:1 등)}"
+   }
+   ```
+   - 검색 전략:
+     - scene_key별로 1~2개 쿼리 → 상위 3개 결과에서 태그 추출
+     - 캐릭터 체형·의상과 장면 배경·포즈를 조합
+     - 중복 태그 제거, base_prompt와 겹치는 태그는 장면 프롬프트에서 생략
+   - `docs/stories/{name}/05_special_scenes.md`에 RAG 검색 결과 + 특화 장면 목록 저장
+
 ```
 ## 제작 완료!
 
@@ -233,6 +261,7 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 - `docs/stories/{name}/02_prompt.md`
 - `docs/stories/{name}/03_qa_report.md`
 - `docs/stories/{name}/04_composition_base.json`
+- `docs/stories/{name}/05_special_scenes.md` (RAG 검색 기반 특화 장면)
 ```
 
 ## 데이터 흐름

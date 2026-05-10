@@ -18,7 +18,7 @@ import {
 } from '../lib/db.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
-import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength } from '../lib/image-generator.mjs';
+import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength, clearQueue } from '../lib/image-generator.mjs';
 import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
@@ -98,11 +98,13 @@ async function triggerAutoGenerate(storyName, hasImages = false) {
 const upload = createMulter(multer);
 
 // GET /api/admin/stories
+const EXTERNAL_DOMAINS = ['ddsmdy.com', 'ri4.org', 'soda1.org'];
 router.get('/stories', (_req, res) => {
-  const stories = getStories().map(s => ({
-    ...s,
-    imageCount: getStoryImageCount(s.name),
-  }));
+  const stories = getStories().map(s => {
+    const desc = s.description || '';
+    const hasExternalImages = EXTERNAL_DOMAINS.some(d => desc.includes(d));
+    return { ...s, imageCount: getStoryImageCount(s.name), hasExternalImages };
+  });
   res.json(stories);
 });
 
@@ -308,6 +310,12 @@ router.get('/stories/:name/generate/status', (req, res) => {
   if (queued) return res.json({ status: 'queued', total: queued.total, completed: 0, failed: 0 });
   const job = getLatestJob(name);
   res.json(job || { status: 'none' });
+});
+
+// POST /api/admin/generate/stop — 배치 큐 전체 중지
+router.post('/generate/stop', (req, res) => {
+  const cleared = clearQueue();
+  res.json({ ok: true, cleared });
 });
 
 // GET /api/admin/stories/:name — 단일 스토리 상세

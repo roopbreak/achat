@@ -80,3 +80,17 @@ DB_PATH             # SQLite 파일 경로
 DATA_DIR            # 이미지/tmp 저장 디렉토리
 APP_SECRET          # 앱 접속 코드 (빈 값 = 인증 없음)
 ```
+
+## 필수 프로세스 (반드시 준수)
+
+1. **설계/플랜 시** → Codex 리뷰 필수
+2. **서버 배포 전** → Codex 리뷰 필수
+3. **서버 배포 전** → 로컬 테스트 필수 (빌드 성공 + 기능 동작 확인)
+4. **서버 배포 후** → 배포 서버 테스트 필수 (원격 서버에서 동작 확인)
+
+## 배포
+
+- 원격 서버: `58.232.136.138` (SSH: `shepard@58.232.136.138`, 키: `~/.ssh/id_github_external`)
+- 배포 명령: `bash deploy.sh`
+- 서버 포트: 8080 (내부), APP_SECRET 인증 필요
+- API 호출 시: `Authorization: Bearer {APP_SECRET}` 헤더 필수
