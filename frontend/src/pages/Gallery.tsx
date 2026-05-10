@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Nav from '../components/common/Nav'
 import { api } from '../lib/api'
@@ -49,6 +49,13 @@ export default function Gallery() {
   const [activeCategory, setActiveCategory] = useState('전체')
   const [activeChar, setActiveChar] = useState('전체')
   const [modal, setModal] = useState<ImageItem | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // 폴링 cleanup on unmount
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [])
 
   // 스토리 목록 로드
   useEffect(() => {
@@ -86,6 +93,41 @@ export default function Gallery() {
   const handleStoryChange = (name: string) => {
     if (name) navigate(`/gallery/${encodeURIComponent(name)}`)
     else navigate('/gallery')
+  }
+
+  // 이미지 삭제
+  const handleDelete = async (img: ImageItem) => {
+    if (!storyName || !confirm(`"${img.scene_key}" 이미지를 삭제할까요?`)) return
+    setActionLoading(img.scene_key)
+    try {
+      const charParam = img.char_dir ? `?charDir=${encodeURIComponent(img.char_dir)}` : ''
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}${charParam}`, { method: 'DELETE' })
+      setImages(prev => prev.filter(i => !(i.scene_key === img.scene_key && i.char_dir === img.char_dir)))
+      setModal(null)
+    } catch (e: any) { alert(e.message || '삭제 실패') }
+    finally { setActionLoading(null) }
+  }
+
+  // 이미지 재생성
+  const handleRegenerate = async (img: ImageItem) => {
+    if (!storyName) return
+    setActionLoading(img.scene_key)
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}/regenerate`, { method: 'POST' })
+      setModal(null)
+      // 완료 대기 후 새로고침
+      pollRef.current = setInterval(async () => {
+        try {
+          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
+          if (job.status === 'completed' || job.status === 'failed' || job.status === 'none') {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+            setActionLoading(null)
+            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+            setImages(list)
+          }
+        } catch { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }; setActionLoading(null) }
+      }, 2000)
+    } catch (e: any) { alert(e.message || '재생성 실패'); setActionLoading(null) }
   }
 
   // 모달 키보드 닫기
@@ -248,10 +290,24 @@ export default function Gallery() {
                   <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>seed: {modal.seed}</div>
                 )}
               </div>
-              <button
-                onClick={() => setModal(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 20, lineHeight: 1, flexShrink: 0 }}
-              >✕</button>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ fontSize: 11, padding: '3px 8px' }}
+                  disabled={!!actionLoading}
+                  onClick={() => handleRegenerate(modal)}
+                >{actionLoading === modal.scene_key ? '생성 중...' : '재생성'}</button>
+                <button
+                  className="btn btn-danger"
+                  style={{ fontSize: 11, padding: '3px 8px' }}
+                  disabled={!!actionLoading}
+                  onClick={() => handleDelete(modal)}
+                >삭제</button>
+                <button
+                  onClick={() => setModal(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}
+                >✕</button>
+              </div>
             </div>
             {modal.prompt && (
               <div style={{ marginTop: 10, color: 'var(--text-dim)', fontSize: 12, lineHeight: 1.6, wordBreak: 'break-all', maxHeight: 120, overflowY: 'auto' }}>
