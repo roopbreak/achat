@@ -126,8 +126,8 @@ router.post('/stories/:name/composition', (req, res) => {
   if (!story) return res.status(404).json({ error: '스토리 없음' });
 
   try {
-    const { basePrompt, baseNegative } = req.body || {};
-    const composition = buildComposition(name, { basePrompt, baseNegative });
+    const { basePrompt, baseNegative, characters } = req.body || {};
+    const composition = buildComposition(name, { basePrompt, baseNegative, characters });
     res.json({ ok: true, total: composition.images?.length || 0 });
   } catch (err) {
     console.error(`[Composition] ${name} 실패:`, err.message);
