@@ -1,4 +1,4 @@
-export type PromptSubTab = 'desc' | 'personality' | 'scenario' | 'firstMes' | 'postHistory'
+export type PromptSubTab = 'desc' | 'personality' | 'scenario' | 'firstMes' | 'postHistory' | 'narrationStyle'
 
 interface Props {
   desc: string; setDesc: (v: string) => void
@@ -6,6 +6,7 @@ interface Props {
   scenario: string; setScenario: (v: string) => void
   firstMes: string; setFirstMes: (v: string) => void
   postHistoryInstructions: string; setPostHistoryInstructions: (v: string) => void
+  narrationStyle: string; setNarrationStyle: (v: string) => void
   subTab: PromptSubTab
   onSubTabChange: (tab: PromptSubTab) => void
 }
@@ -16,6 +17,7 @@ const FIELDS: { key: PromptSubTab; label: string; placeholder: string }[] = [
   { key: 'scenario', label: '시나리오', placeholder: '배경 상황 및 설정...' },
   { key: 'firstMes', label: '첫 메시지', placeholder: '첫 번째 AI 응답...' },
   { key: 'postHistory', label: '턴별 지시', placeholder: '매 턴 시스템에 주입될 핵심 지시사항...' },
+  { key: 'narrationStyle', label: '서술 스타일', placeholder: '장르별 성적 서술 톤, 묘사 원칙, 대사 스타일...' },
 ]
 
 function getFieldValue(props: Props, key: PromptSubTab): string {
@@ -25,6 +27,7 @@ function getFieldValue(props: Props, key: PromptSubTab): string {
     case 'scenario': return props.scenario
     case 'firstMes': return props.firstMes
     case 'postHistory': return props.postHistoryInstructions
+    case 'narrationStyle': return props.narrationStyle
   }
 }
 
@@ -35,6 +38,7 @@ function getFieldSetter(props: Props, key: PromptSubTab): (v: string) => void {
     case 'scenario': return props.setScenario
     case 'firstMes': return props.setFirstMes
     case 'postHistory': return props.setPostHistoryInstructions
+    case 'narrationStyle': return props.setNarrationStyle
   }
 }
 

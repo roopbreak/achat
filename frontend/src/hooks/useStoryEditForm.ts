@@ -36,6 +36,7 @@ export interface StoryEditForm {
     scenario: string; setScenario: (v: string) => void
     firstMes: string; setFirstMes: (v: string) => void
     postHistoryInstructions: string; setPostHistoryInstructions: (v: string) => void
+    narrationStyle: string; setNarrationStyle: (v: string) => void
   }
   loreState: { lore: LoreEntry[]; visible: LoreEntry[] }
   loreActions: {
@@ -64,6 +65,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
   const [scenario, setScenario] = useState('')
   const [firstMes, setFirstMes] = useState('')
   const [postHistoryInstructions, setPostHistoryInstructions] = useState('')
+  const [narrationStyle, setNarrationStyle] = useState('')
 
   // ── 로어북 ──
   const [lore, setLore] = useState<LoreEntry[]>([])
@@ -86,6 +88,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
       setScenario(story.scenario ?? '')
       setFirstMes(story.first_mes ?? '')
       setPostHistoryInstructions(story.post_history_instructions ?? '')
+      setNarrationStyle(story.narration_style ?? '')
       setCategory(story.category ?? '')
       try { setTags(story.tags ? JSON.parse(story.tags) : []) } catch { setTags([]) }
       setLore((loreData as Array<Record<string, unknown>>).map(e => ({
@@ -158,6 +161,8 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
         char_name: charName, description: desc,
         personality: personality || null, scenario: scenario || null,
         first_mes: firstMes || null, post_history_instructions: postHistoryInstructions || null,
+        narration_style: narrationStyle || '',
+        narration_style_source: narrationStyle ? 'manual' : 'unset',
         category: category || null, tags: tags.length ? tags : null,
       }
       let currentName = editName ?? name
@@ -196,7 +201,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     } catch (err) {
       setStatus({ text: (err as Error).message, ok: false })
     } finally { setSaving(false) }
-  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, category, tags, lore, isEdit, editName, navigate])
+  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, narrationStyle, category, tags, lore, isEdit, editName, navigate])
 
   // ── 익스포트 ──
   const exportStory = useCallback(async () => {
@@ -213,7 +218,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
 
   return {
     basicInfo: { name, setName, charName, setCharName, category, setCategory, tags, tagInput, handleTagChange, handleTagKeyDown, handleTagPaste, handleTagBlur, removeTag },
-    promptFields: { desc, setDesc, personality, setPersonality, scenario, setScenario, firstMes, setFirstMes, postHistoryInstructions, setPostHistoryInstructions },
+    promptFields: { desc, setDesc, personality, setPersonality, scenario, setScenario, firstMes, setFirstMes, postHistoryInstructions, setPostHistoryInstructions, narrationStyle, setNarrationStyle },
     loreState: { lore, visible },
     loreActions: { updateLore, addLore, removeLore },
     ui: { saving, status, isEdit, editName },

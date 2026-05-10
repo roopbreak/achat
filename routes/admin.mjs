@@ -46,13 +46,13 @@ router.get('/stories', (_req, res) => {
 // POST /api/admin/stories — 신규 스토리 수동 생성
 router.post('/stories', (req, res) => {
   try {
-    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags } = req.body;
+    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source } = req.body;
     if (!name?.trim() || !char_name?.trim()) {
       return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
     }
     const existing = getStory(name.trim());
     if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
-    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags });
+    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -95,6 +95,8 @@ router.get('/stories/:name/export', (req, res) => {
         achat: {
           category: story.category ?? null,
           story_name: name,
+          narration_style: story.narration_style ?? '',
+          narration_style_source: story.narration_style_source ?? 'unset',
         },
       },
     },
