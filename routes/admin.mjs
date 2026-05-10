@@ -12,14 +12,47 @@ import {
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
   setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
   getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
+  updateLoreEmbedding, getUnembeddedLore,
   getRunningJob, getLatestJob, getAnyRunningJob,
-  getExistingSceneKeys,
+  getExistingSceneKeys, deleteStoryImageBySceneKey,
 } from '../lib/db.mjs';
+import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 import { autoGenerate, checkDependencies, cleanupOrphanImages } from '../lib/image-generator.mjs';
 import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
+
+// 로어 엔트리 비동기 임베딩 (fire-and-forget)
+async function embedLoreEntry(id, content) {
+  if (!content?.trim()) return;
+  try {
+    const vec = await embed(content.slice(0, 2000));
+    if (vec) updateLoreEmbedding(id, vec, content);
+  } catch (err) {
+    console.error(`[lore-embed] id=${id} 실패:`, err.message);
+  }
+}
+
+// 스토리의 미임베딩 로어 일괄 처리
+async function embedLoreForStory(storyName) {
+  const entries = getUnembeddedLore(storyName);
+  let embedded = 0;
+  for (const entry of entries) {
+    if (!entry.content?.trim()) continue;
+    try {
+      const vec = await embed(entry.content.slice(0, 2000));
+      if (vec) {
+        updateLoreEmbedding(entry.id, vec, entry.content);
+        embedded++;
+      }
+    } catch (err) {
+      console.error(`[lore-embed] id=${entry.id} 실패:`, err.message);
+    }
+  }
+  if (embedded > 0) console.log(`[lore-embed] ${storyName}: ${embedded}/${entries.length}건 임베딩 완료`);
+  return { embedded, skipped: entries.length - embedded };
+}
 
 // 이미지 자동 생성 트리거 (비동기, 응답 차단 안 함)
 // composition이 없으면 자동 생성 후 이미지 생성
@@ -272,7 +305,9 @@ router.post('/stories/:name/lore', (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name);
     const result = insertSingleLoreEntry(name, req.body);
-    res.json({ ok: true, id: result.lastInsertRowid });
+    const id = result.lastInsertRowid;
+    if (req.body.content) embedLoreEntry(id, req.body.content);
+    res.json({ ok: true, id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -282,6 +317,7 @@ router.post('/stories/:name/lore', (req, res) => {
 router.put('/stories/:name/lore/:id', (req, res) => {
   try {
     updateLoreEntry(req.params.id, req.body);
+    if ('content' in req.body) embedLoreEntry(req.params.id, req.body.content);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -293,6 +329,17 @@ router.delete('/stories/:name/lore/:id', (req, res) => {
   try {
     deleteLoreEntry(req.params.id);
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/stories/:name/lore/embed-all — 미임베딩 로어 일괄 임베딩
+router.post('/stories/:name/lore/embed-all', async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const result = await embedLoreForStory(name);
+    res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -311,6 +358,8 @@ router.post('/import/card', upload.single('card'), (req, res) => {
 
     const result = parseAndImportCard(storyName, jsonData);
     res.json({ ok: true, ...result });
+    // 로어 임베딩 (비동기)
+    if (result.loreCount > 0) embedLoreForStory(storyName).catch(e => console.error(`[lore-embed] ${storyName}:`, e.message));
     // Card에는 이미지 없으므로 항상 트리거
     triggerAutoGenerate(storyName, false);
   } catch (err) {
@@ -344,6 +393,8 @@ router.post('/import/zip', upload.single('zip'), (req, res) => {
     const result = importFromZip(storyName, req.file.path);
     fs.unlinkSync(req.file.path);
     res.json({ ok: true, ...result });
+    // 로어 임베딩 (비동기)
+    if (result.loreCount > 0) embedLoreForStory(storyName).catch(e => console.error(`[lore-embed] ${storyName}:`, e.message));
     // 이미지 포함 시 스킵
     triggerAutoGenerate(storyName, (result.imagesSaved || 0) > 0);
   } catch (err) {
@@ -394,6 +445,51 @@ router.get('/stories/:name/images', (req, res) => {
     "SELECT char_dir, scene_key, filename, prompt, seed, source FROM story_images WHERE story_name = ? AND (source IS NULL OR source != 'qa_failed') ORDER BY char_dir, scene_key"
   ).all(name);
   res.json(rows);
+});
+
+// DELETE /api/admin/stories/:name/images/:sceneKey — 특정 이미지 삭제
+router.delete('/stories/:name/images/:sceneKey', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const sceneKey = decodeURIComponent(req.params.sceneKey);
+  const charDir = req.query.charDir ? decodeURIComponent(req.query.charDir) : '';
+
+  try {
+    const db = getDB();
+    const row = db.prepare('SELECT filename FROM story_images WHERE story_name = ? AND char_dir = ? AND scene_key = ?').get(name, charDir, sceneKey);
+    if (!row) return res.status(404).json({ error: '이미지 없음' });
+
+    // DB 삭제
+    deleteStoryImageBySceneKey(name, charDir, sceneKey);
+
+    // 파일 삭제
+    const DATA_DIR = process.env.DATA_DIR ?? path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data');
+    const filePath = charDir
+      ? path.join(DATA_DIR, 'stories', name, 'images', charDir, row.filename)
+      : path.join(DATA_DIR, 'stories', name, 'images', row.filename);
+    try { fs.unlinkSync(filePath); } catch {}
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/stories/:name/images/:sceneKey/regenerate — 특정 이미지 재생성
+router.post('/stories/:name/images/:sceneKey/regenerate', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const sceneKey = decodeURIComponent(req.params.sceneKey);
+
+  const composition = loadComposition(name);
+  if (!composition) return res.status(400).json({ error: '컴포지션 없음' });
+
+  const issues = checkDependencies();
+  if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
+
+  const running = getAnyRunningJob();
+  if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
+
+  res.json({ status: 'started', storyName: name, sceneKey });
+  autoGenerate(name, { sceneIds: [sceneKey] }).catch(err => console.error(`[Regen] ${name}/${sceneKey} 실패:`, err.message));
 });
 
 // ── Story Notes ──────────────────────────────────────
