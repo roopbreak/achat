@@ -22,6 +22,19 @@ import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, 
 import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
+const queuedGenerations = new Map();
+
+function setQueuedGeneration(storyName, total) {
+  queuedGenerations.set(storyName, { total });
+}
+
+function clearQueuedGeneration(storyName) {
+  queuedGenerations.delete(storyName);
+}
+
+function getQueuedGeneration(storyName) {
+  return queuedGenerations.get(storyName) || null;
+}
 
 // 로어 엔트리 비동기 임베딩 (fire-and-forget)
 async function embedLoreEntry(id, content) {
@@ -239,8 +252,15 @@ router.post('/stories/:name/generate', (req, res) => {
 
   const total = sceneIds?.length || composition.images?.length || 0;
   const queuePos = getQueueLength();
+  setQueuedGeneration(name, total);
   res.json({ status: 'queued', storyName: name, total, queuePosition: queuePos });
-  enqueueGenerate(() => autoGenerate(name, { sceneIds })).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
+  enqueueGenerate(async () => {
+    clearQueuedGeneration(name);
+    return autoGenerate(name, { sceneIds });
+  }).catch(err => {
+    clearQueuedGeneration(name);
+    console.error(`[AutoGen] ${name} 실패:`, err.message);
+  });
 });
 
 // POST /api/admin/stories/:name/cleanup — 좀비 이미지 정리
@@ -264,7 +284,15 @@ router.get('/stories/:name/generate/progress', (req, res) => {
 
   const interval = setInterval(() => {
     const job = getLatestJob(name);
-    if (!job) { res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`); return; }
+    if (!job) {
+      const queued = getQueuedGeneration(name);
+      if (queued) {
+        res.write(`data: ${JSON.stringify({ status: 'queued', total: queued.total, completed: 0, failed: 0 })}\n\n`);
+        return;
+      }
+      res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`);
+      return;
+    }
     res.write(`data: ${JSON.stringify(job)}\n\n`);
     if (job.status === 'completed' || job.status === 'failed') { clearInterval(interval); res.end(); }
   }, 1000);
@@ -276,7 +304,9 @@ router.get('/stories/:name/generate/progress', (req, res) => {
 router.get('/stories/:name/generate/status', (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const job = getLatestJob(name);
-  res.json(job || { status: 'none' });
+  if (job) return res.json(job);
+  const queued = getQueuedGeneration(name);
+  res.json(queued ? { status: 'queued', total: queued.total, completed: 0, failed: 0 } : { status: 'none' });
 });
 
 // GET /api/admin/stories/:name — 단일 스토리 상세

@@ -170,10 +170,11 @@ export default function Admin() {
   const triggerGenerate = async (storyName: string, options?: { retryFailed?: boolean }) => {
     setGenLoading(storyName)
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
+      const queuedJob = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
         method: 'POST',
         body: options ? JSON.stringify(options) : undefined,
       })
+      setGenJobs(prev => ({ ...prev, [storyName]: queuedJob }))
       const es = new EventSource(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/progress`)
       let noneCount = 0
       es.onmessage = (e) => {
@@ -268,7 +269,9 @@ export default function Admin() {
               <tbody>
                 {stories.map(s => {
                   const job = genJobs[s.name]
-                  const isRunning = job?.status === 'running' || genLoading === s.name
+                  const isQueued = job?.status === 'queued'
+                  const isRunning = job?.status === 'running'
+                  const isGenerating = isQueued || isRunning || genLoading === s.name
                   const comp = compStatus[s.name] || 'none'
                   const isBusy = genLoading === s.name || compLoading === s.name
                   // 컴포지션 total 대비 생성된 이미지가 부족한 경우 미생성 장면 존재
@@ -301,12 +304,18 @@ export default function Admin() {
                       )}
                     </td>
                     <td style={{ minWidth: 160 }}>
-                      {isRunning ? (
+                      {isGenerating ? (
                         <div style={{ fontSize: 12 }}>
-                          <div style={{ background: 'var(--border)', borderRadius: 4, height: 8, marginBottom: 4 }}>
-                            <div style={{ background: 'var(--accent)', borderRadius: 4, height: 8, width: `${((job?.completed || 0) / (job?.total || 100)) * 100}%`, transition: 'width 0.3s' }} />
-                          </div>
-                          <span style={{ color: 'var(--text-dim)' }}>{job?.completed || 0}/{job?.total || '?'}</span>
+                          {isQueued ? (
+                            <span style={{ color: 'var(--text-dim)' }}>대기 중...</span>
+                          ) : (
+                            <>
+                              <div style={{ background: 'var(--border)', borderRadius: 4, height: 8, marginBottom: 4 }}>
+                                <div style={{ background: 'var(--accent)', borderRadius: 4, height: 8, width: `${((job?.completed || 0) / (job?.total || 100)) * 100}%`, transition: 'width 0.3s' }} />
+                              </div>
+                              <span style={{ color: 'var(--text-dim)' }}>{job?.completed || 0}/{job?.total || '?'}</span>
+                            </>
+                          )}
                         </div>
                       ) : job?.status === 'completed' ? (
                         <span style={{ fontSize: 12 }}>
