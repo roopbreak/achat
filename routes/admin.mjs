@@ -98,7 +98,7 @@ async function triggerAutoGenerate(storyName, hasImages = false) {
 const upload = createMulter(multer);
 
 // GET /api/admin/stories
-const EXTERNAL_DOMAINS = ['ddsmdy.com', 'ri4.org', 'soda1.org', 'itimg.kr', 'kasn.org'];
+const EXTERNAL_DOMAINS = ['ddsmdy.com', 'ri4.org', 'soda1.org', 'itimg.kr', 'kasn.org', '6.sche.uk'];
 router.get('/stories', (_req, res) => {
   const stories = getStories().map(s => {
     const desc = s.description || '';
