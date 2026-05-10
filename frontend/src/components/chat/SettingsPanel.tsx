@@ -74,6 +74,9 @@ export default function SettingsPanel({
         <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
         <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
         <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+        <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+        <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
       </select>
 
       <label style={{ fontSize: 13, color: 'var(--text-dim)', marginLeft: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
