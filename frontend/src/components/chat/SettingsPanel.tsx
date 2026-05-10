@@ -47,6 +47,7 @@ export default function SettingsPanel({
       >
         <option value={1024}>짧게 (1K)</option>
         <option value={2048}>보통 (2K)</option>
+        <option value={3072}>기본 (3K)</option>
         <option value={4096}>길게 (4K)</option>
         <option value={8192}>매우 길게 (8K)</option>
       </select>

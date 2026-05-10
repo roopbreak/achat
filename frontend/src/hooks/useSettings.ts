@@ -17,7 +17,7 @@ export interface Settings {
 export function useSettings() {
   const [fontSize, setFontSize] = useState(() => parseInt(read('chat_font_size', String(FONT_DEFAULT)), 10))
   const [model, setModel] = useState(() => read('chat_model', 'claude-sonnet-4-6'))
-  const [maxTokens, setMaxTokens] = useState(() => parseInt(read('chat_max_tokens', '4096'), 10))
+  const [maxTokens, setMaxTokens] = useState(() => parseInt(read('chat_max_tokens', '3072'), 10))
   const [imagesEnabled, setImagesEnabled] = useState(() => read('chat_images', 'on') !== 'off')
   const [loreDebug, setLoreDebug] = useState(() => read('chat_lore_debug', 'off') === 'on')
 
