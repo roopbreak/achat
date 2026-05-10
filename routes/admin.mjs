@@ -16,21 +16,30 @@ import {
 } from '../lib/db.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 import { autoGenerate, checkDependencies } from '../lib/image-generator.mjs';
+import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
 
 const router = Router();
 
 // 이미지 자동 생성 트리거 (비동기, 응답 차단 안 함)
-function triggerAutoGenerate(storyName, hasImages = false) {
+// composition이 없으면 자동 생성 후 이미지 생성
+async function triggerAutoGenerate(storyName, hasImages = false) {
   if (hasImages) {
     console.log(`[AutoGen] ${storyName}: 이미지 포함 → 자동 생성 스킵`);
     return;
   }
   if (checkDependencies().length > 0) return;
 
-  console.log(`[AutoGen] ${storyName}: 자동 이미지 생성 시작`);
-  autoGenerate(storyName).catch(err =>
-    console.error(`[AutoGen] ${storyName} 실패:`, err.message)
-  );
+  try {
+    // composition 없으면 먼저 생성
+    if (!loadComposition(storyName)) {
+      console.log(`[AutoGen] ${storyName}: 컴포지션 자동 생성 시작`);
+      await buildComposition(storyName);
+    }
+    console.log(`[AutoGen] ${storyName}: 이미지 자동 생성 시작`);
+    await autoGenerate(storyName);
+  } catch (err) {
+    console.error(`[AutoGen] ${storyName} 실패:`, err.message);
+  }
 }
 const upload = createMulter(multer);
 
@@ -108,13 +117,55 @@ router.get('/stories/:name/export', (req, res) => {
   res.json(card);
 });
 
-// ── 이미지 자동 생성 라우트 (/:name보다 먼저 매칭되어야 함) ──
+// ── Composition 라우트 (/:name보다 먼저 매칭되어야 함) ──
 
-// POST /api/admin/stories/:name/generate — 수동 트리거
+// POST /api/admin/stories/:name/composition — 컴포지션 생성
+router.post('/stories/:name/composition', async (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리 없음' });
+
+  try {
+    const composition = await buildComposition(name);
+    res.json({ ok: true, total: composition.images?.length || 0 });
+  } catch (err) {
+    console.error(`[Composition] ${name} 실패:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/stories/:name/composition — 컴포지션 조회
+router.get('/stories/:name/composition', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const composition = loadComposition(name);
+  if (!composition) return res.status(404).json({ error: '컴포지션 없음' });
+  res.json(composition);
+});
+
+// PUT /api/admin/stories/:name/composition — 컴포지션 수동 편집
+router.put('/stories/:name/composition', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리 없음' });
+
+  try {
+    saveComposition(name, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── 이미지 생성 라우트 ──
+
+// POST /api/admin/stories/:name/generate — 이미지 생성 (composition 필수)
 router.post('/stories/:name/generate', (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const story = getStory(name);
   if (!story) return res.status(404).json({ error: '스토리 없음' });
+
+  const composition = loadComposition(name);
+  if (!composition) return res.status(400).json({ error: '컴포지션이 없습니다. 먼저 컴포지션을 생성하세요.' });
 
   const issues = checkDependencies();
   if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
@@ -122,8 +173,9 @@ router.post('/stories/:name/generate', (req, res) => {
   const running = getAnyRunningJob();
   if (running) return res.status(409).json({ error: `이미 생성 중: ${running.story_name}`, jobId: running.id });
 
-  res.json({ status: 'started', storyName: name });
-  autoGenerate(name).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
+  const { sceneIds } = req.body || {};
+  res.json({ status: 'started', storyName: name, total: sceneIds?.length || composition.images?.length || 0 });
+  autoGenerate(name, { sceneIds }).catch(err => console.error(`[AutoGen] ${name} 실패:`, err.message));
 });
 
 // GET /api/admin/stories/:name/generate/progress — SSE

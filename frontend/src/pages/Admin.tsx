@@ -54,6 +54,8 @@ export default function Admin() {
   // 이미지 생성
   const [genJobs, setGenJobs] = useState<Record<string, GenerationJob>>({})
   const [genLoading, setGenLoading] = useState<string | null>(null)
+  const [compStatus, setCompStatus] = useState<Record<string, 'none' | 'exists' | 'building'>>({})
+  const [compLoading, setCompLoading] = useState<string | null>(null)
 
   const loadStories = useCallback(async () => {
     const list = await api<StoryInfo[]>('/api/admin/stories')
@@ -130,6 +132,28 @@ export default function Admin() {
     setMappingResult(res.ok ? `저장 완료 (${res.count}개 매핑)` : (res.error ?? '오류'))
   }
 
+  // ── 컴포지션 ──
+  const checkCompStatus = useCallback(async (storyName: string) => {
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`)
+      setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
+    } catch {
+      setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
+    }
+  }, [])
+
+  const triggerComposition = async (storyName: string) => {
+    setCompLoading(storyName)
+    setCompStatus(prev => ({ ...prev, [storyName]: 'building' }))
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`, { method: 'POST' })
+      setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
+    } catch (e: any) {
+      alert(e.message || '컴포지션 생성 실패')
+      setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
+    } finally { setCompLoading(null) }
+  }
+
   // ── 이미지 생성 ──
   const checkGenStatus = useCallback(async (storyName: string) => {
     try {
@@ -143,16 +167,19 @@ export default function Admin() {
     try {
       await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, { method: 'POST' })
       const es = new EventSource(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/progress`)
+      let noneCount = 0
       es.onmessage = (e) => {
         const job = JSON.parse(e.data) as GenerationJob
         setGenJobs(prev => ({ ...prev, [storyName]: job }))
         if (job.status === 'completed' || job.status === 'failed') { es.close(); setGenLoading(null); loadStories() }
+        else if (job.status === 'none') { noneCount++; if (noneCount > 10) { es.close(); setGenLoading(null) } }
+        else { noneCount = 0 }
       }
       es.onerror = () => { es.close(); setGenLoading(null); checkGenStatus(storyName) }
     } catch (e: any) { alert(e.message || '생성 실패'); setGenLoading(null) }
   }
 
-  useEffect(() => { stories.forEach(s => checkGenStatus(s.name)) }, [stories, checkGenStatus])
+  useEffect(() => { stories.forEach(s => { checkGenStatus(s.name); checkCompStatus(s.name) }) }, [stories, checkGenStatus, checkCompStatus])
 
   return (
     <>
@@ -229,15 +256,29 @@ export default function Admin() {
           ) : (
             <div className="story-table-wrap">
             <table className="story-table">
-              <thead><tr><th>스토리</th><th>이미지</th><th>상태</th></tr></thead>
+              <thead><tr><th>스토리</th><th>이미지</th><th>컴포지션</th><th>생성</th></tr></thead>
               <tbody>
                 {stories.map(s => {
                   const job = genJobs[s.name]
                   const isRunning = job?.status === 'running' || genLoading === s.name
+                  const comp = compStatus[s.name] || 'none'
+                  const isBusy = !!genLoading || !!compLoading
                   return (
                   <tr key={s.name}>
                     <td>{s.name}</td>
                     <td>{s.imageCount}</td>
+                    <td style={{ minWidth: 100 }}>
+                      {comp === 'building' ? (
+                        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>생성 중...</span>
+                      ) : comp === 'exists' ? (
+                        <span style={{ fontSize: 12 }}>
+                          <span style={{ color: 'var(--accent)' }}>있음</span>
+                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => triggerComposition(s.name)} disabled={isBusy}>재생성</button>
+                        </span>
+                      ) : (
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerComposition(s.name)} disabled={isBusy}>생성</button>
+                      )}
+                    </td>
                     <td style={{ minWidth: 160 }}>
                       {isRunning ? (
                         <div style={{ fontSize: 12 }}>
@@ -251,12 +292,12 @@ export default function Admin() {
                       ) : job?.status === 'failed' ? (
                         <span style={{ fontSize: 12 }}>
                           <span style={{ color: '#e55' }}>실패</span>
-                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>재시도</button>
+                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy || comp !== 'exists'}>재시도</button>
                         </span>
-                      ) : s.imageCount === 0 ? (
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>자동 생성</button>
+                      ) : comp === 'exists' ? (
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy}>이미지 생성</button>
                       ) : (
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={!!genLoading}>재생성</button>
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>컴포지션 필요</span>
                       )}
                     </td>
                   </tr>
