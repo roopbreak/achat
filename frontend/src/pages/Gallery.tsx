@@ -32,11 +32,12 @@ function getCategory(sceneKey: string): string {
 }
 
 // 이미지 URL 조립
-function buildImageUrl(storyName: string, charDir: string, sceneKey: string): string {
+function buildImageUrl(storyName: string, charDir: string, sceneKey: string, bust?: number): string {
+  const q = bust ? `?t=${bust}` : ''
   if (charDir) {
-    return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(charDir)}/${encodeURIComponent(sceneKey)}`
+    return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(charDir)}/${encodeURIComponent(sceneKey)}${q}`
   }
-  return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(sceneKey)}`
+  return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(sceneKey)}${q}`
 }
 
 export default function Gallery() {
@@ -50,6 +51,7 @@ export default function Gallery() {
   const [activeChar, setActiveChar] = useState('전체')
   const [modal, setModal] = useState<ImageItem | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [cacheBuster, setCacheBuster] = useState(Date.now())
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectMode, setSelectMode] = useState(false)
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -70,7 +72,7 @@ export default function Gallery() {
     if (!storyName) { setImages([]); return }
     setLoading(true)
     api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
-      .then(list => { setImages(list); setActiveCategory('전체'); setActiveChar('전체') })
+      .then(list => { setImages(list); setActiveCategory('전체'); setActiveChar('전체'); setCacheBuster(Date.now()) })
       .catch(() => setImages([]))
       .finally(() => setLoading(false))
   }, [storyName])
@@ -135,7 +137,7 @@ export default function Gallery() {
         await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(sceneKey)}${charParam}`, { method: 'DELETE' })
       }
       const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
-      setImages(list)
+      setImages(list); setCacheBuster(Date.now())
       exitSelectMode()
     } catch (e: any) { alert(e.message || '삭제 실패') }
     finally { setBulkLoading(false) }
@@ -164,7 +166,7 @@ export default function Gallery() {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
             setBulkLoading(false)
             const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
-            setImages(list)
+            setImages(list); setCacheBuster(Date.now())
           }
         } catch { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }; setBulkLoading(false) }
       }, 2000)
@@ -179,6 +181,7 @@ export default function Gallery() {
       const charParam = img.char_dir ? `?charDir=${encodeURIComponent(img.char_dir)}` : ''
       await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}${charParam}`, { method: 'DELETE' })
       setImages(prev => prev.filter(i => !(i.scene_key === img.scene_key && i.char_dir === img.char_dir)))
+      setCacheBuster(Date.now())
       setModal(null)
     } catch (e: any) { alert(e.message || '삭제 실패') }
     finally { setActionLoading(null) }
@@ -200,7 +203,7 @@ export default function Gallery() {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
             setActionLoading(null)
             const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
-            setImages(list)
+            setImages(list); setCacheBuster(Date.now())
           }
         } catch { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }; setActionLoading(null) }
       }, 2000)
@@ -344,7 +347,7 @@ export default function Gallery() {
                       </div>
                     )}
                     <img
-                      src={buildImageUrl(storyName, img.char_dir, img.scene_key)}
+                      src={buildImageUrl(storyName, img.char_dir, img.scene_key, cacheBuster)}
                       alt={img.scene_key}
                       style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: selectMode && isSelected ? 0.7 : 1 }}
                       loading="lazy"
@@ -379,7 +382,7 @@ export default function Gallery() {
           }}
         >
           <img
-            src={buildImageUrl(storyName!, modal.char_dir, modal.scene_key)}
+            src={buildImageUrl(storyName!, modal.char_dir, modal.scene_key, cacheBuster)}
             alt={modal.scene_key}
             onClick={e => e.stopPropagation()}
             style={{ maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: 10, cursor: 'default' }}
