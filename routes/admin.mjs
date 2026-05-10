@@ -283,13 +283,14 @@ router.get('/stories/:name/generate/progress', (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
 
   const interval = setInterval(() => {
+    // 큐 마커가 있으면 DB job보다 우선 (이전 failed/completed job이 남아있을 수 있음)
+    const queued = getQueuedGeneration(name);
+    if (queued) {
+      res.write(`data: ${JSON.stringify({ status: 'queued', total: queued.total, completed: 0, failed: 0 })}\n\n`);
+      return;
+    }
     const job = getLatestJob(name);
     if (!job) {
-      const queued = getQueuedGeneration(name);
-      if (queued) {
-        res.write(`data: ${JSON.stringify({ status: 'queued', total: queued.total, completed: 0, failed: 0 })}\n\n`);
-        return;
-      }
       res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`);
       return;
     }
@@ -303,10 +304,10 @@ router.get('/stories/:name/generate/progress', (req, res) => {
 // GET /api/admin/stories/:name/generate/status — 단순 조회
 router.get('/stories/:name/generate/status', (req, res) => {
   const name = decodeURIComponent(req.params.name);
-  const job = getLatestJob(name);
-  if (job) return res.json(job);
   const queued = getQueuedGeneration(name);
-  res.json(queued ? { status: 'queued', total: queued.total, completed: 0, failed: 0 } : { status: 'none' });
+  if (queued) return res.json({ status: 'queued', total: queued.total, completed: 0, failed: 0 });
+  const job = getLatestJob(name);
+  res.json(job || { status: 'none' });
 });
 
 // GET /api/admin/stories/:name — 단일 스토리 상세
