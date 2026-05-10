@@ -209,10 +209,57 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
    - 상시 규칙 로어: `constant: 1` (캐시됨, 매 턴 주입)
    - 명령어 트리거: `scan_depth: 1` (현재 턴만 스캔)
    - 키워드 AND: `"키1+키2"`, NOT: `"-제외어"`
+   - **성적 용어 로어 필수 추가** (`constant: 1`, `priority: 95`):
+     - 현대물: `보지/클리토리스/자지` (음부, 음핵, 음경 금지)
+     - 사극/무협: `보지/음핵/자지` (클리토리스 금지, 음문·남근 허용)
 3. **Composition 생성** — 캐릭터 외모를 danbooru 태그로 변환하여 `base_prompt` 작성
    - `01_concept.md`의 외모 설명을 기반으로 NovelAI danbooru 태그로 변환
-   - 태그 형식: `1girl, solo, {머리색}, {머리길이}, {머리스타일}, {눈색}, {체형}, {피부}, {고유 특징}`
+   - 태그 형식: `1girl, solo, {머리색}, {머리길이}, {머리스타일}, {눈색}, {체형}, {피부}, {고유 특징}, {음모색} pubic hair`
    - 글래머 체형 기본: `huge breasts, large breasts, sagging breasts, heavy breasts, narrow waist, wide hips, hourglass figure, thick thighs, detailed skin texture, silky skin, collarbone`
+   
+   **머리색/눈색 다양화 규칙 (필수):**
+   - 애니메이션/웹툰 스타일로 캐릭터 성격에 맞게 다양한 색상 사용
+   - **black hair 남발 금지** — 사극/무협이 아닌 한 흑발만 쓰지 않는다
+   - 음모색은 반드시 머리색과 일치시킨다 (`{머리색} pubic hair`)
+   - red eyes는 인외 캐릭터(악마, 뱀파이어 등)에만 허용. 일반 캐릭터 금지
+   
+   **머리색 팔레트 (성격 기반 선택):**
+   | 색상 | 어울리는 성격 |
+   |------|-------------|
+   | black hair | 사극/무협, 카리스마/지배적, 전통미인 |
+   | dark brown hair | 현실적, 성숙한 직장인, 차분한 |
+   | brown hair | 따뜻한, 친근한, 일상적 |
+   | light brown hair | 부드러운, 온화한, 첫사랑 |
+   | chestnut hair | 모성적, 따뜻한 누나 |
+   | auburn hair | 세련된, 성숙한 매력 |
+   | blonde hair | 화려한, 자신감, 셀럽/퀸카 |
+   | platinum blonde hair | 도도한, 냉미녀, 신비로운 |
+   | silver hair | 미스터리, 지배적, 초월적 |
+   | pink hair | 사랑스러운, 활발한, 아이돌 |
+   | light pink hair | 도발적이면서 귀여운 |
+   | light purple hair | 도도한 + 세련된, 글래머 셀럽 |
+   | purple hair | 통제적, 미스터리, S기질 |
+   | dark blue hair | 차가운 프로, 지적 |
+   | light blue hair | 쿨한, 독특한, 개성파 |
+   | red hair | 강렬한, 열정적, 거친 |
+   | orange hair | 활발한, 에너지, 밝은 선배 |
+   | green hair | 독특한, 자연/요정, 개성 강한 |
+   
+   **눈색 팔레트 (머리색과 조합):**
+   | 색상 | 어울리는 조합 |
+   |------|-------------|
+   | amber eyes | 따뜻한 톤 머리 (brown, auburn, orange) |
+   | emerald/green eyes | 보색 대비 (red, blonde) |
+   | violet eyes | 퍼플/라벤더 머리, 미스터리 |
+   | blue eyes | 블론드, 블루 계열 머리 |
+   | golden eyes | 블론드, 판타지 캐릭터 |
+   | pink eyes | 핑크 머리, 라이트핑크 |
+   | hazel eyes | 브라운 계열, 자연스러운 |
+   | purple eyes | 퍼플 머리, 지배적 |
+   | silver eyes | 실버/화이트 머리 |
+   | dark brown eyes | 현실적 톤, 흑발/다크브라운 |
+   | orange eyes | 오렌지 머리 |
+   | aqua/teal eyes | 블루/그린 계열 |
    - `base_negative`: 캐릭터에서 제외할 태그 (예: `pointy ears, animal ears, tail`)
    - `docs/stories/{name}/04_composition_base.json`에 저장
    - `PUT /api/admin/stories/{name}/composition`으로 업로드
