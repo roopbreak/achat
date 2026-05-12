@@ -35,6 +35,9 @@ const distDir = path.join(__dirname, 'public', 'dist');
 app.use(express.static(distDir));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 
+// 스토리별 외부 호스팅 이미지 자체 호스팅 (DATA_DIR/eh → /eh)
+app.use('/eh', express.static(path.join(DATA_DIR, 'eh'), { maxAge: '7d', immutable: true }));
+
 // 인증 미들웨어 (APP_SECRET 설정 시 API에만 적용)
 // /images는 <img> 태그에서 직접 로드하므로 인증 제외
 app.use('/api', authMiddleware);
