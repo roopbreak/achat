@@ -19,7 +19,7 @@ import {
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength, clearQueue } from '../lib/image-generator.mjs';
-import { buildComposition, loadComposition, saveComposition } from '../lib/composition-builder.mjs';
+import { buildComposition, loadComposition, saveComposition, COMPOSITION_CATEGORIES } from '../lib/composition-builder.mjs';
 
 const router = Router();
 const queuedGenerations = new Map();
@@ -182,7 +182,7 @@ router.post('/stories/:name/composition', (req, res) => {
   if (!story) return res.status(404).json({ error: '스토리 없음' });
 
   try {
-    const { basePrompt, baseNegative, characters } = req.body || {};
+    const { basePrompt, baseNegative, characters, customScenes } = req.body || {};
     // characters 입력 검증
     if (characters) {
       const keys = Object.keys(characters);
@@ -191,7 +191,37 @@ router.post('/stories/:name/composition', (req, res) => {
         if (!/^[a-zA-Z0-9_]+$/.test(k)) return res.status(400).json({ error: `캐릭터 키는 영문/숫자/밑줄만 허용: ${k}` });
       }
     }
-    const composition = buildComposition(name, { basePrompt, baseNegative, characters });
+    // customScenes 검증
+    if (customScenes != null) {
+      if (typeof customScenes !== 'object' || Array.isArray(customScenes)) {
+        return res.status(400).json({ error: 'customScenes는 카테고리별 배열을 담은 객체여야 합니다' });
+      }
+      // 멀티 캐릭터일 때 customScenes는 적용되지 않으므로 명시적으로 거부
+      if (characters && Object.keys(characters).length > 1) {
+        return res.status(400).json({ error: 'customScenes는 단일 캐릭터 composition에만 적용됩니다 (멀티 캐릭터는 미지원)' });
+      }
+      const allowedCategories = new Set(COMPOSITION_CATEGORIES.customAllowed);
+      for (const [cat, scenes] of Object.entries(customScenes)) {
+        if (!allowedCategories.has(cat)) {
+          return res.status(400).json({ error: `customScenes 카테고리는 ${[...allowedCategories].join('/')}만 허용: ${cat}` });
+        }
+        if (!Array.isArray(scenes)) {
+          return res.status(400).json({ error: `customScenes.${cat}는 배열이어야 합니다` });
+        }
+        for (const s of scenes) {
+          if (!s || typeof s !== 'object') {
+            return res.status(400).json({ error: `customScenes.${cat}의 항목은 객체여야 합니다` });
+          }
+          if (!s.name || typeof s.name !== 'string') {
+            return res.status(400).json({ error: `customScenes.${cat}의 항목에는 name(string)이 필요합니다` });
+          }
+          if (s.id && !/^[a-zA-Z0-9_-]+$/.test(s.id)) {
+            return res.status(400).json({ error: `customScenes.${cat} id는 영문/숫자/하이픈/밑줄만 허용: ${s.id}` });
+          }
+        }
+      }
+    }
+    const composition = buildComposition(name, { basePrompt, baseNegative, characters, customScenes });
     res.json({ ok: true, total: composition.images?.length || 0 });
   } catch (err) {
     console.error(`[Composition] ${name} 실패:`, err.message);

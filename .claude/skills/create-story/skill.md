@@ -24,6 +24,7 @@ AChat 인터랙티브 픽션 스토리를 설계부터 DB 등록까지 완성하
 | story-designer | oh-my-claudecode:architect | 캐릭터 컨셉 설계 | `docs/stories/{name}/01_concept.md` |
 | prompt-writer | oh-my-claudecode:executor | 프롬프트/로어북 작성 | `docs/stories/{name}/02_prompt.md` |
 | story-qa | oh-my-claudecode:quality-reviewer | 가이드라인 검증 | `docs/stories/{name}/03_qa_report.md` |
+| composition-designer | oh-my-claudecode:executor | 이미지 맞춤 장면 설계 | `docs/stories/{name}/04_custom_scenes.json` |
 
 ## 워크플로우
 
@@ -189,7 +190,10 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 
 ### Phase 5: DB 등록 + Composition 생성
 
-유저 승인 후 AChat API를 통해 스토리를 등록하고, 이미지 생성용 composition을 함께 만든다.
+유저 승인 후 **두 단계**로 진행:
+
+**5-A. composition-designer 실행** — 맞춤 장면 설계 (DB 등록 전)
+**5-B. DB 등록 + Composition 한번에** — 스토리/로어북/composition(base+customScenes) 일괄 등록
 
 **중요: 원격 서버(58.232.136.138)에 등록해야 한다.**
 - 원격 서버 접속: `ssh -i ~/.ssh/id_github_external shepard@58.232.136.138`
@@ -198,24 +202,13 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 - 로컬 DB(localhost:3001)는 개발/테스트용이며, 실제 서비스는 원격 서버에서 운영됨
 - 등록 순서: 스토리 JSON을 scp로 전송 → 서버 내부에서 curl로 API 호출
 
-1. `POST /api/admin/stories` — 스토리 생성
-   ```json
-   { "name": "{name}", "char_name": "{char_name}", "description": "...", "personality": "...", "scenario": "...", "first_mes": "...", "post_history_instructions": "..." }
-   ```
-2. `POST /api/admin/stories/{name}/lore` — 로어북 항목 각각 등록
-   ```json
-   { "name": "항목명", "keys": "[\"키워드1\", \"키워드2\"]", "content": "...", "constant": 0, "priority": 5, "insertion_order": 100, "scan_depth": 4 }
-   ```
-   - 상시 규칙 로어: `constant: 1` (캐시됨, 매 턴 주입)
-   - 명령어 트리거: `scan_depth: 1` (현재 턴만 스캔)
-   - 키워드 AND: `"키1+키2"`, NOT: `"-제외어"`
-   - **성적 용어 로어 필수 추가** (`constant: 1`, `priority: 95`):
-     - 현대물: `보지/클리토리스/자지` (음부, 음핵, 음경 금지)
-     - 사극/무협: `보지/음핵/자지` (클리토리스 금지, 음문·남근 허용)
-3. **Composition 생성** — 캐릭터 외모를 danbooru 태그로 변환하여 `base_prompt` 작성
-   - `01_concept.md`의 외모 설명을 기반으로 NovelAI danbooru 태그로 변환
-   - 태그 형식: `1girl, solo, {머리색}, {머리길이}, {머리스타일}, {눈색}, {체형}, {피부}, {고유 특징}, {음모색} pubic hair`
-   - 글래머 체형 기본: `huge breasts, large breasts, sagging breasts, heavy breasts, narrow waist, wide hips, hourglass figure, thick thighs, detailed skin texture, silky skin, collarbone`
+#### 5-A. composition-designer 실행
+
+먼저 base_prompt를 작성한다 (캐릭터 외모를 danbooru 태그로 변환):
+
+- `01_concept.md`의 외모 설명을 기반으로 NovelAI danbooru 태그로 변환
+- 태그 형식: `1girl, solo, {머리색}, {머리길이}, {머리스타일}, {눈색}, {체형}, {피부}, {고유 특징}, {음모색} pubic hair`
+- 글래머 체형 기본: `huge breasts, large breasts, sagging breasts, heavy breasts, narrow waist, wide hips, hourglass figure, thick thighs, detailed skin texture, silky skin, collarbone`
    
    **머리색/눈색 다양화 규칙 (필수):**
    - 애니메이션/웹툰 스타일로 캐릭터 성격에 맞게 다양한 색상 사용
@@ -260,38 +253,80 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
    | dark brown eyes | 현실적 톤, 흑발/다크브라운 |
    | orange eyes | 오렌지 머리 |
    | aqua/teal eyes | 블루/그린 계열 |
-   - `base_negative`: 캐릭터에서 제외할 태그 (예: `pointy ears, animal ears, tail`)
-   - `docs/stories/{name}/04_composition_base.json`에 저장
-   - `PUT /api/admin/stories/{name}/composition`으로 업로드
-   ```json
-   {
-     "characters": { "main": { "name": "{char_name}", "base_prompt": "{danbooru 태그}", "base_negative": "{제외 태그}" } },
-     "defaults": { "model": "nai-diffusion-4-5-full", "aspect_ratio": "3:4", "steps": 28, "scale": 8, "rescale": 0, "sampler": "k_euler_ancestral" },
-     "images": [ ... 100장 템플릿 장면 (서버가 자동 생성한 것 사용) ... ]
-   }
-   ```
-   - 워크플로우: `POST /api/admin/stories/{name}/composition`에 `{ "basePrompt": "{태그}", "baseNegative": "{제외 태그}" }`를 body로 전달하면 서버가 템플릿 100장 + base_prompt를 합쳐서 composition.json을 자동 생성
+- `base_negative`: 캐릭터에서 제외할 태그 (예: `pointy ears, animal ears, tail`)
+- `docs/stories/{name}/04_composition_base.json`에 base_prompt와 base_negative 저장
 
-4. **RAG 검색으로 스토리별 특화 장면 추가**
-   - `01_concept.md`의 이미지 키워드(scene_key)와 시나리오를 기반으로 RAG 검색 쿼리를 구성
-   - MCP `local-rag` 서버의 `search` 도구로 danbooru 태그/포즈/구도 레퍼런스 검색
-   - 검색 쿼리 예시: "수영복 풀사이드 포즈", "란제리 피팅 거울", "야간 수영 물속", "루프탑 드레스 야경"
-   - 검색 결과에서 관련 태그 조합·구도·포즈 정보를 추출하여 특화 장면 프롬프트 구성
-   - 특화 장면을 `composition.json`의 `images` 배열에 추가 (기존 100장 템플릿 + 특화 장면 N장)
-   - 특화 장면 형식:
+그 다음 composition-designer 에이전트를 호출:
+
+```
+Agent(
+  name: "composition-designer",
+  subagent_type: "oh-my-claudecode:executor",
+  model: "opus",
+  prompt: "
+    .claude/agents/composition-designer.md의 역할 정의를 따르라.
+    스토리: {name}
+    base_prompt: {위에서 만든 danbooru 태그}
+    base_negative: {제외 태그}
+    template_type: {modern / sageuk / muhyup / fantasy — story.category에서 결정}
+
+    입력:
+    - docs/stories/{name}/01_concept.md (Read)
+    - docs/stories/{name}/02_prompt.md (Read)
+
+    출력: docs/stories/{name}/04_custom_scenes.json
+    - daily 10장, outfit 10장(란제리 3~4 포함), location 8장, special 6~10장, interaction 2~4장
+    - 모든 장면 RAG 검색 (mcp__local-rag__search) 우선 사용
+    - 컨셉 정합성 체크리스트 통과 후 저장
+  "
+)
+```
+
+**[Phase 5-A 게이트]** composition-designer 결과 요약:
+
+```
+## Phase 5-A 완료 — 맞춤 장면 설계
+
+- daily: {N}장
+- outfit: {N}장 (란제리 {N}장)
+- location: {N}장
+- special: {N}장
+- interaction: {N}장
+- **총 {N}장**
+
+전체: `docs/stories/{name}/04_custom_scenes.json`
+
+수정할 부분이 있으면 말씀해주세요. 없으면 "다음"으로 DB 등록 진행.
+```
+
+#### 5-B. DB 등록 + Composition 한번에
+
+1. `POST /api/admin/stories` — 스토리 생성
+   ```json
+   { "name": "{name}", "char_name": "{char_name}", "description": "...", "personality": "...", "scenario": "...", "first_mes": "...", "post_history_instructions": "..." }
+   ```
+2. `POST /api/admin/stories/{name}/lore` — 로어북 항목 각각 등록
+   ```json
+   { "name": "항목명", "keys": "[\"키워드1\", \"키워드2\"]", "content": "...", "constant": 0, "priority": 5, "insertion_order": 100, "scan_depth": 4 }
+   ```
+   - 상시 규칙 로어: `constant: 1` (캐시됨, 매 턴 주입)
+   - 명령어 트리거: `scan_depth: 1` (현재 턴만 스캔)
+   - 키워드 AND: `"키1+키2"`, NOT: `"-제외어"`
+   - **성적 용어 로어 필수 추가** (`constant: 1`, `priority: 95`):
+     - 현대물: `보지/클리토리스/자지` (음부, 음핵, 음경 금지)
+     - 사극/무협: `보지/음핵/자지` (클리토리스 금지, 음문·남근 허용)
+
+3. **Composition 생성 (base + customScenes 한번에)**:
+   - `POST /api/admin/stories/{name}/composition`
    ```json
    {
-     "key": "{scene_key}",
-     "prompt": "{base_prompt}, {RAG에서 검색한 포즈/구도/의상 태그}",
-     "negative": "{base_negative}, {장면별 제외 태그}",
-     "aspect_ratio": "{장면에 맞는 비율 (3:4, 4:3, 1:1 등)}"
+     "basePrompt": "{danbooru 태그}",
+     "baseNegative": "{제외 태그}",
+     "customScenes": { ... 04_custom_scenes.json 내용 ... }
    }
    ```
-   - 검색 전략:
-     - scene_key별로 1~2개 쿼리 → 상위 3개 결과에서 태그 추출
-     - 캐릭터 체형·의상과 장면 배경·포즈를 조합
-     - 중복 태그 제거, base_prompt와 겹치는 태그는 장면 프롬프트에서 생략
-   - `docs/stories/{name}/05_special_scenes.md`에 RAG 검색 결과 + 특화 장면 목록 저장
+   - 서버가 코어 55장(expression 15 + interaction 5 + adult 35) + customScenes(36~46장)을 머지하여 composition.json 자동 생성
+   - 총 91~101장
 
 ```
 ## 제작 완료!
@@ -300,15 +335,15 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 
 - 스토리명: {name}
 - 로어북: {N}개 항목
-- composition: base_prompt 포함 {N}장 장면
+- composition: 코어 55장 + 맞춤 {N}장 = 총 {N}장
 - 채팅 URL: /chat/{name}
 
 ### 산출물
 - `docs/stories/{name}/01_concept.md`
 - `docs/stories/{name}/02_prompt.md`
 - `docs/stories/{name}/03_qa_report.md`
-- `docs/stories/{name}/04_composition_base.json`
-- `docs/stories/{name}/05_special_scenes.md` (RAG 검색 기반 특화 장면)
+- `docs/stories/{name}/04_composition_base.json` (base_prompt + base_negative)
+- `docs/stories/{name}/04_custom_scenes.json` (맞춤 장면 — composition-designer 산출물)
 ```
 
 ## 데이터 흐름
@@ -324,7 +359,9 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
     ↓ (승인)
 [Phase 4] story-qa → 03_qa_report.md → 게이트: QA 결과
     ↓ (PASS 또는 수정 후 PASS)
-[Phase 5] API 호출 → DB 등록 + composition 생성/업로드 → 완료
+[Phase 5-A] base_prompt 작성 → composition-designer → 04_custom_scenes.json → 게이트: 맞춤 장면 확인
+    ↓ (승인)
+[Phase 5-B] API 호출 → DB 등록 + composition(base + customScenes) → 완료
 ```
 
 ## 에러 핸들링
@@ -334,4 +371,6 @@ FAIL 시 prompt-writer를 재호출하여 수정 → story-qa 재검증 (최대 
 | story-designer 실패 | 1회 재시도, 재실패 시 유저에게 구체화 요청 |
 | prompt-writer 실패 | 1회 재시도, 재실패 시 컨셉 기반 기본 프롬프트 생성 |
 | QA FAIL 2회 수정 후에도 FAIL | 유저에게 수동 수정 항목 안내 |
+| composition-designer 실패 | 1회 재시도, 재실패 시 customScenes 없이 fallback 템플릿으로 진행 (POST composition에 basePrompt + baseNegative 전달, customScenes 생략) |
+| local-rag MCP 미동작 | composition-designer가 AI 지식으로 작성 (`_note`에 표시), 진행 멈추지 않음 |
 | DB 등록 실패 (409 중복) | 대안 이름 제안 또는 기존 스토리 업데이트 확인 |
