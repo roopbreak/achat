@@ -1,10 +1,17 @@
 # HANDOFF: 스토리별 이미지 Composition 맞춤화
 > 참조 플랜: docs/plan/story-composition-customization_2026-05-13.md
-> 상태: 활성 | 마지막 업데이트: 2026-05-13
+> 상태: 완료 | 마지막 업데이트: 2026-05-13
 
 ## 현재 상태
 
-플랜 승인 완료, 구현 착수 단계.
+구현 + Codex 리뷰 + 로컬 테스트 + 원격 배포 + 원격 검증 모두 완료.
+
+**커밋**: 8800fa8
+**배포 검증**:
+- 기존 스토리(bangkok-poolvilla) customScenes 미전달 → 124장 fallback (호환성 OK)
+- 신규 customScenes 전달 → 코어 55장 + 맞춤 N장 정상 머지
+- adult 카테고리 customScenes 거부 (400 에러)
+- 멀티 캐릭터 + customScenes 동시 사용 거부 (400 에러)
 
 핵심 결정사항:
 - 코어 55장 (expression 15 + interaction 5 + adult 35) — composition-builder 자동
@@ -14,28 +21,25 @@
 
 ## TODO 체크리스트
 
-- [ ] `lib/composition-builder.mjs` 리팩토링
-  - [ ] 카테고리 분리 (CORE: expression/adult/interaction-5, CUSTOM: 나머지)
-  - [ ] `customScenes` 파라미터 추가 + 머지 로직
-  - [ ] interaction 코어 5장 분리 (포옹/손잡기/머리쓰다듬기/볼뽀뽀/기대기)
-- [ ] `.claude/agents/composition-designer.md` 신규 작성
-  - [ ] 입력/출력 스펙
-  - [ ] RAG 검색 워크플로우
-  - [ ] 카테고리별 작성 원칙 (특히 special 6~10 정책)
-  - [ ] 컨셉 정합성 검증
-- [ ] `.claude/skills/create-story/skill.md` 업데이트
-  - [ ] Phase 5 흐름 단순화 (2단계로 통합)
-  - [ ] 기존 RAG 단계(5-4) 제거 (composition-designer가 흡수)
-  - [ ] 산출물 변경: 05_special_scenes.md → 04_custom_scenes.json
-- [ ] `routes/admin.mjs` 엔드포인트 확장
-  - [ ] POST `/api/admin/stories/:name/composition`에 `customScenes` 받기
-  - [ ] customScenes 검증 (id/name 필수, 카테고리 화이트리스트)
-- [ ] Codex 리뷰 (배포 전 필수)
-- [ ] 로컬 테스트
-  - [ ] 새 스토리 1개 제작하여 맞춤 장면 품질 확인
-  - [ ] composition.json 구조 검증 (총 91~101장)
-- [ ] 원격 서버 배포 (`bash deploy.sh`)
-- [ ] 배포 서버 테스트
+- [x] `lib/composition-builder.mjs` 리팩토링
+  - [x] 카테고리 분리 (CORE: expression/adult, CUSTOM: daily/outfit/location/special, interaction 분할)
+  - [x] `customScenes` 파라미터 추가 + 머지 로직 + `normalizeCustomScene` 헬퍼
+  - [x] interaction 코어 5장 분리 (포옹/손잡기/머리쓰다듬기/볼뽀뽀/기대기)
+  - [x] `COMPOSITION_CATEGORIES` export (customAllowed 포함)
+- [x] `.claude/agents/composition-designer.md` 신규 작성
+- [x] `.claude/skills/create-story/skill.md` 업데이트 (Phase 5-A/5-B 2단계)
+- [x] `routes/admin.mjs` 엔드포인트 확장 (customScenes 검증, 멀티 캐릭터 거부)
+- [x] Codex 리뷰 — 3건 (MAJOR 1 + MINOR 2) 모두 수정
+- [x] 로컬 통합 테스트 — buildComposition() 호환성 + 신규 동작 검증
+- [x] 원격 서버 배포 (`bash deploy.sh`)
+- [x] 배포 서버 테스트
+  - [x] 임시 스토리에 customScenes 적용 (65장 생성)
+  - [x] adult 카테고리 거부 검증
+  - [x] bangkok-poolvilla 124장 fallback (운영 영향 없음)
+
+## 후속 작업 (이번 작업에는 미포함)
+
+- [ ] 기존 스토리(bangkok-poolvilla, 나와이혼해줘 등) composition 재생성 — 별도 작업으로 분리
 
 ## 다음 세션 시작 가이드
 
