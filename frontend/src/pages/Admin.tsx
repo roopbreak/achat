@@ -61,6 +61,10 @@ export default function Admin() {
   const [compTotal, setCompTotal] = useState<Record<string, number>>({})
   const [compLoading, setCompLoading] = useState<string | null>(null)
 
+  // 스토리 관리
+  const [storyFilter, setStoryFilter] = useState('')
+  const [deletingStory, setDeletingStory] = useState<string | null>(null)
+
   const loadStories = useCallback(async () => {
     const list = await api<StoryInfo[]>('/api/admin/stories')
     setStories(list)
@@ -191,11 +195,105 @@ export default function Admin() {
 
   useEffect(() => { stories.forEach(s => { checkGenStatus(s.name); checkCompStatus(s.name) }) }, [stories, checkGenStatus, checkCompStatus])
 
+  // ── 스토리 삭제 ──
+  const deleteStoryWithConfirm = async (name: string) => {
+    if (deletingStory) return
+    const typed = window.prompt(`정말 삭제하시겠습니까?\n\n스토리, 세션, 메시지, 이미지가 모두 삭제됩니다.\n복구 불가능합니다.\n\n계속하려면 스토리명 "${name}" 을 정확히 입력하세요:`)
+    if (typed === null) return
+    if (typed.trim() !== name) { alert('입력이 일치하지 않아 취소되었습니다.'); return }
+    setDeletingStory(name)
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(name)}`, { method: 'DELETE' })
+    } catch (e: any) {
+      alert(e.message || '삭제 실패')
+      setDeletingStory(null)
+      return
+    }
+    try { await loadStories() }
+    catch (e: any) { alert(`삭제는 완료되었으나 목록 갱신에 실패했습니다: ${e.message || ''}\n페이지를 새로고침 해주세요.`) }
+    finally { setDeletingStory(null) }
+  }
+
+  const fmtDate = (ts?: number) => {
+    if (ts == null) return '-'
+    try { return new Date(ts).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) }
+    catch { return '-' }
+  }
+
+  const filteredStories = (() => {
+    const q = storyFilter.trim().toLowerCase()
+    if (!q) return stories
+    return stories.filter(s => s.name.toLowerCase().includes(q) || (s.char_name || '').toLowerCase().includes(q))
+  })()
+
   return (
     <>
       <Nav />
       <div className="page">
         <h2 style={{ marginBottom: 20, fontSize: 18 }}>설정</h2>
+
+        {/* 스토리 관리 */}
+        <div className="admin-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10 }}>
+            <h2 style={{ margin: 0 }}>스토리 관리 ({stories.length})</h2>
+            <input
+              value={storyFilter}
+              onChange={e => setStoryFilter(e.target.value)}
+              placeholder="이름/캐릭터로 검색"
+              style={{ width: 220, fontSize: 13 }}
+            />
+          </div>
+          {stories.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>등록된 스토리가 없습니다.</div>
+          ) : filteredStories.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>검색 결과 없음</div>
+          ) : (
+            <div className="story-table-wrap">
+              <table className="story-table">
+                <thead>
+                  <tr>
+                    <th>스토리</th>
+                    <th>캐릭터</th>
+                    <th style={{ textAlign: 'right' }}>이미지</th>
+                    <th>임포트</th>
+                    <th style={{ width: 1 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStories.map(s => {
+                    const isThis = deletingStory === s.name
+                    const busy = deletingStory !== null
+                    return (
+                      <tr key={s.name}>
+                        <td style={{ fontSize: 13 }}>{s.name}</td>
+                        <td style={{ fontSize: 13, color: 'var(--text-dim)' }}>{s.char_name || '-'}</td>
+                        <td style={{ textAlign: 'right', fontSize: 13 }}>{s.imageCount}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-dim)' }}>{fmtDate(s.imported_at)}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ fontSize: 11, padding: '3px 10px' }}
+                              onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}
+                              disabled={busy}
+                              title="채팅 열기"
+                            >열기</button>
+                            <button
+                              className="btn btn-danger"
+                              style={{ fontSize: 11, padding: '3px 10px' }}
+                              onClick={() => deleteStoryWithConfirm(s.name)}
+                              disabled={busy}
+                            >{isThis ? '삭제 중...' : '삭제'}</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         {/* 페르소나 관리 */}
         <div className="admin-section">
