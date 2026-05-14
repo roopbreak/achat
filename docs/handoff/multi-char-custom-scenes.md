@@ -1,12 +1,17 @@
 # HANDOFF: 멀티 캐릭터 customScenes 적용 파이프라인
 > 참조 플랜: docs/plan/multi-char-custom-scenes_2026-05-14.md
-> 상태: 활성 | 마지막 업데이트: 2026-05-14
+> 상태: 완료 | 마지막 업데이트: 2026-05-14
 
 ## 현재 상태
 
-**구현 + 로컬 검증 완료. 남은 것: 배포 전 Codex 리뷰 → 배포 → 실서버 검증.**
+**완료 — 구현 · 로컬 검증 · Codex 리뷰 · 배포 · 실서버 검증 전부 통과.**
 
-`customScenes`(composition-designer 맞춤 장면)를 멀티 캐릭터 스토리에도 적용 가능하게 확장 완료. 코드 4파일(`composition-builder.mjs`, `admin.mjs`, `apply-custom-scenes.mjs`, `SKILL.md`) 수정, 로컬 검증 3시나리오(빌더 33/33, 라우트 6/6, 스크립트 dry-run) 전부 통과. 상세 검증 결과는 플랜 문서 "검증 결과" 섹션 참고.
+`customScenes`(composition-designer 맞춤 장면)를 멀티 캐릭터 스토리에도 적용 가능하게 확장. 코드 4파일(`composition-builder.mjs`, `admin.mjs`, `apply-custom-scenes.mjs`, `SKILL.md`) 수정.
+
+- 로컬 검증: 빌더 13/13, 라우트 6/6, 스크립트 dry-run 통과
+- Codex 리뷰: 빈 블록 `{}` 비대칭 BLOCKER 1건 발견 → 수정(빈 객체를 null로 정규화) → 재확인 "배포 가능"
+- 배포: 커밋 `e392d78`, `deploy.sh` 완료
+- 실서버 검증(`risu.ddsmdy.com`, `캠퍼스퀸` save-restore): 9/9 통과 — 멀티 중첩 customScenes POST 200, main daily 커스텀 대체 + `main-` id 접두사, sub1 자동 슬라이스 fallback, composition 원복 확인
 
 핵심 사실: `lib/nai-client.mjs:111`이 `char_captions: []` → **한 이미지 = 한 캐릭터**. 멀티 customScenes는 본질적으로 "캐릭터 N명분의 싱글 customScenes"이며, `04_custom_scenes.json`을 멀티일 때 charKey로 중첩한다.
 
@@ -22,11 +27,11 @@
 - [x] `routes/admin.mjs` — 멀티 하드 400 제거, `validateCustomScenesBlock` 추출, 멀티 charKey 매칭 + 캐릭터별 재귀 검증
 - [x] `scripts/apply-custom-scenes.mjs` — 멀티 throw 제거, 평면/중첩 자동 판별, charKey↔원격 매칭 검증, 캐릭터별 dry-run 출력
 - [x] `.claude/skills/apply-custom-scenes/SKILL.md` — "싱글 한정" 제거, 멀티 캐릭터별 designer 루프, 비용 게이트 강화
-- [x] 로컬 검증 시나리오 1~3 — 빌더 33/33, 라우트 6/6, 스크립트 dry-run 전부 통과
-- [ ] 배포 전 Codex 리뷰 (실제 diff)
-- [ ] commit + push → `bash deploy.sh`
-- [ ] 실서버 검증 (작은 멀티 스토리 — 시나리오 4)
-- [ ] 본 핸드오프 + 루트 `HANDOFF.md` 갱신 (배포·검증 후 완료 처리)
+- [x] 로컬 검증 시나리오 1~3 — 빌더 13/13, 라우트 6/6, 스크립트 dry-run 전부 통과
+- [x] 배포 전 Codex 리뷰 — BLOCKER 1건(빈 블록 비대칭) 수정 후 "배포 가능" 확인
+- [x] commit (`e392d78`) + push → `bash deploy.sh` 완료
+- [x] 실서버 검증 — `캠퍼스퀸` save-restore 9/9 통과
+- [x] 본 핸드오프 + 루트 `HANDOFF.md` 갱신
 
 ## 다음 세션 시작 가이드
 

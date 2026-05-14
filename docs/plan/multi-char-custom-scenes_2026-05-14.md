@@ -177,10 +177,10 @@ function buildCharImages(charKey, character, templates, customScenesForChar, { m
 - [x] `scripts/apply-custom-scenes.mjs` — 멀티 throw 제거, 평면/중첩 자동 판별, charKey↔원격 characters 매칭 검증, 캐릭터별 dry-run 출력
 - [x] `.claude/skills/apply-custom-scenes/SKILL.md` — "싱글 한정" 제거, 멀티는 캐릭터별 designer 루프, 비용 게이트 강화
 - [x] 로컬 검증 시나리오 1~3 — 빌더 단위 33/33, 라우트 6/6, 스크립트 dry-run (싱글 회귀 + 멀티 + 불일치 감지) 모두 통과
-- [ ] 배포 전 Codex 리뷰 (실제 diff)
-- [ ] commit + push → `bash deploy.sh`
-- [ ] 실서버 검증 (작은 멀티 스토리 — 시나리오 4)
-- [ ] `docs/handoff/multi-char-custom-scenes.md` + 루트 `HANDOFF.md` 갱신
+- [x] 배포 전 Codex 리뷰 — BLOCKER 1건(빈 블록 `{}` 비대칭) 발견 → 빈 객체 null 정규화로 수정 → 재확인 "배포 가능"
+- [x] commit (`e392d78`) + push → `bash deploy.sh` 완료
+- [x] 실서버 검증 — `캠퍼스퀸` save-restore 9/9 통과 (멀티 중첩 POST 200, id 접두사, fallback, 원복 확인)
+- [x] `docs/handoff/multi-char-custom-scenes.md` + 루트 `HANDOFF.md` 갱신
 
 ## 검증 결과 (2026-05-14)
 
