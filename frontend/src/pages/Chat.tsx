@@ -3,13 +3,14 @@ import { useParams } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry } from '../hooks/useSSEStream'
-import { api } from '../lib/api'
+import { api, type StoryDetail } from '../lib/api'
 import ChatHeader from '../components/chat/ChatHeader'
 import ChatMessages from '../components/chat/ChatMessages'
 import ChatInput from '../components/chat/ChatInput'
 import SettingsPanel from '../components/chat/SettingsPanel'
 import SlotPanel from '../components/chat/SlotPanel'
 import NotePanel from '../components/chat/NotePanel'
+import GuidePanel from '../components/chat/GuidePanel'
 import Lightbox, { showLightbox } from '../components/common/Lightbox'
 
 interface Persona {
@@ -36,6 +37,10 @@ export default function Chat() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [slotsOpen, setSlotsOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+
+  // 스토리 상세 (가이드 패널용) — fetch 실패 시 null 유지
+  const [storyDetail, setStoryDetail] = useState<StoryDetail | null>(null)
 
   // 페르소나
   const [personas, setPersonas] = useState<Persona[]>([])
@@ -67,6 +72,15 @@ export default function Chat() {
   // 타이틀
   useEffect(() => {
     document.title = `${storyName} — achat-v2`
+  }, [storyName])
+
+  // 스토리 상세 로드 (가이드 패널용)
+  useEffect(() => {
+    let cancelled = false
+    api<StoryDetail>(`/api/stories/${encodeURIComponent(storyName)}`)
+      .then(d => { if (!cancelled) setStoryDetail(d) })
+      .catch(() => { if (!cancelled) setStoryDetail(null) })
+    return () => { cancelled = true }
   }, [storyName])
 
   // ── 전송 ──
@@ -280,6 +294,7 @@ export default function Chat() {
         storyName={storyName}
         onReset={handleReset}
         onExport={handleExport}
+        onToggleGuide={() => setGuideOpen(v => !v)}
         onToggleSettings={() => setSettingsOpen(v => !v)}
         onToggleSlots={() => setSlotsOpen(v => !v)}
         onToggleNote={() => setNoteOpen(v => !v)}
@@ -301,6 +316,13 @@ export default function Chat() {
         onImageClick={showLightbox}
       />
 
+      <GuidePanel
+        open={guideOpen}
+        story={storyDetail}
+        storyName={storyName}
+        charName={session.charName}
+        onClose={() => setGuideOpen(false)}
+      />
       <NotePanel open={noteOpen} storyName={storyName} onClose={() => setNoteOpen(false)} />
       <SettingsPanel
         open={settingsOpen}

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getStories, getDB } from '../lib/db.mjs';
+import { getStories, getStory, getDB, parseCommands } from '../lib/db.mjs';
 
 const router = Router();
 
@@ -8,6 +8,7 @@ router.get('/', (_req, res) => {
   const stories = getStories().map(s => ({
     ...s,
     summary: (s.description ?? '').slice(0, 200),
+    commands: parseCommands(s.commands),
   }));
   res.json(stories);
 });
@@ -26,6 +27,26 @@ router.get('/recent', (_req, res) => {
     LIMIT 10
   `).all();
   res.json(rows);
+});
+
+// GET /api/stories/:name — 단일 스토리 (상세 페이지·채팅 가이드 패널용)
+// 주의: 정적 경로 /recent 보다 뒤에 선언해야 매칭이 가로채지 않음
+router.get('/:name', (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const story = getStory(name);
+  if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+  res.json({
+    name: story.name,
+    title: story.title ?? null,
+    char_name: story.char_name,
+    description: story.description ?? '',
+    scenario: story.scenario ?? '',
+    personality: story.personality ?? '',
+    category: story.category ?? null,
+    tags: story.tags ?? null,
+    first_mes: story.first_mes ?? '',
+    commands: parseCommands(story.commands),
+  });
 });
 
 export default router;

@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, apiRaw } from '../lib/api'
+import { api, apiRaw, type Command } from '../lib/api'
+
+// 편집 폼 전용 — 안정적 React key를 위한 클라이언트 id 부착. 저장 시 _cid는 제거됨
+export interface CommandRow extends Command {
+  _cid: string
+}
+
+let _cmdCounter = 0
+function newCmdRow(cmd = '', desc = '', group = '기능'): CommandRow {
+  return { _cid: `cmd_${Date.now()}_${_cmdCounter++}`, cmd, desc, group }
+}
 
 export interface LoreEntry {
   id?: number
@@ -29,6 +39,10 @@ export interface StoryEditForm {
     handleTagPaste: (e: React.ClipboardEvent) => void
     handleTagBlur: () => void
     removeTag: (tag: string) => void
+    commands: CommandRow[]
+    addCommand: () => void
+    updateCommand: (index: number, field: keyof Command, value: string) => void
+    removeCommand: (index: number) => void
   }
   promptFields: {
     desc: string; setDesc: (v: string) => void
@@ -67,6 +81,9 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
   const [postHistoryInstructions, setPostHistoryInstructions] = useState('')
   const [narrationStyle, setNarrationStyle] = useState('')
 
+  // ── 커맨드 ──
+  const [commands, setCommands] = useState<CommandRow[]>([])
+
   // ── 로어북 ──
   const [lore, setLore] = useState<LoreEntry[]>([])
 
@@ -79,18 +96,23 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     if (!isEdit) return
     ;(async () => {
       const [story, loreData] = await Promise.all([
-        api<Record<string, string>>(`/api/admin/stories/${encodeURIComponent(editName!)}`),
+        api<Record<string, unknown>>(`/api/admin/stories/${encodeURIComponent(editName!)}`),
         api<Array<Record<string, unknown>>>(`/api/admin/stories/${encodeURIComponent(editName!)}/lore`),
       ])
-      setCharName(story.char_name ?? '')
-      setDesc(story.description ?? '')
-      setPersonality(story.personality ?? '')
-      setScenario(story.scenario ?? '')
-      setFirstMes(story.first_mes ?? '')
-      setPostHistoryInstructions(story.post_history_instructions ?? '')
-      setNarrationStyle(story.narration_style ?? '')
-      setCategory(story.category ?? '')
-      try { setTags(story.tags ? JSON.parse(story.tags) : []) } catch { setTags([]) }
+      setCharName((story.char_name as string) ?? '')
+      setDesc((story.description as string) ?? '')
+      setPersonality((story.personality as string) ?? '')
+      setScenario((story.scenario as string) ?? '')
+      setFirstMes((story.first_mes as string) ?? '')
+      setPostHistoryInstructions((story.post_history_instructions as string) ?? '')
+      setNarrationStyle((story.narration_style as string) ?? '')
+      setCategory((story.category as string) ?? '')
+      setCommands(
+        Array.isArray(story.commands)
+          ? (story.commands as Command[]).map(c => newCmdRow(c.cmd, c.desc, c.group ?? ''))
+          : []
+      )
+      try { setTags(story.tags ? JSON.parse(story.tags as string) : []) } catch { setTags([]) }
       setLore((loreData as Array<Record<string, unknown>>).map(e => ({
         ...e,
         clientId: `db_${e.id}`,
@@ -123,6 +145,19 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
   const handleTagBlur = useCallback(() => { if (tagInput) addTags(tagInput) }, [tagInput, addTags])
 
   const removeTag = useCallback((tag: string) => { setTags(prev => prev.filter(t => t !== tag)) }, [])
+
+  // ── 커맨드 핸들러 ──
+  const addCommand = useCallback(() => {
+    setCommands(prev => [...prev, newCmdRow()])
+  }, [])
+
+  const updateCommand = useCallback((index: number, field: keyof Command, value: string) => {
+    setCommands(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)))
+  }, [])
+
+  const removeCommand = useCallback((index: number) => {
+    setCommands(prev => prev.filter((_, i) => i !== index))
+  }, [])
 
   // ── 로어 핸들러 (ID 기반) ──
   const updateLore = useCallback((targetId: string, field: string, value: unknown) => {
@@ -157,6 +192,10 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     if (!name || !charName) { setStatus({ text: '스토리명과 캐릭터명은 필수입니다.', ok: false }); return }
     setSaving(true); setStatus(null)
     try {
+      // 커맨드: cmd가 비어있는 행은 저장에서 제외
+      const cleanCommands = commands
+        .map(c => ({ cmd: c.cmd.trim(), desc: c.desc.trim(), group: c.group?.trim() || undefined }))
+        .filter(c => c.cmd)
       const storyData = {
         char_name: charName, description: desc,
         personality: personality || null, scenario: scenario || null,
@@ -164,6 +203,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
         narration_style: narrationStyle || '',
         narration_style_source: narrationStyle ? 'manual' : 'unset',
         category: category || null, tags: tags.length ? tags : null,
+        commands: cleanCommands,
       }
       let currentName = editName ?? name
       if (isEdit && name !== editName) {
@@ -201,7 +241,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     } catch (err) {
       setStatus({ text: (err as Error).message, ok: false })
     } finally { setSaving(false) }
-  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, narrationStyle, category, tags, lore, isEdit, editName, navigate])
+  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, narrationStyle, category, tags, commands, lore, isEdit, editName, navigate])
 
   // ── 익스포트 ──
   const exportStory = useCallback(async () => {
@@ -217,7 +257,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
   const visible = lore.filter(e => !e._deleted)
 
   return {
-    basicInfo: { name, setName, charName, setCharName, category, setCategory, tags, tagInput, handleTagChange, handleTagKeyDown, handleTagPaste, handleTagBlur, removeTag },
+    basicInfo: { name, setName, charName, setCharName, category, setCategory, tags, tagInput, handleTagChange, handleTagKeyDown, handleTagPaste, handleTagBlur, removeTag, commands, addCommand, updateCommand, removeCommand },
     promptFields: { desc, setDesc, personality, setPersonality, scenario, setScenario, firstMes, setFirstMes, postHistoryInstructions, setPostHistoryInstructions, narrationStyle, setNarrationStyle },
     loreState: { lore, visible },
     loreActions: { updateLore, addLore, removeLore },

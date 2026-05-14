@@ -15,6 +15,7 @@ import {
   updateLoreEmbedding, getUnembeddedLore,
   getRunningJob, getLatestJob, getAnyRunningJob,
   getExistingSceneKeys, deleteStoryImageBySceneKey,
+  parseCommands,
 } from '../lib/db.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
@@ -111,13 +112,13 @@ router.get('/stories', (_req, res) => {
 // POST /api/admin/stories — 신규 스토리 수동 생성
 router.post('/stories', (req, res) => {
   try {
-    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source } = req.body;
+    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands } = req.body;
     if (!name?.trim() || !char_name?.trim()) {
       return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
     }
     const existing = getStory(name.trim());
     if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
-    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source });
+    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -372,7 +373,7 @@ router.get('/stories/:name', (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const story = getStory(name);
   if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
-  res.json(story);
+  res.json({ ...story, commands: parseCommands(story.commands) });
 });
 
 // PUT /api/admin/stories/:name — 스토리 필드 수정

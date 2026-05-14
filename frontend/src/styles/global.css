@@ -346,3 +346,67 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .chat-messages.hide-images .msg-assistant img { display: none; }
 html, body { overflow-x: hidden; max-width: 100vw; }
 .chat-wrap, .chat-messages, .msg, .msg-body, .msg-assistant, .page { max-width: 100%; }
+
+/* -- 커맨드 목록 (공용: 상세 페이지 + 가이드 패널) -- */
+.command-list { display: flex; flex-direction: column; gap: 14px; }
+.command-group-label {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  margin-bottom: 6px; letter-spacing: .03em;
+}
+.command-item {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 4px 0; line-height: 1.5;
+}
+.command-cmd {
+  flex-shrink: 0; font-family: monospace; font-size: 13px;
+  color: var(--accent2); background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 8px; min-width: 96px;
+}
+.command-desc { font-size: 13px; color: var(--text-dim); }
+
+/* -- 가이드 패널 (채팅 화면) -- */
+.guide-panel {
+  flex-shrink: 0; background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  max-height: 55vh;
+}
+.guide-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.guide-panel-body {
+  padding: 14px 16px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.guide-section-label {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  margin-bottom: 6px;
+}
+.guide-text {
+  font-size: 13px; color: var(--text-dim);
+  line-height: 1.65; white-space: pre-wrap;
+}
+
+/* -- 스토리 상세 페이지 -- */
+.story-detail { max-width: 760px; }
+.story-detail-head { margin: 14px 0 24px; }
+.story-detail-head h1 { font-size: 22px; margin-bottom: 8px; }
+.story-detail-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; color: var(--text-dim);
+}
+.story-detail-section { margin-bottom: 22px; }
+.story-detail-section h3 {
+  font-size: 14px; color: var(--accent);
+  margin-bottom: 8px; font-weight: 600;
+}
+.story-detail-text {
+  font-size: 14px; color: var(--text); line-height: 1.7;
+  white-space: pre-wrap;
+}
+.story-detail-cta {
+  display: flex; justify-content: center;
+  margin: 32px 0 12px;
+}

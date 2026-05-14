@@ -120,7 +120,7 @@ export default function Home() {
             <div className="story-grid">
               {recent.map(s => (
                 <div key={s.name} className="story-card" style={{ position: 'relative' }}>
-                  <div onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}>
+                  <div onClick={() => navigate(`/story/${encodeURIComponent(s.name)}`)}>
                     <h3>{s.title || s.name}</h3>
                     <div className="char" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{s.char_name}</span>
@@ -205,7 +205,7 @@ export default function Home() {
           ) : sorted.map(s => {
             const storyTags = parseTags(s.tags)
             return (
-              <div key={s.name} className="story-card" onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}>
+              <div key={s.name} className="story-card" onClick={() => navigate(`/story/${encodeURIComponent(s.name)}`)}>
                 <h3>{s.title || s.name}</h3>
                 {storyTags.length > 0 && (
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
