@@ -1,6 +1,6 @@
 # 스토리 설명 영역 + 커맨드 ! 통일
 
-> 작성일: 2026-05-14 | 상태: 승인 — 구현 중
+> 작성일: 2026-05-14 | 상태: Phase 1·2 배포·검증 완료 (Phase 3·4 별도 사이클 대기)
 
 ## 배경 / 목표
 
@@ -168,8 +168,8 @@ DB에는 `TEXT` 컬럼, 내용은 JSON 배열 문자열. 각 항목:
 ### 검증·배포
 - [x] 로컬 빌드 + 기능 동작 확인 (Playwright UI 렌더 + API 검증)
 - [x] 배포 전 Codex 리뷰 — HIGH/MEDIUM/LOW 4건 수정·재검증
-- [ ] commit + push → `bash deploy.sh`
-- [ ] 배포 후 `https://risu.ddsmdy.com/` 검증
+- [x] commit (`64fc286`) + push → `bash deploy.sh`
+- [x] 배포 후 `https://risu.ddsmdy.com/` 검증 — 엔드포인트·StoryDetail UI 정상
 
 ---
 
