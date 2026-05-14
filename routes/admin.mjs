@@ -175,6 +175,33 @@ router.get('/stories/:name/export', (req, res) => {
 
 // ── Composition 라우트 (/:name보다 먼저 매칭되어야 함) ──
 
+// customScenes 한 블록(카테고리→씬배열 맵) 검증. 문제 있으면 에러 문자열, 없으면 null
+function validateCustomScenesBlock(block, allowedCategories, prefix = '') {
+  if (typeof block !== 'object' || block === null || Array.isArray(block)) {
+    return `${prefix}customScenes는 카테고리별 배열을 담은 객체여야 합니다`;
+  }
+  for (const [cat, scenes] of Object.entries(block)) {
+    if (!allowedCategories.has(cat)) {
+      return `${prefix}customScenes 카테고리는 ${[...allowedCategories].join('/')}만 허용: ${cat}`;
+    }
+    if (!Array.isArray(scenes)) {
+      return `${prefix}customScenes.${cat}는 배열이어야 합니다`;
+    }
+    for (const s of scenes) {
+      if (!s || typeof s !== 'object') {
+        return `${prefix}customScenes.${cat}의 항목은 객체여야 합니다`;
+      }
+      if (!s.name || typeof s.name !== 'string') {
+        return `${prefix}customScenes.${cat}의 항목에는 name(string)이 필요합니다`;
+      }
+      if (s.id && !/^[a-zA-Z0-9_-]+$/.test(s.id)) {
+        return `${prefix}customScenes.${cat} id는 영문/숫자/하이픈/밑줄만 허용: ${s.id}`;
+      }
+    }
+  }
+  return null;
+}
+
 // POST /api/admin/stories/:name/composition — 컴포지션 생성
 router.post('/stories/:name/composition', (req, res) => {
   const name = decodeURIComponent(req.params.name);
@@ -194,31 +221,23 @@ router.post('/stories/:name/composition', (req, res) => {
     // customScenes 검증
     if (customScenes != null) {
       if (typeof customScenes !== 'object' || Array.isArray(customScenes)) {
-        return res.status(400).json({ error: 'customScenes는 카테고리별 배열을 담은 객체여야 합니다' });
-      }
-      // 멀티 캐릭터일 때 customScenes는 적용되지 않으므로 명시적으로 거부
-      if (characters && Object.keys(characters).length > 1) {
-        return res.status(400).json({ error: 'customScenes는 단일 캐릭터 composition에만 적용됩니다 (멀티 캐릭터는 미지원)' });
+        return res.status(400).json({ error: 'customScenes는 객체여야 합니다' });
       }
       const allowedCategories = new Set(COMPOSITION_CATEGORIES.customAllowed);
-      for (const [cat, scenes] of Object.entries(customScenes)) {
-        if (!allowedCategories.has(cat)) {
-          return res.status(400).json({ error: `customScenes 카테고리는 ${[...allowedCategories].join('/')}만 허용: ${cat}` });
-        }
-        if (!Array.isArray(scenes)) {
-          return res.status(400).json({ error: `customScenes.${cat}는 배열이어야 합니다` });
-        }
-        for (const s of scenes) {
-          if (!s || typeof s !== 'object') {
-            return res.status(400).json({ error: `customScenes.${cat}의 항목은 객체여야 합니다` });
+      const charKeys = characters ? Object.keys(characters) : [];
+      if (charKeys.length > 1) {
+        // 멀티 캐릭터: customScenes는 charKey로 중첩. 키가 모두 characters에 속해야 함
+        for (const key of Object.keys(customScenes)) {
+          if (!charKeys.includes(key)) {
+            return res.status(400).json({ error: `customScenes의 키 '${key}'가 characters에 없습니다 (멀티는 charKey로 중첩해야 합니다)` });
           }
-          if (!s.name || typeof s.name !== 'string') {
-            return res.status(400).json({ error: `customScenes.${cat}의 항목에는 name(string)이 필요합니다` });
-          }
-          if (s.id && !/^[a-zA-Z0-9_-]+$/.test(s.id)) {
-            return res.status(400).json({ error: `customScenes.${cat} id는 영문/숫자/하이픈/밑줄만 허용: ${s.id}` });
-          }
+          const err = validateCustomScenesBlock(customScenes[key], allowedCategories, `[${key}] `);
+          if (err) return res.status(400).json({ error: err });
         }
+      } else {
+        // 싱글 캐릭터: 평면 카테고리 맵
+        const err = validateCustomScenesBlock(customScenes, allowedCategories);
+        if (err) return res.status(400).json({ error: err });
       }
     }
     const composition = buildComposition(name, { basePrompt, baseNegative, characters, customScenes });

@@ -7,3 +7,7 @@
 | 「나와이혼해줘」 스토리 전면 재작성 | 완료 | docs/handoff/divorce-rewrite.md | 2026-05-12 |
 | 스토리별 이미지 Composition 맞춤화 | 완료 | docs/handoff/story-composition-customization.md | 2026-05-13 |
 | 「앱 매칭」 스토리 전면 재작성 | 완료 | docs/handoff/app-matching-rewrite.md | 2026-05-13 |
+| 「비서실 쟁탈전」 9인 캐릭터 + 외부 이미지 재구축 | 완료 | docs/handoff/secretary-room-rebuild.md | 2026-05-13 |
+| 기존 스토리 커스텀 이미지 재구성 파이프라인 | 완료 | docs/handoff/apply-custom-scenes.md | 2026-05-13 |
+| 멀티 캐릭터 customScenes 적용 파이프라인 | 활성 | docs/handoff/multi-char-custom-scenes.md | 2026-05-14 |
+| AChat 스토리 하네스 구성 (페르소나 6인 + Codex) | 활성 | docs/handoff/achat-story-harness.md | 2026-05-14 |
