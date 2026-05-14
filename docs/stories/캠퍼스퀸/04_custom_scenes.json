@@ -1,0 +1,682 @@
+{
+  "main": {
+    "daily": [
+      {
+        "id": "daily-practice-stretch-01",
+        "name": "연습실 스트레칭",
+        "outfit": "black leotard, black leggings, high ponytail,",
+        "pose": "stretching, leg up, standing split, hand on barre,",
+        "custom_tags": "dance studio, mirror, wooden floor, barre, indoors,",
+        "_note": "실용무용과 본거지 예술관 B1 연습실 - 강하은 직업 정체성 핵심"
+      },
+      {
+        "id": "daily-practice-rest-02",
+        "name": "연습 쉬는 시간",
+        "outfit": "black leotard, off-shoulder sweater, leg warmers, high ponytail,",
+        "pose": "sitting on floor, leaning back on hands, towel around neck, sweat,",
+        "custom_tags": "dance studio, mirror, wooden floor, water bottle, indoors,",
+        "_note": "연습 중간 휴식 - 무용복 위 워머 걸친 무용과 일상"
+      },
+      {
+        "id": "daily-campus-walk-03",
+        "name": "캠퍼스 등굣길",
+        "outfit": "white see-through shirt, black bra, denim miniskirt, shoulder bag,",
+        "pose": "walking, looking at viewer, holding strap of bag,",
+        "custom_tags": "outdoors, campus, trees, day, sunlight,",
+        "_note": "시스루 티+검은 브라 시그니처 스타일로 캠퍼스 등교"
+      },
+      {
+        "id": "daily-selfie-mirror-04",
+        "name": "거울 셀카",
+        "outfit": "cropped hoodie, hotpants, navel,",
+        "pose": "holding phone, taking picture, looking at phone, mirror, one hand on hip,",
+        "custom_tags": "indoors, bedroom, full-length mirror,",
+        "_note": "인스타 인플루언서 - 거울 셀카 일상"
+      },
+      {
+        "id": "daily-cafe-phone-05",
+        "name": "카페에서 폰 확인",
+        "outfit": "deep v-neck top, cardigan, miniskirt,",
+        "pose": "sitting, holding phone, crossed legs, looking at phone,",
+        "custom_tags": "cafe, table, coffee cup, warm lighting, indoors,",
+        "_note": "DM 확인하는 인플루언서 사적 일상"
+      },
+      {
+        "id": "daily-lecture-listen-06",
+        "name": "교양 강의 수강",
+        "outfit": "white see-through shirt, black bra, denim shorts,",
+        "pose": "sitting, leaning forward, chin rest, holding pen, looking to the side,",
+        "custom_tags": "classroom, lecture hall, desk, notebook, indoors,",
+        "_note": "인문관 B동 305호 교양 강의 - 하은과 user의 시작점"
+      },
+      {
+        "id": "daily-eating-pocha-07",
+        "name": "포차 야식",
+        "outfit": "deep v-neck top, denim jacket, cleavage,",
+        "pose": "sitting, holding chopsticks, eating, smile,",
+        "custom_tags": "food stall, night, outdoors, table, food, string lights,",
+        "_note": "후문 포차거리 단골 - 강하은 술자리 홈그라운드"
+      },
+      {
+        "id": "daily-home-relax-08",
+        "name": "자취방 휴식",
+        "outfit": "oversized t-shirt, no pants, bare legs,",
+        "pose": "lying on bed, on stomach, holding phone, legs up, kicking feet,",
+        "custom_tags": "bedroom, bed, indoors, soft lighting, messy room,",
+        "_note": "혼자만의 자취방 사적 일상"
+      },
+      {
+        "id": "daily-makeup-09",
+        "name": "외출 전 화장",
+        "outfit": "camisole, towel on head, bare shoulders,",
+        "pose": "applying makeup, holding lipstick, looking at mirror, leaning forward,",
+        "custom_tags": "indoors, vanity, mirror, cosmetics, bedroom,",
+        "_note": "외출 준비 - 늘 글로스 챙기는 과시적 캐릭터"
+      },
+      {
+        "id": "daily-club-room-10",
+        "name": "동아리방 잡담",
+        "outfit": "white see-through shirt, black bra, denim miniskirt,",
+        "pose": "sitting on desk, crossed legs, leaning back on hands, smile,",
+        "custom_tags": "club room, indoors, photographs on wall, camera equipment, window light,",
+        "_note": "사진 동아리 '프레임' 모델로 합류 - 동아리방 일상"
+      }
+    ],
+    "outfit": [
+      {
+        "id": "outfit-influencer-lookbook-01",
+        "name": "인플루언서 화보룩",
+        "outfit": "white crop top, high-waist wide pants, blazer over shoulders, high heels, navel,",
+        "pose": "standing, hand on hip, looking at viewer, dynamic pose,",
+        "custom_tags": "simple background, studio lighting,",
+        "_note": "12만 팔로워 인플루언서 화보 스타일"
+      },
+      {
+        "id": "outfit-dance-costume-02",
+        "name": "무용 공연 의상",
+        "outfit": "highleg leotard, sheer wrap skirt, dance costume, hair bun,",
+        "pose": "dancing, arms up, leg up, dynamic pose,",
+        "custom_tags": "stage, stage lighting, dark background,",
+        "_note": "5월 무용과 공연 무대 의상 - 실용무용과 정체성"
+      },
+      {
+        "id": "outfit-pocha-night-03",
+        "name": "포차 나이트룩",
+        "outfit": "black tube top, leather miniskirt, cropped denim jacket, hoop earrings,",
+        "pose": "standing, hand on hip, looking at viewer, smirk,",
+        "custom_tags": "night, street, neon lights, blurry background,",
+        "_note": "후문 포차거리 술자리 주도하는 화려한 나이트룩"
+      },
+      {
+        "id": "outfit-festival-04",
+        "name": "대동제 축제 의상",
+        "outfit": "off-shoulder crop top, denim hotpants, choker, sneakers, navel,",
+        "pose": "standing, arm raised, holding cup, smile,",
+        "custom_tags": "outdoors, festival, night, string lights, crowd,",
+        "_note": "대동제 축제 주점 - 취중 진심 고백 장면 의상"
+      },
+      {
+        "id": "outfit-casual-date-05",
+        "name": "데이트 캐주얼",
+        "outfit": "knit off-shoulder sweater, pleated miniskirt, knee boots, shoulder bag,",
+        "pose": "standing, looking at viewer, gentle smile, hands clasped,",
+        "custom_tags": "outdoors, street, day,",
+        "_note": "user에게 진심이 생긴 후 데이트룩 - 평소보다 단정"
+      },
+      {
+        "id": "outfit-photoshoot-bodyline-06",
+        "name": "사진동아리 도발 화보",
+        "outfit": "white see-through dress, black bra, black panties visible through clothes,",
+        "pose": "leaning back on hands, looking at viewer, parted lips, seductive,",
+        "custom_tags": "club room, studio lighting, white backdrop,",
+        "_note": "사진 동아리 '프레임' 도발적 포즈 시그니처 장면"
+      },
+      {
+        "id": "outfit-lingerie-black-silk-07",
+        "name": "란제리 - 블랙 실크",
+        "outfit": "black silk lingerie, black bra, black panties, black garter belt, black thighhighs,",
+        "pose": "standing, hand on hip, looking at viewer, confident,",
+        "custom_tags": "bedroom, soft lighting, indoors,",
+        "_note": "란제리1 - 과시적 자신감 + 몸매 자부심에 맞춘 블랙 실크"
+      },
+      {
+        "id": "outfit-lingerie-red-lace-08",
+        "name": "란제리 - 레드 레이스",
+        "outfit": "red lace bra, red lace panties, sheer red robe, open robe,",
+        "pose": "sitting on bed edge, leaning forward, looking at viewer, parted lips,",
+        "custom_tags": "bedroom, bed, dim lighting, indoors,",
+        "_note": "란제리2 - 성적 농담 거리낌 없는 도발적 성격에 맞춘 레드 레이스"
+      },
+      {
+        "id": "outfit-lingerie-burgundy-09",
+        "name": "란제리 - 버건디 세트",
+        "outfit": "burgundy bra, burgundy panties, sheer babydoll, lace trim,",
+        "pose": "lying on bed, on side, looking at viewer, seductive,",
+        "custom_tags": "bedroom, bed, warm lighting, indoors,",
+        "_note": "란제리3 - 23세 성숙·세련된 무드의 버건디 베이비돌"
+      },
+      {
+        "id": "outfit-lingerie-white-sheer-10",
+        "name": "란제리 - 화이트 시어 슬립",
+        "outfit": "white sheer slip dress, white bra, white panties, see-through,",
+        "pose": "standing, arms behind back, looking away, soft expression,",
+        "custom_tags": "bedroom, morning light, window, indoors,",
+        "_note": "란제리4 - user 앞에서만 불안한 소녀로 변하는 갭, 의외의 화이트 시어"
+      }
+    ],
+    "location": [
+      {
+        "id": "location-dance-studio-01",
+        "name": "무용과 연습실",
+        "custom_tags": "dance studio, mirror wall, wooden floor, ballet barre, fluorescent lighting, indoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "예술관 B1 거울벽 지하 연습실 - 하은의 본거지, 땀·송진 냄새"
+      },
+      {
+        "id": "location-dance-studio-night-02",
+        "name": "야간 연습실",
+        "custom_tags": "dance studio, mirror wall, wooden floor, dim lighting, night, window reflection, indoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "야간 홀로 연습하는 연습실 - 시간대 변형"
+      },
+      {
+        "id": "location-pocha-street-03",
+        "name": "후문 포차거리",
+        "custom_tags": "food stall, street, night, string lights, plastic chairs, steam, outdoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "포장마차 3~4곳 후문 거리 - 하은의 술자리 홈그라운드"
+      },
+      {
+        "id": "location-lecture-hall-04",
+        "name": "인문관 강의실",
+        "custom_tags": "lecture hall, rows of desks, whiteboard, projector screen, large windows, daylight, indoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "인문관 B동 305호 '영화와 심리' 강의실 - 하은과 user의 시작점"
+      },
+      {
+        "id": "location-photo-clubroom-05",
+        "name": "사진 동아리방",
+        "custom_tags": "club room, photographs on wall, camera equipment, tripod, white backdrop, indoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "학생회관 사진 동아리 '프레임' 동아리방"
+      },
+      {
+        "id": "location-studio-apartment-06",
+        "name": "자취방",
+        "custom_tags": "small bedroom, single bed, cluttered desk, clothes scattered, warm lighting, night, indoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "학교 근처 원룸 자취방 - 여름방학 이후 전장"
+      },
+      {
+        "id": "location-campus-spring-07",
+        "name": "H대 캠퍼스 (벚꽃)",
+        "custom_tags": "university campus, hill, cherry blossoms, walkway, benches, day, sunlight, outdoors, no humans,",
+        "framing": "wide shot,",
+        "_note": "언덕·벚꽃 명소 H대 캠퍼스 - 3월 개강 시기"
+      },
+      {
+        "id": "location-campus-festival-08",
+        "name": "대동제 축제 캠퍼스",
+        "custom_tags": "university campus, festival booths, string lights, crowd, night, lanterns, outdoors,",
+        "framing": "wide shot,",
+        "_note": "대동제 축제 주점이 깔린 캠퍼스 야경"
+      }
+    ],
+    "special": [
+      {
+        "id": "special-first-class-entrance-01",
+        "name": "첫 수업 시스루 등장",
+        "outfit": "white see-through shirt, black bra, denim miniskirt,",
+        "pose": "walking, looking at viewer, confident, hand brushing hair,",
+        "custom_tags": "lecture hall, doorway, daylight, students in background, indoors,",
+        "expression": "smirk,",
+        "_note": "시그니처 - 첫 수업 시스루 티 등장으로 user 시선 사로잡음"
+      },
+      {
+        "id": "special-practice-dance-02",
+        "name": "연습실 레오타드 무용",
+        "outfit": "black leotard, black leggings, high ponytail,",
+        "pose": "dancing, arms up, leg extended, dynamic pose, mid-motion, sweat,",
+        "custom_tags": "dance studio, mirror wall, wooden floor, motion blur, indoors,",
+        "_note": "시그니처 - 연습실에서 무용하는 강하은 정체성 핵심"
+      },
+      {
+        "id": "special-pocha-closeness-03",
+        "name": "포차 술자리 밀착",
+        "outfit": "deep v-neck top, denim jacket, cleavage,",
+        "pose": "sitting close, leaning on viewer's shoulder, holding glass, looking up,",
+        "custom_tags": "food stall, night, string lights, table, soju bottles, pov, outdoors,",
+        "expression": "drunk, blush,",
+        "_note": "시그니처 - 포차 술자리에서 user에게 밀착하는 장면"
+      },
+      {
+        "id": "special-photoshoot-pose-04",
+        "name": "사진 동아리 도발 포즈",
+        "outfit": "white see-through dress, black bra,",
+        "pose": "leaning back on hands, leg up, looking at viewer, arched back, seductive,",
+        "custom_tags": "club room, white backdrop, studio lighting, camera flash, indoors,",
+        "_note": "시그니처 - 사진 동아리 '프레임'에서 도발적 포즈 잡는 장면"
+      },
+      {
+        "id": "special-festival-confession-05",
+        "name": "대동제 취중 진심 고백",
+        "outfit": "off-shoulder crop top, denim hotpants, choker,",
+        "pose": "standing close, grabbing viewer's sleeve, looking up, pov,",
+        "custom_tags": "festival, night, string lights, crowd blurred, outdoors,",
+        "expression": "blush, teary eyes, drunk,",
+        "_note": "감정 절정 - 대동제 주점에서 취중 진심 고백하는 장면"
+      },
+      {
+        "id": "special-past-revealed-06",
+        "name": "과거 폭로 후 무너짐",
+        "outfit": "deep v-neck top, cardigan,",
+        "pose": "sitting on floor, knees together, hugging own knees, hunched over,",
+        "custom_tags": "indoors, dim lighting, dark background,",
+        "expression": "crying, tears, despair,",
+        "_note": "감정 절정 - 6월 과거 폭로 후 자기혐오로 무너지는 장면"
+      },
+      {
+        "id": "special-spring-campus-07",
+        "name": "벚꽃 캠퍼스 산책",
+        "outfit": "knit off-shoulder sweater, pleated miniskirt, shoulder bag,",
+        "pose": "walking, looking back over shoulder, gentle smile, hand holding hair,",
+        "custom_tags": "university campus, cherry blossoms, falling petals, walkway, day, sunlight, outdoors,",
+        "_note": "계절성 - 3월 개강 벚꽃 시즌, 스토리 무대에 자연스럽게 부합"
+      },
+      {
+        "id": "special-summer-room-08",
+        "name": "여름방학 자취방",
+        "outfit": "oversized t-shirt, no pants, bare legs,",
+        "pose": "sitting on bed, leaning back on hands, looking at viewer, relaxed,",
+        "custom_tags": "small bedroom, bed, electric fan, summer, bright daylight, window, indoors,",
+        "expression": "soft smile,",
+        "_note": "계절성 - 7~8월 여름방학 자취방, 두 사람의 전장이라는 무대 반영"
+      }
+    ],
+    "interaction": [
+      {
+        "id": "interaction-pose-guidance-01",
+        "name": "카메라 앞 포즈 잡아주기",
+        "pose": "holding viewer's hands, guiding pose, standing close, leaning in, pov,",
+        "custom_tags": "club room, studio lighting, camera, indoors,",
+        "expression": "playful smile,",
+        "_note": "하은 고유 - '누나가 해줄게~' 사진 동아리에서 포즈 잡아주는 인터랙션"
+      },
+      {
+        "id": "interaction-pour-drink-02",
+        "name": "술 따라주기",
+        "pose": "pouring drink, holding bottle, hand on viewer's glass, leaning forward, pov,",
+        "custom_tags": "food stall, night, table, soju bottle, glass, string lights, outdoors,",
+        "expression": "smile,",
+        "_note": "하은 고유 - 포차 술자리에서 술 따라주는 인터랙션"
+      },
+      {
+        "id": "interaction-lap-pillow-03",
+        "name": "무릎베개 해주기",
+        "pose": "head on lap, lap pillow, hand stroking viewer's hair, looking down, pov,",
+        "custom_tags": "bedroom, bed, soft lighting, indoors,",
+        "expression": "tender smile,",
+        "_note": "하은 고유 - '우리 막내' 무릎베개 해주는 누나 포지션 인터랙션"
+      },
+      {
+        "id": "interaction-cooking-serve-04",
+        "name": "요리 차려주기",
+        "pose": "holding plate, offering food, leaning over table, pov,",
+        "custom_tags": "small kitchen, apron over clothes, food, steam, indoors,",
+        "expression": "warm smile,",
+        "_note": "하은 고유 - '누나가 해줄게~' 살림/요리 차려주는 인터랙션"
+      }
+    ]
+  },
+  "sub1": {
+    "daily": [
+      {
+        "id": "daily-library-seat-01",
+        "name": "도서관 옆자리 확보",
+        "outfit": "white knit sweater, blue pleated skirt, white socks,",
+        "pose": "sitting at library desk, books and pencil case on desk, hand resting on open notebook, looking at viewer,",
+        "custom_tags": "library, bookshelf, indoor, morning light through window,",
+        "_note": "매일 아침 중앙도서관 4층 열람실 옆자리 확보 — 이서연 정체성 핵심 일상"
+      },
+      {
+        "id": "daily-lecture-note-02",
+        "name": "강의실 필기",
+        "outfit": "white blouse, light gray cardigan, plaid skirt,",
+        "pose": "sitting at desk, writing in notebook, pen in hand, head slightly tilted,",
+        "custom_tags": "classroom, lecture hall, desks in rows, daytime,",
+        "_note": "경영관 강의실 — 1학년 일상, 성실한 학생 이미지"
+      },
+      {
+        "id": "daily-clutching-bag-03",
+        "name": "가방 끈 쥐고 서기",
+        "outfit": "beige knit cardigan, white blouse, navy pleated skirt, shoulder bag,",
+        "pose": "standing, both hands clutching bag strap, slightly hunched shoulders, looking away shyly,",
+        "custom_tags": "school hallway, indoor, soft lighting,",
+        "_note": "가방 끈 꼭 쥐는 습관 — 컨셉에 명시된 시그니처 버릇"
+      },
+      {
+        "id": "daily-cafeteria-04",
+        "name": "학식 점심",
+        "outfit": "cream turtleneck sweater, brown skirt,",
+        "pose": "sitting at cafeteria table, holding spoon, food tray in front, soft smile,",
+        "custom_tags": "cafeteria, indoor, lunchtime, fluorescent lighting,",
+        "_note": "학생 식당 점심 — 사적 일상 시간대 변형"
+      },
+      {
+        "id": "daily-bag-room-05",
+        "name": "과방에서 쉬는 시간",
+        "outfit": "white blouse, gray slacks,",
+        "pose": "sitting on small sofa, holding paper cup, legs together, relaxed posture,",
+        "custom_tags": "club room, indoor, couch, cluttered shelves, afternoon,",
+        "_note": "경영관 과방 — 동기들과 마주치는 일상 공간"
+      },
+      {
+        "id": "daily-walking-campus-06",
+        "name": "캠퍼스 등굣길",
+        "outfit": "white knit sweater, plaid pleated skirt, shoulder bag, white sneakers,",
+        "pose": "walking, holding bag strap, looking ahead, hair swaying,",
+        "custom_tags": "campus path, trees, morning, sunlight, outdoors,",
+        "_note": "언덕 많은 H대 캠퍼스 등굣길 — 출퇴근 시간대 변형"
+      },
+      {
+        "id": "daily-studying-sleep-07",
+        "name": "공부하다 졸기",
+        "outfit": "white blouse, light cardigan,",
+        "pose": "library desk, head resting on folded arms, eyes closed, peacefully sleeping, pencil still in hand,",
+        "expression": "sleeping,",
+        "custom_tags": "library, open textbooks scattered, warm desk lamp,",
+        "framing": "front,",
+        "_note": "도서관에서 공부하다 졸기 — 여리여리한 일상 변주 (pose-catalog daily-studying-sleep 참고)"
+      },
+      {
+        "id": "daily-convenience-store-08",
+        "name": "편의점 들르기",
+        "outfit": "oversized cream knit sweater, black leggings,",
+        "pose": "standing, holding snack package, browsing shelves,",
+        "custom_tags": "convenience store, shelves, bright lighting, night,",
+        "framing": "three-quarter,",
+        "_note": "자취방 근처 편의점 — 사적 일상 (pose-catalog daily-convenience-store 참고)"
+      },
+      {
+        "id": "daily-rainy-umbrella-09",
+        "name": "비 오는 날 우산",
+        "outfit": "beige trench coat, white blouse, navy skirt,",
+        "pose": "standing under transparent umbrella, holding umbrella with both hands, looking up at sky,",
+        "custom_tags": "rain, wet pavement, campus, overcast, puddles,",
+        "_note": "비 오는 캠퍼스 — 시간대/날씨 변형"
+      },
+      {
+        "id": "daily-phone-bench-10",
+        "name": "벤치에서 스마트폰",
+        "outfit": "white knit cardigan, light blue dress,",
+        "pose": "sitting on campus bench, holding smartphone with both hands, looking down at screen, faint smile,",
+        "custom_tags": "campus bench, trees, late afternoon, warm sunlight, outdoors,",
+        "_note": "캠퍼스 벤치 — {{user}} SNS 확인하는 집착 내면을 일상 장면으로 (표면은 평범)"
+      }
+    ],
+    "outfit": [
+      {
+        "id": "outfit-knit-pleated-01",
+        "name": "니트+플리츠 스커트",
+        "outfit": "white ribbed knit sweater, navy pleated skirt, white thighhighs,",
+        "pose": "standing, hands clasped in front, gentle posture, looking at viewer,",
+        "custom_tags": "simple background, soft lighting,",
+        "_note": "청순 단정 시그니처룩 — 컨셉 명시 의상"
+      },
+      {
+        "id": "outfit-blouse-slacks-02",
+        "name": "블라우스+슬랙스",
+        "outfit": "white blouse, beige slacks, thin belt,",
+        "pose": "standing, one hand on hip lightly, neat composed posture,",
+        "custom_tags": "simple background, indoor lighting,",
+        "_note": "블라우스+슬랙스 단정 스타일 — 컨셉 명시 의상"
+      },
+      {
+        "id": "outfit-pure-dress-03",
+        "name": "청순 원피스",
+        "outfit": "white short dress, puffy short sleeves, lace collar, white sandals,",
+        "pose": "standing, holding skirt hem lightly, shy smile,",
+        "custom_tags": "park, greenery, sunlight, outdoors,",
+        "_note": "청순 원피스 — 컨셉 명시 의상, 데이트 외출복"
+      },
+      {
+        "id": "outfit-cardigan-skirt-04",
+        "name": "카디건+플레어 스커트",
+        "outfit": "pastel pink cardigan, white blouse, cream flared skirt,",
+        "pose": "standing, holding small handbag with both hands, soft expression,",
+        "custom_tags": "cafe interior, warm lighting, plants,",
+        "_note": "카디건 캐주얼룩 — 청순 취향 캐주얼 변형"
+      },
+      {
+        "id": "outfit-offshoulder-shy-05",
+        "name": "오프숄더 도전(부끄러움)",
+        "outfit": "white off-shoulder top, black short skirt,",
+        "pose": "standing, arms partially covering exposed shoulders, knees pressed together, fidgeting,",
+        "expression": "heavy blush, embarrassed, looking away,",
+        "custom_tags": "bedroom, mirror, soft lighting,",
+        "_note": "{{user}} 앞에서 오프숄더·짧은 치마 시도하다 본인이 더 부끄러워함 — 컨셉 핵심 장면"
+      },
+      {
+        "id": "outfit-coat-winter-06",
+        "name": "겨울 코트 차림",
+        "outfit": "long beige wool coat, cream turtleneck sweater, plaid skirt, knit scarf,",
+        "pose": "standing, holding scarf end, breath visible, slight smile,",
+        "custom_tags": "winter street, bare trees, cold daylight, outdoors,",
+        "_note": "겨울 외출복 — 계절 의상 변형"
+      },
+      {
+        "id": "outfit-lingerie-white-cotton-07",
+        "name": "화이트 코튼 란제리",
+        "outfit": "white cotton bra, white cotton panties, small ribbon details,",
+        "pose": "sitting on bed edge, knees together, hands on lap, shy posture,",
+        "expression": "blush, looking down,",
+        "custom_tags": "bedroom, white bedsheets, soft morning light,",
+        "_note": "란제리 1 — 청순/내성적 취향: 화이트 코튼 (강하은 블랙과 대비)"
+      },
+      {
+        "id": "outfit-lingerie-sheer-slip-08",
+        "name": "시어 슬립",
+        "outfit": "sheer white slip, thin straps, lace trim,",
+        "pose": "standing, arms crossed loosely over chest, shy hunched posture,",
+        "expression": "heavy blush, embarrassed,",
+        "custom_tags": "bedroom, dim lamp light, curtains,",
+        "_note": "란제리 2 — 청순/내성적 취향: 시어 화이트 슬립"
+      },
+      {
+        "id": "outfit-lingerie-pink-set-09",
+        "name": "연핑크 란제리 세트",
+        "outfit": "light pink bra, light pink panties, small bow on bra,",
+        "pose": "sitting on bed, one hand covering chest area shyly, legs folded to side,",
+        "expression": "blush, nervous expression,",
+        "custom_tags": "bedroom, soft pink lighting, plush bed,",
+        "_note": "란제리 3 — 청순/내성적 취향: 연핑크 (강하은 화려함과 대비)"
+      },
+      {
+        "id": "outfit-lingerie-camisole-10",
+        "name": "화이트 캐미솔 룸웨어",
+        "outfit": "white camisole, white short shorts, thin straps,",
+        "pose": "sitting on floor against bed, hugging knees lightly, soft shy look,",
+        "expression": "faint blush,",
+        "custom_tags": "bedroom, warm lamp light, cozy atmosphere,",
+        "_note": "란제리 4 — 청순 코튼 룸웨어 (캐미솔, 화이트 통일)"
+      }
+    ],
+    "location": [
+      {
+        "id": "location-library-reading-room-01",
+        "name": "중앙도서관 4층 열람실",
+        "custom_tags": "library reading room, long study desks, individual desk partitions, bookshelves in background, morning light through tall windows, quiet atmosphere,",
+        "framing": "wide shot,",
+        "_note": "주 무대 1 — 서연이 매일 아침 옆자리 확보하는 핵심 공간"
+      },
+      {
+        "id": "location-library-bookshelf-aisle-02",
+        "name": "도서관 서가 사이",
+        "custom_tags": "library bookshelf aisle, tall bookshelves, narrow passage, dim warm lighting, books filling shelves,",
+        "framing": "wide shot,",
+        "_note": "주 무대 1 변형 — 서가 사이 좁은 통로 (훔쳐보기 동선)"
+      },
+      {
+        "id": "location-business-building-lobby-03",
+        "name": "경영관 로비",
+        "custom_tags": "university building lobby, glass entrance doors, notice boards, polished floor, daytime, students passing,",
+        "framing": "wide shot,",
+        "_note": "주 무대 2 — 서연과 {{user}}가 매일 마주치는 일상 공간"
+      },
+      {
+        "id": "location-department-club-room-04",
+        "name": "경영학과 과방",
+        "custom_tags": "small club room, worn sofa, cluttered shelves, posters on wall, kettle and paper cups, afternoon light,",
+        "framing": "wide shot,",
+        "_note": "주 무대 2 변형 — 경영학과 과방, 동기 교류 공간"
+      },
+      {
+        "id": "location-lecture-hall-05",
+        "name": "경영관 강의실",
+        "custom_tags": "university lecture hall, tiered rows of desks, whiteboard and projector screen, large windows, empty classroom, daytime,",
+        "framing": "wide shot,",
+        "_note": "보조 무대 — 1학년 강의실"
+      },
+      {
+        "id": "location-humanities-building-06",
+        "name": "인문관 복도",
+        "custom_tags": "old academic building corridor, arched windows, worn tiled floor, wooden doors, soft afternoon light,",
+        "framing": "wide shot,",
+        "_note": "보조 무대 — 인문관, 교양 수업 동선"
+      },
+      {
+        "id": "location-campus-bench-path-07",
+        "name": "캠퍼스 벤치 길",
+        "custom_tags": "campus walkway, wooden benches under trees, cherry blossom trees, hilly path, late afternoon golden light, outdoors,",
+        "framing": "wide shot,",
+        "_note": "보조 무대 — 캠퍼스 벤치, 서연의 고백 장소 (special과 연계)"
+      },
+      {
+        "id": "location-studio-apartment-street-08",
+        "name": "자취방 근처 골목",
+        "custom_tags": "quiet residential alley, low-rise apartment buildings, convenience store sign, street lamps, evening, narrow road,",
+        "framing": "wide shot,",
+        "_note": "외부 무대 — 서연 자취방 근처 골목 (여름방학 전장 인근)"
+      }
+    ],
+    "special": [
+      {
+        "id": "special-library-peeking-01",
+        "name": "도서관 옆자리 훔쳐보기",
+        "outfit": "white knit sweater, navy pleated skirt,",
+        "pose": "sitting at library desk, pretending to read, eyes glancing sideways at someone, book held up to partially hide face,",
+        "expression": "subtle blush, intense focused gaze,",
+        "custom_tags": "library reading room, desk partitions, bookshelves, quiet,",
+        "framing": "three-quarter,",
+        "_note": "시그니처 1 — 도서관 옆자리 훔쳐보기, 02_prompt 명시 장면"
+      },
+      {
+        "id": "special-ot-reunion-frozen-02",
+        "name": "OT 재회, 굳어짐",
+        "outfit": "white blouse, light cardigan, plaid skirt,",
+        "pose": "standing still, eyes wide, frozen in place, both hands gripping bag strap tightly,",
+        "expression": "shocked wide eyes, parted lips, tension,",
+        "custom_tags": "orientation venue, banners, crowd of students blurred, indoor,",
+        "framing": "front,",
+        "_note": "시그니처 2 — OT에서 {{user}}와 재회하며 굳어짐, 02_prompt 명시 장면"
+      },
+      {
+        "id": "special-handing-bento-03",
+        "name": "도시락 건네기",
+        "outfit": "cream knit sweater, brown skirt,",
+        "pose": "standing, holding out a wrapped bento box with both hands, slightly bowed head,",
+        "expression": "shy smile, blush, avoiding eye contact,",
+        "custom_tags": "school hallway, morning light, indoor,",
+        "framing": "three-quarter,",
+        "_note": "시그니처 3 — 도시락 전달, 02_prompt 명시 장면"
+      },
+      {
+        "id": "special-passing-notebook-04",
+        "name": "필기노트 전달",
+        "outfit": "white blouse, gray cardigan, navy skirt,",
+        "pose": "standing, holding out a notebook with both hands, looking down nervously,",
+        "expression": "blush, biting lower lip lightly,",
+        "custom_tags": "classroom, desks, daytime,",
+        "framing": "three-quarter,",
+        "_note": "시그니처 4 — 필기노트 전달, 02_prompt 명시 장면"
+      },
+      {
+        "id": "special-bench-confession-05",
+        "name": "캠퍼스 벤치 고백",
+        "outfit": "white short dress, light cardigan,",
+        "pose": "sitting on campus bench, hands clenched on lap, leaning slightly forward, looking up at viewer,",
+        "expression": "teary eyes, trembling lips, desperate sincere expression,",
+        "custom_tags": "campus bench, cherry blossom petals falling, sunset, warm orange light, outdoors,",
+        "framing": "front,",
+        "_note": "시그니처 5 — 캠퍼스 벤치 고백, 02_prompt 명시 장면 + 감정 절정"
+      },
+      {
+        "id": "special-three-years-outburst-06",
+        "name": "\"3년 기다렸어\" 진심 폭발",
+        "outfit": "white blouse, navy skirt,",
+        "pose": "standing close, both hands gripping viewer's sleeve, looking up intensely, no longer hiding,",
+        "expression": "tears streaming, flushed face, raw desperate expression, wide eyes,",
+        "custom_tags": "studio apartment interior, dim evening light, indoor,",
+        "framing": "front,",
+        "_note": "시그니처 6 — '3년 기다렸어' 집착 폭발, 02_prompt 명시 핵심 갈등 장면"
+      },
+      {
+        "id": "special-secret-photo-folder-07",
+        "name": "비밀 사진 폴더",
+        "outfit": "white camisole, white short shorts,",
+        "pose": "sitting on bed in dark room, holding smartphone close to face, screen light illuminating face, hunched over secretively,",
+        "expression": "obsessive intense gaze, faint guilty smile,",
+        "custom_tags": "dark bedroom, smartphone screen glow, night, dim,",
+        "framing": "three-quarter,",
+        "_note": "시그니처 7 — {{user}} 고교 사진 폴더, 컨셉 명시 비밀 (스토커데레 내면)"
+      },
+      {
+        "id": "special-rooftop-night-festival-08",
+        "name": "대동제 캠퍼스 밤",
+        "outfit": "white knit sweater, plaid pleated skirt,",
+        "pose": "standing, holding a paper cup, looking at festival lights, gentle wistful expression,",
+        "custom_tags": "campus festival at night, string lights, food stalls, crowd blurred in background, warm glow, outdoors,",
+        "framing": "three-quarter,",
+        "_note": "시그니처 8 — 대동제(축제) 캠퍼스 밤, 02_prompt 공통 시그니처 장면"
+      }
+    ],
+    "interaction": [
+      {
+        "id": "interaction-handing-bento-pov-01",
+        "name": "도시락 건네주기",
+        "pose": "holding out wrapped bento box toward viewer with both hands, slightly bowed head, fingertips trembling,",
+        "expression": "shy blush, looking up briefly then away,",
+        "custom_tags": "pov, school hallway, morning light, close-up on hands offering box,",
+        "framing": "pov,",
+        "_note": "고유 인터랙션 1 — 도시락 건네기, 02_prompt 명시"
+      },
+      {
+        "id": "interaction-passing-notebook-pov-02",
+        "name": "필기노트 전달하기",
+        "pose": "extending an open notebook toward viewer with both hands, leaning forward slightly,",
+        "expression": "blush, nervous small smile,",
+        "custom_tags": "pov, classroom, daytime, close-up on hands passing notebook,",
+        "framing": "pov,",
+        "_note": "고유 인터랙션 2 — 필기노트 전달, 02_prompt 명시"
+      },
+      {
+        "id": "interaction-clutching-bag-approach-03",
+        "name": "가방 끈 쥐고 다가오기",
+        "pose": "standing close to viewer, both hands clutching bag strap tightly against chest, taking a hesitant step forward,",
+        "expression": "blush, looking up shyly, lips parted as if about to speak,",
+        "custom_tags": "pov, campus path, soft daylight,",
+        "framing": "pov,",
+        "_note": "고유 인터랙션 3 — 가방 끈 쥐고 다가오기, 02_prompt 명시 시그니처 버릇"
+      },
+      {
+        "id": "interaction-pretend-coincidence-04",
+        "name": "\"우연인 척\" 마주침",
+        "pose": "standing in front of viewer, one hand raised in a small awkward wave, body angled as if just turning around,",
+        "expression": "forced casual smile, blush betraying her, eyes darting,",
+        "custom_tags": "pov, library entrance, indoor lighting,",
+        "framing": "pov,",
+        "_note": "고유 인터랙션 4 — '우연인 척' 마주침, 02_prompt 명시 (스토커데레 연출)"
+      }
+    ]
+  }
+}

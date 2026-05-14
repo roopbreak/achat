@@ -10,5 +10,5 @@
 | 「비서실 쟁탈전」 9인 캐릭터 + 외부 이미지 재구축 | 완료 | docs/handoff/secretary-room-rebuild.md | 2026-05-13 |
 | 기존 스토리 커스텀 이미지 재구성 파이프라인 | 완료 | docs/handoff/apply-custom-scenes.md | 2026-05-13 |
 | 멀티 캐릭터 customScenes 적용 파이프라인 | 완료 | docs/handoff/multi-char-custom-scenes.md | 2026-05-14 |
-| AChat 스토리 하네스 구성 (페르소나 6인 + Codex) | 활성 | docs/handoff/achat-story-harness.md | 2026-05-14 |
+| AChat 스토리 하네스 구성 (페르소나 6인 + Codex) | 완료 | docs/handoff/achat-story-harness.md | 2026-05-14 |
 | 스토리 설명 영역 + 커맨드 ! 통일 | 완료 | docs/handoff/story-guide-and-commands.md | 2026-05-14 |

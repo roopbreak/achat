@@ -1,0 +1,12 @@
+{
+  "startedAt": "2026-05-14T12:08:40.433Z",
+  "target": "lore/1270",
+  "body": {
+    "name": "NSFW 분기 5종",
+    "constant": 0,
+    "priority": 85,
+    "insertion_order": 13
+  },
+  "result": "OK — [1270] constant 1→0 전환, io 100→13",
+  "finishedAt": "2026-05-14T12:08:40.480Z"
+}
