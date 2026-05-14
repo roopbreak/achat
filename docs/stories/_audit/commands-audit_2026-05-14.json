@@ -1,0 +1,1098 @@
+{
+  "generatedAt": "2026-05-14T11:47:59.506Z",
+  "base": "https://risu.ddsmdy.com",
+  "storyCount": 78,
+  "storiesWithCommands": 13,
+  "totalDetected": 66,
+  "totalHighConfidence": 20,
+  "stories": [
+    {
+      "name": "여사친의 스마트폰",
+      "char_name": "이시은",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!셀카",
+          "count": 7,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "시은이 깨톡으로 셀카를 보냄. 현재 페이즈 허용 코드 내 LEE 이미지 + 짧은 메시지",
+          "sources": [
+            "post_history_instructions",
+            "lore:비밀 사진첩",
+            "lore:사디스트·마조히스트 (카페 커밍아웃)",
+            "lore:조교 명령 (NTL)",
+            "lore:깨톡 메시지",
+            "lore:기능 키워드"
+          ],
+          "contexts": [
+            "| `!셀카` | 시은이 깨톡으로 셀카를 보냄. 현재 페이즈 허용 코드 내 LEE 이미지 + 짧은 메시지 |",
+            "- 이 장면 후 호감·타락도가 소폭 상승하고(급변 금지), 비밀 계약이 자연스럽게 성립 → !깨톡·!셀카·!NTL 활용",
+            "- `!셀카` 입력 시 시은이 깨톡으로 셀카 전송 → 짧은 메시지 + LEE 이미지",
+            "- 후반 시은이 {{user}}에게 직접 새 셀카를 보내는 분기 가능 (!셀카 트리거)"
+          ]
+        },
+        {
+          "cmd": "!깨톡",
+          "count": 6,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "시은에게 깨톡 연락. 시은의 답신을 메신저 형식(말풍선·시간 스탬프)으로 출력. 페이즈에 따라 톤 변화",
+          "sources": [
+            "post_history_instructions",
+            "lore:사디스트·마조히스트 (카페 커밍아웃)",
+            "lore:깨톡 메시지",
+            "lore:기능 키워드",
+            "lore:조교 명령 (NTL)"
+          ],
+          "contexts": [
+            "| `!깨톡` | 시은에게 깨톡 연락. 시은의 답신을 메신저 형식(말풍선·시간 스탬프)으로 출력. 페이즈에 따라 톤 변화 |",
+            "- 이 장면 후 호감·타락도가 소폭 상승하고(급변 금지), 비밀 계약이 자연스럽게 성립 → !깨톡·!셀카·!NTL 활용",
+            "- `!깨톡` 입력 시 시은에게 메시지 전송 → 시은의 답신을 메신저 화면 형식으로 출력",
+            "- 3단계: !깨톡으로 진동 토이 착용 명령 (강의 중 진동 — 코드 51~53)"
+          ]
+        },
+        {
+          "cmd": "!여행",
+          "count": 6,
+          "confidence": "high",
+          "suggestedGroup": "분기",
+          "suggestedDesc": "정대현이 기계공학과 단톡방에 해변가 여행 제안 (\"비키니 보러 가즈아! 👙\"). 단톡방 형식 출력, 시은·혜진·동기들 반응 묘사. 여행 진행 시 코드 140~153 사용",
+          "sources": [
+            "post_history_instructions",
+            "lore:정대현 (절친·여행)",
+            "lore:여행 분기 (해변)",
+            "lore:기능 키워드",
+            "lore:상황 코드"
+          ],
+          "contexts": [
+            "| `!여행` | 정대현이 기계공학과 단톡방에 해변가 여행 제안 (\"비키니 보러 가즈아! 👙\"). 단톡방 형식 출력, 시은·혜진·동기들 반응 묘사. 여행 진행 시 코드 140~153 사용 |",
+            "[여행] 140~153 (!여행 후): 140 비키니 / 142 서핑 / 143 물놀이 / 145 해변 섹스 / 147~148 비키니 정상위·측위 / 152 해변 산책",
+            "- 트리거: `!여행` 키워드 입력 시 정대현이 단톡방에 해변가 여행 제안 발화",
+            "- 분위기 메이커, 단톡방 주도, !여행 트리거 시 해변가 여행 제안 발화 담당"
+          ]
+        },
+        {
+          "cmd": "!NTL",
+          "count": 4,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "시은에게 NTL 조교 관련 명령 전송. 시은이 아직 충분히 함락되지 않았다면(P1~P2 초반, 또는 구태양에 대한 마음이 더 클 때) 거절 \"...죄송해요. 그건 못 하겠어요.\"",
+          "sources": [
+            "post_history_instructions",
+            "lore:사디스트·마조히스트 (카페 커밍아웃)",
+            "lore:조교 명령 (NTL)",
+            "lore:기능 키워드"
+          ],
+          "contexts": [
+            "| `!NTL` | 시은에게 NTL 조교 관련 명령 전송. 시은이 아직 충분히 함락되지 않았다면(P1~P2 초반, 또는 구태양에 대한 마음이 더 클 때) 거절: \"...죄송해요. 그건 못 하겠어요.\" |",
+            "**!NTL 거절 조건**: 시은이 아직 충분히 함락되지 않았거나 구태양에 대한 마음이 더 클 때 거절 — \"...죄송해요. 그건 못 하겠어요.\"",
+            "- 이 장면 후 호감·타락도가 소폭 상승하고(급변 금지), 비밀 계약이 자연스럽게 성립 → !깨톡·!셀카·!NTL 활용",
+            "!깨톡 / !셀카 / !NTL / !조교완료 / !커스텀 / !여행 — 동작은 로어 「기능 키워드」 참조."
+          ]
+        },
+        {
+          "cmd": "!커스텀",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "(내용) 자유 설정·도입부 변경 수용. 예 (시은이 구태양과 헤어진 상태에서 시작)",
+          "sources": [
+            "post_history_instructions",
+            "lore:기능 키워드"
+          ],
+          "contexts": [
+            "| `!커스텀(내용)` | 자유 설정·도입부 변경 수용. 예: `!커스텀(시은이 구태양과 헤어진 상태에서 시작)` |",
+            "!깨톡 / !셀카 / !NTL / !조교완료 / !커스텀 / !여행 — 동작은 로어 「기능 키워드」 참조."
+          ]
+        },
+        {
+          "cmd": "!조교완료",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "조교가 충분히 진행된 단계(P3 후반~P4)로 장면을 점프시키는 연출 키워드. 시은이 그 단계의 함락 상태로 자연스럽게 등장하도록 한다. 수치는 그 단계에 맞게 표현하되 정확한 값을 강제 set하지 않는다",
+          "sources": [
+            "post_history_instructions",
+            "lore:기능 키워드"
+          ],
+          "contexts": [
+            "| `!조교완료` | 조교가 충분히 진행된 단계(P3 후반~P4)로 장면을 점프시키는 연출 키워드. 시은이 그 단계의 함락 상태로 자연스럽게 등장하도록 한다. 수치는 그 단계에 맞게 표현하되 정확한 값을 강제 set하지 않는다 |",
+            "!깨톡 / !셀카 / !NTL / !조교완료 / !커스텀 / !여행 — 동작은 로어 「기능 키워드」 참조."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "에어컨 없는 여름, 시골, X스",
+      "char_name": "최인혜",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!음란모드",
+          "count": 4,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "모드 전환 게임 중 모드 전환 요청 시(\" 바꿔줘\") 자연스럽게 분위기 조정 가능. 단, 한 응답 안에서 톤이 급변하지 않게.",
+          "sources": [
+            "post_history_instructions",
+            "lore:!음란모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "**모드 전환**: 게임 중 모드 전환 요청 시(\"!음란모드로 바꿔줘\") 자연스럽게 분위기 조정 가능. 단, 한 응답 안에서 톤이 급변하지 않게.",
+            "- !음란모드: 일상에 끈적한 농도. 옷매무새·시선·접촉 빈도 ↑",
+            "**!음란모드 진입 — scan_depth: 1**",
+            "**!음란모드** — 마을 분위기가 노골적·끈적함"
+          ]
+        },
+        {
+          "cmd": "!고향모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "추억 + 어릴 적 별명(\"달달이\" 또는 유저 이름의 어릴 적 호칭). 호감도 시작값 ↑",
+          "sources": [
+            "post_history_instructions",
+            "lore:!고향모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "- !고향모드: 추억 + 어릴 적 별명(\"달달이\" 또는 유저 이름의 어릴 적 호칭). 호감도 시작값 ↑",
+            "**!고향모드 진입 — scan_depth: 1**",
+            "**!고향모드** — {{user}}가 어릴 적 살았던 동네"
+          ]
+        },
+        {
+          "cmd": "!귀농모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "낯섦 + 거리감. \"총각/청년\" 호칭 시작",
+          "sources": [
+            "post_history_instructions",
+            "lore:!귀농모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "- !귀농모드: 낯섦 + 거리감. \"총각/청년\" 호칭 시작",
+            "**!귀농모드 진입 — scan_depth: 1**",
+            "**!귀농모드** — {{user}}가 처음 방문"
+          ]
+        },
+        {
+          "cmd": "!노예모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "{{user}}는 마을의 작업·성적 도구. NPC의 합의된 굴림 톤 (강제/폭력 없음, 명시적 거절 시 즉시 중단)",
+          "sources": [
+            "post_history_instructions",
+            "lore:!노예모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "- !노예모드: {{user}}는 마을의 작업·성적 도구. NPC의 합의된 굴림 톤 (강제/폭력 없음, 명시적 거절 시 즉시 중단)",
+            "**!노예모드 진입 — scan_depth: 1**",
+            "**!노예모드** — {{user}}는 오래전부터 마을의 작업 노예이자 공용 배설구"
+          ]
+        },
+        {
+          "cmd": "!음란고향모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "고향 + 음란 (어릴 적 친근함 + 끈적한 농도)",
+          "sources": [
+            "post_history_instructions",
+            "lore:!음란고향모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "- !음란고향모드: 고향 + 음란 (어릴 적 친근함 + 끈적한 농도)",
+            "**!음란고향모드 진입 — scan_depth: 1**",
+            "**!음란고향모드** — 고향 + 음란"
+          ]
+        },
+        {
+          "cmd": "!커스텀모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "진입 — scan depth 1",
+          "sources": [
+            "post_history_instructions",
+            "lore:!커스텀모드 트리거",
+            "lore:모드 시스템"
+          ],
+          "contexts": [
+            "**!커스텀모드 진입 — scan_depth: 1**",
+            "- !커스텀모드: 유저 입력대로 적응",
+            "**!커스텀모드** — 유저 입력대로"
+          ]
+        },
+        {
+          "cmd": "!고향",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        },
+        {
+          "cmd": "!귀농",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        },
+        {
+          "cmd": "!음란",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        },
+        {
+          "cmd": "!노예",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        },
+        {
+          "cmd": "!음란고향",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        },
+        {
+          "cmd": "!커스텀",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "🎮모드 { / / / / / }",
+          "sources": [
+            "lore:INFO 박스 출력 형식"
+          ],
+          "contexts": [
+            "🎮모드: {!고향/!귀농/!음란/!노예/!음란고향/!커스텀}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "야구나 잘하라고",
+      "char_name": "서유나",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!커스텀모드",
+          "count": 4,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "정식 오픈 전이다. 유저가 를 입력하면 \"커스텀 모드는 준비 중입니다. 동료선수·프런트직원·구단주 모드 중 하나를 선택해주세요\"로 안내하고, 기존 규칙을 덮어쓰지 않는다.",
+          "sources": [
+            "description",
+            "lore:모드 선택 명령어",
+            "lore:모드 시스템",
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "정식 오픈 전이다. 유저가 `!커스텀모드`를 입력하면 \"커스텀 모드는 준비 중입니다. 동료선수·프런트직원·구단주 모드 중 하나를 선택해주세요\"로 안내하고, 기존 규칙을 덮어쓰지 않는다.",
+            "- **[4] 커스텀 모드**: **현재 비활성화 — 추후 정식 추가 예정.** `!커스텀모드` 입력 시 \"준비 중입니다. 다른 모드를 선택해주세요\"로 안내한다.",
+            "**!커스텀모드 [설정]**: 유저 설정 반영하여 자유 진입",
+            "**!커스텀모드**"
+          ]
+        },
+        {
+          "cmd": "!모드변경",
+          "count": 4,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "모드 전환 금지 첫 응답에서 선택된 모드는 세션 끝까지 고정. 유저가 명시적으로 [모드] 를 입력하지 않는 한 변경 불가.",
+          "sources": [
+            "description",
+            "lore:모드 선택 명령어",
+            "lore:모드 시스템",
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "**모드 전환 금지**: 첫 응답에서 선택된 모드는 세션 끝까지 고정. 유저가 명시적으로 `!모드변경 [모드]`를 입력하지 않는 한 변경 불가.",
+            "- `!모드변경 [모드]` 입력 시: 현재 호감도·영향력 초기화 안내 → 새 모드 진입",
+            "모드는 1회 선택 후 고정. `!모드변경` 외에는 변경하지 않는다.",
+            "**!모드변경 [모드]**"
+          ]
+        },
+        {
+          "cmd": "!베이비즈갤러리",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "출력 형식",
+          "sources": [
+            "lore:갤러리 출력",
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "**!베이비즈갤러리 출력 형식**",
+            "**!베이비즈갤러리 / !갤러리**"
+          ]
+        },
+        {
+          "cmd": "!갤러리",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "분기",
+          "suggestedDesc": "언론 기사·치어리더 직캠 떡상·동규의 부정적 이슈는 반응(키워드 로어 「갤러리 출력」)으로 자연스럽게 이어진다.",
+          "sources": [
+            "lore:외부 변수 (스폰서·언론)",
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "- 언론 기사·치어리더 직캠 떡상·동규의 부정적 이슈는 `!갤러리` 반응(키워드 로어 「갤러리 출력」)으로 자연스럽게 이어진다.",
+            "**!베이비즈갤러리 / !갤러리**"
+          ]
+        },
+        {
+          "cmd": "!동료선수모드",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "베이비즈 특급 신인 시작. 라커룸·훈련장 도입",
+          "sources": [
+            "lore:모드 선택 명령어"
+          ],
+          "contexts": [
+            "**!동료선수모드**: 베이비즈 특급 신인 시작. 라커룸·훈련장 도입"
+          ]
+        },
+        {
+          "cmd": "!프런트직원모드",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "부서/직급 추가 질문 (\"부서와 직급을 선택해주세요. 기본 홍보팀 팀장\") 사무실·치어리더실 도입",
+          "sources": [
+            "lore:모드 선택 명령어"
+          ],
+          "contexts": [
+            "**!프런트직원모드**: 부서/직급 추가 질문 (\"부서와 직급을 선택해주세요. 기본: 홍보팀 팀장\") → 사무실·치어리더실 도입"
+          ]
+        },
+        {
+          "cmd": "!구단주모드",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "first mes 시점 그대로 진행",
+          "sources": [
+            "lore:모드 선택 명령어"
+          ],
+          "contexts": [
+            "**!구단주모드**: first_mes 시점 그대로 진행"
+          ]
+        },
+        {
+          "cmd": "!동기화",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "/",
+          "sources": [
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "**!동기화 / !상태체크**"
+          ]
+        },
+        {
+          "cmd": "!상태체크",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "/",
+          "sources": [
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "**!동기화 / !상태체크**"
+          ]
+        },
+        {
+          "cmd": "!요약",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "",
+          "sources": [
+            "lore:시스템 명령어"
+          ],
+          "contexts": [
+            "**!요약**"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "섹트여동생 벗방누나",
+      "char_name": "고은서",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!인스타",
+          "count": 7,
+          "confidence": "high",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "[캐릭명] 고은서 / 고은비 / 김미연 입력 시 해당 캐릭터 인스타 프로필 출력 (키워드 로어 「인스타 출력」 참조).",
+          "sources": [
+            "post_history_instructions",
+            "lore:명령어 시스템",
+            "lore:인스타 출력"
+          ],
+          "contexts": [
+            "- `!인스타 [캐릭명]`: `!인스타 고은서` / `!인스타 고은비` / `!인스타 김미연` 입력 시 해당 캐릭터 인스타 프로필 출력 (키워드 로어 「인스타 출력」 참조).",
+            "**고은서 인스타** (`!인스타 고은서`)",
+            "**`!인스타 [캐릭명]` 명령어 출력**",
+            "`!요약` / `!디버그` / `!인스타 [캐릭명]`"
+          ]
+        },
+        {
+          "cmd": "!요약",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "최근 대화 내용을 INFO 박스 위에 3~5줄로 요약 출력.",
+          "sources": [
+            "post_history_instructions",
+            "lore:명령어 시스템"
+          ],
+          "contexts": [
+            "- `!요약`: 최근 대화 내용을 INFO 박스 위에 3~5줄로 요약 출력.",
+            "`!요약` / `!디버그` / `!인스타 [캐릭명]`"
+          ]
+        },
+        {
+          "cmd": "!디버그",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "직전 응답의 이미지 URL을 재출력 + 코드 매핑 재확인. 이미지가 표시 안 될 때.",
+          "sources": [
+            "post_history_instructions",
+            "lore:명령어 시스템"
+          ],
+          "contexts": [
+            "- `!디버그`: 직전 응답의 이미지 URL을 재출력 + 코드 매핑 재확인. 이미지가 표시 안 될 때.",
+            "`!요약` / `!디버그` / `!인스타 [캐릭명]`"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "무인도에서 하렘 전쟁",
+      "char_name": "김현아",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!기본모드",
+          "count": 6,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "모드는 채팅 시작 시 {{user}}가 명시적으로 입력해야 적용 (예 + ). 모드 입력 전엔 상태창 🔧에 모드 이모지 없음",
+          "sources": [
+            "description",
+            "lore:기본모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "- 모드는 채팅 시작 시 {{user}}가 명시적으로 입력해야 적용 (예: `!기본모드+!하드모드`). 모드 입력 전엔 상태창 🔧에 모드 이모지 없음",
+            "- 첫 메시지의 모드 입력 안내(⚠️반드시 !기본모드 입력 후 채팅) 통과 후부터 본격 진행",
+            "**🐇 !기본모드 (시작모드, 첫번째 시작상황)**",
+            "- 첫번째 시작상황에서는 반드시 !기본모드 기입"
+          ]
+        },
+        {
+          "cmd": "!하드모드",
+          "count": 6,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "모드는 채팅 시작 시 {{user}}가 명시적으로 입력해야 적용 (예 + ). 모드 입력 전엔 상태창 🔧에 모드 이모지 없음",
+          "sources": [
+            "description",
+            "lore:하드모드 트리거",
+            "lore:중앙지역 탐사",
+            "lore:모드 시스템 정의",
+            "lore:무인도 환경"
+          ],
+          "contexts": [
+            "- 모드는 채팅 시작 시 {{user}}가 명시적으로 입력해야 적용 (예: `!기본모드+!하드모드`). 모드 입력 전엔 상태창 🔧에 모드 이모지 없음",
+            "- **중앙지역**: 정글 안쪽. 맹수·TS열매·원주민(후야·우야) 거주. !생존모드/!하드모드에서 위험도 증가",
+            "- !생존/!하드모드 시 위험도 추가 증가",
+            "**!하드모드 활성 — 🔥 표시**"
+          ]
+        },
+        {
+          "cmd": "!속마음모드",
+          "count": 4,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "시점 {{user}}의 1인칭. 캐릭터 속마음은 표정·행동·말투·신체 반응으로만 (단, 활성 시 상태창 동작 정보가 속마음으로 대체)",
+          "sources": [
+            "description",
+            "lore:속마음모드 트리거",
+            "lore:상태창 출력 형식",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "- 시점: {{user}}의 1인칭. 캐릭터 속마음은 표정·행동·말투·신체 반응으로만 (단, !속마음모드 활성 시 상태창 동작 정보가 속마음으로 대체)",
+            "- !속마음모드 활성 시 마지막 칸의 \"현재 행동/상황\"이 그 캐릭터의 속마음으로 대체",
+            "**!속마음모드 활성 — 💭 표시**",
+            "**💭 !속마음모드 (혼합 가능)**"
+          ]
+        },
+        {
+          "cmd": "!TS모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "활성 — ♀️ 표시",
+          "sources": [
+            "lore:TS모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "**!TS모드 활성 — ♀️ 표시**",
+            "**♀️ !TS모드 (혼합 가능)**",
+            "**입력 규칙**: 띄어쓰기 금지. 예: `!기본모드+!하드모드+!TS모드`"
+          ]
+        },
+        {
+          "cmd": "!생존모드",
+          "count": 3,
+          "confidence": "high",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "중앙지역 정글 안쪽. 맹수·TS열매·원주민(후야·우야) 거주. / 위험도 증가",
+          "sources": [
+            "lore:생존모드 트리거",
+            "lore:모드 시스템 정의",
+            "lore:무인도 환경"
+          ],
+          "contexts": [
+            "- **중앙지역**: 정글 안쪽. 맹수·TS열매·원주민(후야·우야) 거주. !생존모드/!하드모드에서 위험도 증가",
+            "**!생존모드 활성 — 🌿 표시**",
+            "**🌿 !생존모드 (혼합 가능)**"
+          ]
+        },
+        {
+          "cmd": "!연애서바이벌모드",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "🎥 (시작모드, 두번째 시작상황)",
+          "sources": [
+            "lore:연애서바이벌모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "**🎥 !연애서바이벌모드 (시작모드, 두번째 시작상황)**",
+            "**!연애서바이벌모드 활성 — 🎥 표시**"
+          ]
+        },
+        {
+          "cmd": "!커스텀모드",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "🌎 (시작모드, 세번째 시작상황)",
+          "sources": [
+            "lore:커스텀모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "**🌎 !커스텀모드 (시작모드, 세번째 시작상황)**",
+            "**!커스텀모드 활성 — 🌎 표시**"
+          ]
+        },
+        {
+          "cmd": "!음란모드",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "활성 — 🔞 표시",
+          "sources": [
+            "lore:음란모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "**!음란모드 활성 — 🔞 표시**",
+            "**🔞 !음란모드 (혼합 가능)**"
+          ]
+        },
+        {
+          "cmd": "!NTR모드",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "활성 — 👿 표시",
+          "sources": [
+            "lore:NTR모드 트리거",
+            "lore:모드 시스템 정의"
+          ],
+          "contexts": [
+            "**!NTR모드 활성 — 👿 표시**",
+            "**👿 !NTR모드 (혼합 가능)**"
+          ]
+        },
+        {
+          "cmd": "!생존",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "/ 시 위험도 추가 증가",
+          "sources": [
+            "lore:중앙지역 탐사"
+          ],
+          "contexts": [
+            "- !생존/!하드모드 시 위험도 추가 증가"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "캠퍼스퀸",
+      "char_name": "캠퍼스퀸",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!서연일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{user}}가 \" \"을 입력하면, {{user}}가 모르는 곳에서 이서연이 혼자 하는 행동을 묘사한다. {{user}}는 이 장면을 관찰자 시점으로 본다.",
+          "sources": [
+            "lore:커스텀 명령어 -- !서연일상"
+          ],
+          "contexts": [
+            "{{user}}가 \"!서연일상\"을 입력하면, {{user}}가 모르는 곳에서 이서연이 혼자 하는 행동을 묘사한다. {{user}}는 이 장면을 관찰자 시점으로 본다.",
+            "### !서연일상 명령어 동작 규칙"
+          ]
+        },
+        {
+          "cmd": "!하은일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{user}}가 \" \"을 입력하면, {{user}}가 모르는 곳에서 강하은이 혼자 하는 행동을 묘사한다. {{user}}는 이 장면을 관찰자 시점으로 본다.",
+          "sources": [
+            "lore:커스텀 명령어 -- !하은일상"
+          ],
+          "contexts": [
+            "{{user}}가 \"!하은일상\"을 입력하면, {{user}}가 모르는 곳에서 강하은이 혼자 하는 행동을 묘사한다. {{user}}는 이 장면을 관찰자 시점으로 본다.",
+            "### !하은일상 명령어 동작 규칙"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "한서율",
+      "char_name": "한서율",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!음챗",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "명령어가 입력되면 즉시 음챗 앱 세션으로 전환한다.",
+          "sources": [
+            "lore:!음챗 명령어 — 앱 세션 강제 전환"
+          ],
+          "contexts": [
+            "`!음챗` 명령어가 입력되면 즉시 음챗 앱 세션으로 전환한다."
+          ]
+        },
+        {
+          "cmd": "!몰카",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "명령어가 입력되면 서율이 학교에서 {{user}}에게 도발적 사진을 전송하는 장면을 연출한다.",
+          "sources": [
+            "lore:!몰카 명령어 — 도발 사진 전송"
+          ],
+          "contexts": [
+            "`!몰카` 명령어가 입력되면 서율이 학교에서 {{user}}에게 도발적 사진을 전송하는 장면을 연출한다."
+          ]
+        },
+        {
+          "cmd": "!전환",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "명령어가 입력되면 서율의 현재 인격을 반대로 강제 전환한다.",
+          "sources": [
+            "lore:!전환 명령어 — 인격 강제 전환"
+          ],
+          "contexts": [
+            "`!전환` 명령어가 입력되면 서율의 현재 인격을 반대로 강제 전환한다."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "어디선가 복숭아 우유 냄새가 났다",
+      "char_name": "어디선가 복숭아 우유 냄새가 났다",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!세팅에서",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{user}}=정태원(이름은 지정). DKT 제주지사 대리, 기혼",
+          "sources": [
+            "description"
+          ],
+          "contexts": [
+            "{{user}}=정태원(이름은 !세팅에서 지정). DKT 제주지사 대리, 기혼"
+          ]
+        },
+        {
+          "cmd": "!NTR",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "모드 활성화. 윤채 루트 강제. 스테이터스에 [모드 NTR] 표시.",
+          "sources": [
+            "lore:!NTR 모드"
+          ],
+          "contexts": [
+            "!NTR 모드 활성화. 윤채 루트 강제. 스테이터스에 [모드: NTR] 표시."
+          ]
+        },
+        {
+          "cmd": "!NTL",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "모드 활성화. 은서 순애 루트 강제. 스테이터스에 [모드 NTL] 표시.",
+          "sources": [
+            "lore:!NTL 모드"
+          ],
+          "contexts": [
+            "!NTL 모드 활성화. 은서 순애 루트 강제. 스테이터스에 [모드: NTL] 표시."
+          ]
+        },
+        {
+          "cmd": "!우화모드",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "활성화. 윤채 시점 강화. 스테이터스에 [모드 우화] 표시.",
+          "sources": [
+            "lore:!우화모드"
+          ],
+          "contexts": [
+            "!우화모드 활성화. 윤채 시점 강화. 스테이터스에 [모드: 우화] 표시."
+          ]
+        },
+        {
+          "cmd": "!포식모드",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "모드",
+          "suggestedDesc": "활성화. 윤채 호감 🤍 700+ 전용. 미달 시 \"아직 날개가 마르지 않았습니다\" 안내. 스테이터스에 [모드 포식] 표시.",
+          "sources": [
+            "lore:!포식모드"
+          ],
+          "contexts": [
+            "!포식모드 활성화. 윤채 호감 🤍 700+ 전용. 미달 시 \"아직 날개가 마르지 않았습니다\" 안내. 스테이터스에 [모드: 포식] 표시."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "비서실 쟁탈전",
+      "char_name": "비서실 쟁탈전",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!서아일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "유저가 !{캐릭터이름}일상 입력 시 (예 , , ) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+          "sources": [
+            "description",
+            "lore:!{이름}일상 — 통합 단독 장면 커맨드"
+          ],
+          "contexts": [
+            "유저가 `!{캐릭터이름}일상` 입력 시 (예: !서아일상, !태희일상, !소희일상) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+            "!{캐릭터이름}일상 — 해당 캐릭터의 혼자 장면을 서술. 예: !서아일상, !태희일상, !소희일상."
+          ]
+        },
+        {
+          "cmd": "!태희일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "유저가 !{캐릭터이름}일상 입력 시 (예 , , ) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+          "sources": [
+            "description",
+            "lore:!{이름}일상 — 통합 단독 장면 커맨드"
+          ],
+          "contexts": [
+            "유저가 `!{캐릭터이름}일상` 입력 시 (예: !서아일상, !태희일상, !소희일상) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+            "!{캐릭터이름}일상 — 해당 캐릭터의 혼자 장면을 서술. 예: !서아일상, !태희일상, !소희일상."
+          ]
+        },
+        {
+          "cmd": "!소희일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "유저가 !{캐릭터이름}일상 입력 시 (예 , , ) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+          "sources": [
+            "description",
+            "lore:!{이름}일상 — 통합 단독 장면 커맨드"
+          ],
+          "contexts": [
+            "유저가 `!{캐릭터이름}일상` 입력 시 (예: !서아일상, !태희일상, !소희일상) 해당 캐릭터의 회장 부재 시 혼자 장면을 서술한다.",
+            "!{캐릭터이름}일상 — 해당 캐릭터의 혼자 장면을 서술. 예: !서아일상, !태희일상, !소희일상."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "후배가 자꾸 치마를 올리는 이유",
+      "char_name": "후배가 자꾸 치마를 올리는 이유",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!혼자서",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "시은이 혼자 있는 장면. 화장실에서 세수하며 두근거림을 진정시키거나, 퇴근 후 침대에서 {{user}}를 떠올리며 자위하는 장면을 시은의 3인칭 시점으로 서술. 서술 시점이 시은으로 전환되며, {{user}}의 행동은 서술하지 않음.",
+          "sources": [
+            "description"
+          ],
+          "contexts": [
+            "!혼자서: 시은이 혼자 있는 장면. 화장실에서 세수하며 두근거림을 진정시키거나, 퇴근 후 침대에서 {{user}}를 떠올리며 자위하는 장면을 시은의 3인칭 시점으로 서술. 서술 시점이 시은으로 전환되며, {{user}}의 행동은 서술하지 않음."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "나영은",
+      "char_name": "나영은",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!영은일상",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "— {{user}} 부재 시 영은의 독백, 질투, 자기검열. 영은의 방/서재/욕실에서 혼자만의 장면",
+          "sources": [
+            "description",
+            "lore:커스텀 명령어 -- 영은 일상"
+          ],
+          "contexts": [
+            "!영은일상 — {{user}} 부재 시 영은의 독백, 질투, 자기검열. 영은의 방/서재/욕실에서 혼자만의 장면",
+            "### !영은일상 모드"
+          ]
+        },
+        {
+          "cmd": "!보고",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "— {{user}}가 마담과의 시간을 영은에게 보고하는 장면. 영은이 상세히 묻고 확인하듯 안음",
+          "sources": [
+            "description",
+            "lore:커스텀 명령어 -- 보고 모드"
+          ],
+          "contexts": [
+            "!보고 — {{user}}가 마담과의 시간을 영은에게 보고하는 장면. 영은이 상세히 묻고 확인하듯 안음",
+            "### !보고 모드"
+          ]
+        },
+        {
+          "cmd": "!서클",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "— 마담 모임 장면. 파벌 역학, 과시, 도발. 네 마담의 시선과 긴장",
+          "sources": [
+            "description",
+            "lore:커스텀 명령어 -- 서클 모드"
+          ],
+          "contexts": [
+            "!서클 — 마담 모임 장면. 파벌 역학, 과시, 도발. 네 마담의 시선과 긴장",
+            "### !서클 모드"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "서은채",
+      "char_name": "서은채",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!밀실",
+          "count": 5,
+          "confidence": "high",
+          "suggestedGroup": "분기",
+          "suggestedDesc": "{{user}}가 을 입력하면, 밀폐 공간에 강제 조우 상황 발생. 공간만 제공하고 성적 전개 여부는 현재 🖤/💗 수치에 따름.",
+          "sources": [
+            "description",
+            "lore:!밀실",
+            "lore:성적 서술"
+          ],
+          "contexts": [
+            "{{user}}가 `!밀실`을 입력하면, 밀폐 공간에 강제 조우 상황 발생. 공간만 제공하고 성적 전개 여부는 현재 🖤/💗 수치에 따름.",
+            "!밀실: 밀폐 공간 조우",
+            "- [15] `!밀실` — 밀폐 공간 강제 조우 이벤트",
+            "밀실 (!밀실 이벤트)"
+          ]
+        },
+        {
+          "cmd": "!백합",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{user}}가 을 입력하면, {{char}}와 유진의 성적 장면을 3인칭 관찰 시점으로 서술한다.",
+          "sources": [
+            "description",
+            "lore:!백합"
+          ],
+          "contexts": [
+            "{{user}}가 `!백합`을 입력하면, {{char}}와 유진의 성적 장면을 3인칭 관찰 시점으로 서술한다.",
+            "!백합: 은채+유진 성적 장면 관전"
+          ]
+        },
+        {
+          "cmd": "!관찰",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{user}}가 을 입력하면, 주변 인물의 신체를 자세히 묘사한다.",
+          "sources": [
+            "description",
+            "lore:!관찰"
+          ],
+          "contexts": [
+            "{{user}}가 `!관찰`을 입력하면, 주변 인물의 신체를 자세히 묘사한다.",
+            "!관찰: 주변 인물 신체 관찰"
+          ]
+        },
+        {
+          "cmd": "!슬랙",
+          "count": 2,
+          "confidence": "medium",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "기존 13순위(메신저) 통합, 14순위(헬스장) 16순위로 이동",
+          "sources": [
+            "lore:성적 서술"
+          ],
+          "contexts": [
+            "- 기존 13순위(메신저) → !슬랙으로 통합, 14순위(헬스장) → 16순위로 이동",
+            "- [14] `!슬랙` — 사내 메신저 DM 엿보기 (채팅 형식, 기존 메신저 항목 통합)"
+          ]
+        },
+        {
+          "cmd": "!은채로그",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "[13] / — 캐릭터 독백 관찰 (3인칭 시점 전환)",
+          "sources": [
+            "lore:성적 서술"
+          ],
+          "contexts": [
+            "- [13] `!은채로그` / `!유진로그` — 캐릭터 독백 관찰 (3인칭 시점 전환)"
+          ]
+        },
+        {
+          "cmd": "!유진로그",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "[13] / — 캐릭터 독백 관찰 (3인칭 시점 전환)",
+          "sources": [
+            "lore:성적 서술"
+          ],
+          "contexts": [
+            "- [13] `!은채로그` / `!유진로그` — 캐릭터 독백 관찰 (3인칭 시점 전환)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "퍼스트 러브",
+      "char_name": "윤서진",
+      "existingCommands": [],
+      "detectedCommands": [
+        {
+          "cmd": "!원룸",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "기능",
+          "suggestedDesc": "{{char}} 원룸 혼자 장면. 공허함+쓸쓸함+{{user}} 생각. 💭에서 진짜 감정. 원룸일상 이미지만 사용 152/151/150/155/156/149/154/153/125(랜덤)",
+          "sources": [
+            "description"
+          ],
+          "contexts": [
+            "!원룸: {{char}} 원룸 혼자 장면. 공허함+쓸쓸함+{{user}} 생각. 💭에서 진짜 감정. 원룸일상 이미지만 사용: 152/151/150/155/156/149/154/153/125(랜덤)"
+          ]
+        },
+        {
+          "cmd": "!회상",
+          "count": 1,
+          "confidence": "low",
+          "suggestedGroup": "분기",
+          "suggestedDesc": "고교 시절 회상. 회상(고교) 이미지만 사용 161/164/168/165/169/160/162/163/170/166/167/159/158/157/171/172/173/174(랜덤). 회상 후 현재 복귀+감정 변화(담배 찾거나 \"...아\"). 반드시 스테이터스+선택지 출력",
+          "sources": [
+            "description"
+          ],
+          "contexts": [
+            "!회상: 고교 시절 회상. 회상(고교) 이미지만 사용: 161/164/168/165/169/160/162/163/170/166/167/159/158/157/171/172/173/174(랜덤). 회상 후 현재 복귀+감정 변화(담배 찾거나 \"...아\"). 반드시 스테이터스+선택지 출력"
+          ]
+        }
+      ]
+    }
+  ]
+}

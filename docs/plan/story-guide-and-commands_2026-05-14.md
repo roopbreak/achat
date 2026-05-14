@@ -1,6 +1,6 @@
 # 스토리 설명 영역 + 커맨드 ! 통일
 
-> 작성일: 2026-05-14 | 상태: Phase 1·2 배포·검증 완료 (Phase 3·4 별도 사이클 대기)
+> 작성일: 2026-05-14 | 상태: 완료 (Phase 1~4 전체)
 
 ## 배경 / 목표
 
@@ -112,23 +112,25 @@ DB에는 `TEXT` 컬럼, 내용은 JSON 배열 문자열. 각 항목:
 
 **StoryEdit 폼 contract** (Codex NOTE-8): `useStoryEditForm`의 `commands` state는 `Command[]` (`{cmd,desc,group}`) — API payload와 **동일 shape**. 저장 시 변환 없이 `storyData.commands`로 그대로 전달, 직렬화·검증은 백엔드 `serializeCommands()`가 담당.
 
-### Phase 3 — 원격 스토리 전수 점검 (read-only 감사) — *후속 사이클*
+### Phase 3 — 원격 스토리 전수 점검 (read-only 감사) — ✅ 완료
 
-| # | 작업 |
-|---|------|
-| 3.1 | `scripts/audit-commands.mjs` 신설 — 원격에서 실행. 모든 스토리의 `description` + `post_history_instructions` + 로어북 엔트리 스캔 |
-| 3.2 | 추출 규칙: `![가-힣A-Za-z0-9]+` 패턴 + 비-`!` 커맨드 후보(`○○모드`, `[○○]` 형식 등) 탐지 |
-| 3.3 | 리포트 산출(`docs/stories/_audit/commands-audit_<date>.json`): 스토리별 발견 커맨드, `!` 누락·불일치 항목, 제안 `commands` 필드 JSON |
-| 3.4 | 사용자 검토 — 자동 추출 결과 확인·보정 |
+| # | 작업 | 결과 |
+|---|------|------|
+| 3.1 | `scripts/audit-commands.mjs` 신설 — 원격 모든 스토리 스캔 | 78개 스토리 스캔 |
+| 3.2 | 추출 규칙: `!커맨드` 패턴 + 조사 병합 + 정의 컨텍스트 우선 추출 | — |
+| 3.3 | 리포트 산출 `commands-audit_2026-05-14.json` | 13개 스토리에서 커맨드 탐지 |
+| 3.4 | 사용자 검토 → `commands-synthesis_2026-05-14.json` 합성 | 13개 스토리 / 56 커맨드 확정 |
 
-### Phase 4 — 정규화·반영 (원격 DB 수정) — *후속 사이클*
+탐지된 커맨드는 전부 이미 `!` 접두사 사용 — 별도 통일 수정 불필요. 단축형/정식형 혼용만 `commands` 필드에서 정식형으로 통일.
 
-| # | 작업 |
-|---|------|
-| 4.1 | 검토된 리포트 기반 스토리별 payload 생성 (`commands` 필드 + 필요 시 프롬프트 텍스트 `!` 통일분) |
-| 4.2 | 스토리별 **스냅샷**(현재 상태 백업) + **복구 payload** 생성 |
-| 4.3 | 배치별 적용 — PUT story (commands 포함) + 필요 시 description/PHI/로어북 텍스트 수정 |
-| 4.4 | 적용 후 스모크 테스트 (스토리 로드 + 채팅 1턴) |
+### Phase 4 — 정규화·반영 (원격 DB 수정) — ✅ 완료
+
+| # | 작업 | 결과 |
+|---|------|------|
+| 4.1 | 합성안 기반 스토리별 payload (`commands` 필드만, 프롬프트 텍스트 미수정) | — |
+| 4.2 | `scripts/apply-commands.mjs` — 스냅샷 + 복구(`--revert`) 지원 | `commands-apply-snapshot_2026-05-14.json` |
+| 4.3 | 13개 스토리 `commands` PUT 반영 | 13/13 검증 OK, 오류 0 |
+| 4.4 | 스모크 테스트 — StoryDetail UI 렌더 확인 | 여사친의 스마트폰 정상 |
 
 ---
 
@@ -170,6 +172,12 @@ DB에는 `TEXT` 컬럼, 내용은 JSON 배열 문자열. 각 항목:
 - [x] 배포 전 Codex 리뷰 — HIGH/MEDIUM/LOW 4건 수정·재검증
 - [x] commit (`64fc286`) + push → `bash deploy.sh`
 - [x] 배포 후 `https://risu.ddsmdy.com/` 검증 — 엔드포인트·StoryDetail UI 정상
+
+### Phase 3·4 — 원격 전수 점검·반영
+- [x] `scripts/audit-commands.mjs` 감사 → 13개 스토리 탐지
+- [x] `commands-synthesis_2026-05-14.json` 합성·사용자 승인
+- [x] `scripts/apply-commands.mjs` 스냅샷 → 13개 스토리 반영 → 13/13 검증
+- [x] StoryDetail UI 스모크 테스트
 
 ---
 
