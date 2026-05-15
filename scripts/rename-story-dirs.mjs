@@ -50,6 +50,10 @@ function preflight(storiesDir, mappings) {
       errors.push(`slug 패턴 위반: ${m.slug}`);
       continue;
     }
+    if (m.name === m.slug) {
+      // 이미 슬러그와 동일한 이름의 디렉토리 (예: bangkok-poolvilla)
+      continue;
+    }
     const oldPath = path.join(storiesDir, m.name);
     const newPath = path.join(storiesDir, m.slug);
 
