@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 interface Props {
-  storyName: string
+  slug: string
   onReset: () => void
   onExport: () => void
   onToggleGuide: () => void
@@ -11,13 +11,13 @@ interface Props {
 }
 
 export default function ChatHeader({
-  storyName, onReset, onExport,
+  slug, onReset, onExport,
   onToggleGuide, onToggleSettings, onToggleSlots, onToggleNote,
 }: Props) {
   return (
     <header className="chat-header">
       <Link to="/" style={{ color: 'var(--text-dim)', fontSize: 20, lineHeight: 1 }}>←</Link>
-      <span className="story-title">{storyName}</span>
+      <span className="story-title">{slug}</span>
       <div className="session-actions">
         <button className="btn btn-secondary" onClick={onToggleGuide} style={{ fontSize: 13, padding: '6px 12px' }} title="가이드 (캐릭터·커맨드)">❓</button>
         <button className="btn btn-secondary" onClick={onToggleSlots} style={{ fontSize: 13, padding: '6px 12px' }}>

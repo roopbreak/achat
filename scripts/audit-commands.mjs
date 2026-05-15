@@ -117,9 +117,9 @@ async function main() {
 
     let lore = [];
     try {
-      lore = await api(`/api/admin/stories/${encodeURIComponent(s.name)}/lore`);
+      lore = await api(`/api/admin/stories/${encodeURIComponent(s.slug)}/lore`);
     } catch (e) {
-      console.warn(`  ⚠ ${s.name} 로어 조회 실패: ${e.message}`);
+      console.warn(`  ⚠ ${s.slug} 로어 조회 실패: ${e.message}`);
     }
     for (const entry of lore) {
       scanText(entry.content, `lore:${entry.name || entry.id}`, hits);
@@ -153,7 +153,8 @@ async function main() {
       report.totalDetected += commands.length;
       report.totalHighConfidence += high.length;
       report.stories.push({
-        name: s.name,
+        slug: s.slug,
+        title: s.title,
         char_name: s.char_name,
         existingCommands,
         detectedCommands: commands,

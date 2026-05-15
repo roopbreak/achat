@@ -32,16 +32,16 @@ function getCategory(sceneKey: string): string {
 }
 
 // 이미지 URL 조립
-function buildImageUrl(storyName: string, charDir: string, sceneKey: string, bust?: number): string {
+function buildImageUrl(slug: string, charDir: string, sceneKey: string, bust?: number): string {
   const q = bust ? `?v=${bust}` : ''
   if (charDir) {
-    return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(charDir)}/${encodeURIComponent(sceneKey)}${q}`
+    return `/images/${encodeURIComponent(slug)}/${encodeURIComponent(charDir)}/${encodeURIComponent(sceneKey)}${q}`
   }
-  return `/images/${encodeURIComponent(storyName)}/${encodeURIComponent(sceneKey)}${q}`
+  return `/images/${encodeURIComponent(slug)}/${encodeURIComponent(sceneKey)}${q}`
 }
 
 export default function Gallery() {
-  const { storyName } = useParams<{ storyName?: string }>()
+  const { slug } = useParams<{ slug?: string }>()
   const navigate = useNavigate()
 
   const [stories, setStories] = useState<StoryInfo[]>([])
@@ -69,13 +69,13 @@ export default function Gallery() {
 
   // 스토리 변경 시 이미지 목록 로드
   useEffect(() => {
-    if (!storyName) { setImages([]); return }
+    if (!slug) { setImages([]); return }
     setLoading(true)
-    api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+    api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(slug)}/images`)
       .then(list => { setImages(list); setActiveCategory('전체'); setActiveChar('전체'); setCacheBusters({}) })
       .catch(() => setImages([]))
       .finally(() => setLoading(false))
-  }, [storyName])
+  }, [slug])
 
   // 캐릭터 목록 (char_dir 기준)
   const charDirs = useMemo(() => {
@@ -133,16 +133,16 @@ export default function Gallery() {
 
   // 대량 삭제
   const handleBulkDelete = async () => {
-    if (!storyName || selected.size === 0) return
+    if (!slug || selected.size === 0) return
     if (!confirm(`선택한 ${selected.size}장을 삭제할까요?`)) return
     setBulkLoading(true)
     try {
       for (const k of selected) {
         const [charDir, sceneKey] = k.split('::')
         const charParam = charDir ? `?charDir=${encodeURIComponent(charDir)}` : ''
-        await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(sceneKey)}${charParam}`, { method: 'DELETE' })
+        await api(`/api/admin/stories/${encodeURIComponent(slug)}/images/${encodeURIComponent(sceneKey)}${charParam}`, { method: 'DELETE' })
       }
-      const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+      const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(slug)}/images`)
       setImages(list)
       setCacheBusters(prev => { const next = { ...prev }; for (const k of selected) delete next[k]; return next })
       exitSelectMode()
@@ -152,14 +152,14 @@ export default function Gallery() {
 
   // 대량 재생성
   const handleBulkRegenerate = async () => {
-    if (!storyName || selected.size === 0) return
+    if (!slug || selected.size === 0) return
     if (!confirm(`선택한 ${selected.size}장을 재생성할까요?`)) return
     setBulkLoading(true)
     try {
       // filtered 범위 내 선택만 전송
       const sceneIds = filtered.filter(img => selected.has(selKey(img))).map(img => img.scene_key)
       if (sceneIds.length === 0) { setBulkLoading(false); return }
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
+      await api(`/api/admin/stories/${encodeURIComponent(slug)}/generate`, {
         method: 'POST',
         body: JSON.stringify({ sceneIds }),
       })
@@ -168,11 +168,11 @@ export default function Gallery() {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       pollRef.current = setInterval(async () => {
         try {
-          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
+          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(slug)}/generate/status`)
           if (job.status === 'completed' || job.status === 'failed' || job.status === 'none') {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
             setBulkLoading(false)
-            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(slug)}/images`)
             setImages(list)
             // 재생성된 이미지만 캐시 무효화
             const now = Date.now()
@@ -189,11 +189,11 @@ export default function Gallery() {
 
   // 이미지 삭제
   const handleDelete = async (img: ImageItem) => {
-    if (!storyName || !confirm(`"${img.scene_key}" 이미지를 삭제할까요?`)) return
+    if (!slug || !confirm(`"${img.scene_key}" 이미지를 삭제할까요?`)) return
     setActionLoading(img.scene_key)
     try {
       const charParam = img.char_dir ? `?charDir=${encodeURIComponent(img.char_dir)}` : ''
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}${charParam}`, { method: 'DELETE' })
+      await api(`/api/admin/stories/${encodeURIComponent(slug)}/images/${encodeURIComponent(img.scene_key)}${charParam}`, { method: 'DELETE' })
       setImages(prev => prev.filter(i => !(i.scene_key === img.scene_key && i.char_dir === img.char_dir)))
       setCacheBusters(prev => { const next = { ...prev }; delete next[selKey(img)]; return next })
       setModal(null)
@@ -203,20 +203,20 @@ export default function Gallery() {
 
   // 이미지 재생성
   const handleRegenerate = async (img: ImageItem) => {
-    if (!storyName) return
+    if (!slug) return
     setActionLoading(img.scene_key)
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(storyName)}/images/${encodeURIComponent(img.scene_key)}/regenerate`, { method: 'POST' })
+      await api(`/api/admin/stories/${encodeURIComponent(slug)}/images/${encodeURIComponent(img.scene_key)}/regenerate`, { method: 'POST' })
       setModal(null)
       // 기존 폴링 정리 후 새로고침
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       pollRef.current = setInterval(async () => {
         try {
-          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
+          const job = await api<{ status: string }>(`/api/admin/stories/${encodeURIComponent(slug)}/generate/status`)
           if (job.status === 'completed' || job.status === 'failed' || job.status === 'none') {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
             setActionLoading(null)
-            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(storyName)}/images`)
+            const list = await api<ImageItem[]>(`/api/admin/stories/${encodeURIComponent(slug)}/images`)
             setImages(list)
             // 재생성된 이미지만 캐시 무효화
             setCacheBusters(prev => ({ ...prev, [selKey(img)]: Date.now() }))
@@ -241,7 +241,7 @@ export default function Gallery() {
           <h2 style={{ fontSize: 18, margin: 0 }}>이미지 갤러리</h2>
           {/* 스토리 선택 드롭다운 */}
           <select
-            value={storyName ?? ''}
+            value={slug ?? ''}
             onChange={e => handleStoryChange(e.target.value)}
             style={{ width: 'auto', minWidth: 160, fontSize: 14, padding: '6px 10px' }}
           >
@@ -250,14 +250,14 @@ export default function Gallery() {
               <option key={s.name} value={s.name}>{s.name}</option>
             ))}
           </select>
-          {storyName && (
+          {slug && (
             <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
               {images.length}장
             </span>
           )}
         </div>
 
-        {!storyName ? (
+        {!slug ? (
           <div style={{ color: 'var(--text-dim)', fontSize: 14, paddingTop: 40, textAlign: 'center' }}>
             스토리를 선택하면 이미지를 볼 수 있습니다.
           </div>
@@ -364,7 +364,7 @@ export default function Gallery() {
                       </div>
                     )}
                     <img
-                      src={buildImageUrl(storyName, img.char_dir, img.scene_key, cacheBusters[selKey(img)])}
+                      src={buildImageUrl(slug, img.char_dir, img.scene_key, cacheBusters[selKey(img)])}
                       alt={img.scene_key}
                       style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: selectMode && isSelected ? 0.7 : 1 }}
                       loading="lazy"
@@ -408,7 +408,7 @@ export default function Gallery() {
           }}
         >
           <img
-            src={buildImageUrl(storyName!, modal.char_dir, modal.scene_key, cacheBusters[selKey(modal)])}
+            src={buildImageUrl(slug!, modal.char_dir, modal.scene_key, cacheBusters[selKey(modal)])}
             alt={modal.scene_key}
             onClick={e => e.stopPropagation()}
             style={{ maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: 10, cursor: 'default' }}

@@ -3,23 +3,23 @@ import { api } from '../../lib/api'
 
 interface Props {
   open: boolean
-  storyName: string
+  slug: string
   onClose: () => void
 }
 
-export default function NotePanel({ open, storyName, onClose }: Props) {
+export default function NotePanel({ open, slug, onClose }: Props) {
   const [content, setContent] = useState('')
 
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    api<{ content?: string }>(`/api/admin/stories/${encodeURIComponent(storyName)}/note`)
+    api<{ content?: string }>(`/api/admin/stories/${encodeURIComponent(slug)}/note`)
       .then(data => { if (!cancelled) setContent(data.content ?? '') })
     return () => { cancelled = true }
-  }, [open, storyName])
+  }, [open, slug])
 
   const save = async () => {
-    await api(`/api/admin/stories/${encodeURIComponent(storyName)}/note`, {
+    await api(`/api/admin/stories/${encodeURIComponent(slug)}/note`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     })

@@ -5,15 +5,15 @@ import fs from 'node:fs';
 import { parseAndImportCard } from '../lib/card-parser.mjs';
 import { saveImages, deleteStoryImageFiles, createMulter } from '../lib/upload-handler.mjs';
 import {
-  getStories, getStory, getStoryImageCount, deleteStory, deleteStoryImages,
-  updateStory, createStoryManual, renameStory,
+  getStories, getStoryBySlug, getStoryImageCount, deleteStoryById, deleteStoryImages,
+  updateStory, createStoryManual, changeStorySlug,
   updateUrlMappings, getUrlMappings,
   getStoryNote, upsertStoryNote,
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
   setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
   getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
   updateLoreEmbedding, getUnembeddedLore,
-  getRunningJob, getLatestJob, getAnyRunningJob,
+  getLatestJob,
   getExistingSceneKeys, deleteStoryImageBySceneKey,
   parseCommands,
 } from '../lib/db.mjs';
@@ -25,16 +25,25 @@ import { buildComposition, loadComposition, saveComposition, COMPOSITION_CATEGOR
 const router = Router();
 const queuedGenerations = new Map();
 
-function setQueuedGeneration(storyName, total) {
-  queuedGenerations.set(storyName, { total });
+function setQueuedGeneration(slug, total) {
+  queuedGenerations.set(slug, { total });
+}
+function clearQueuedGeneration(slug) {
+  queuedGenerations.delete(slug);
+}
+function getQueuedGeneration(slug) {
+  return queuedGenerations.get(slug) || null;
 }
 
-function clearQueuedGeneration(storyName) {
-  queuedGenerations.delete(storyName);
-}
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{2,49}$/;
 
-function getQueuedGeneration(storyName) {
-  return queuedGenerations.get(storyName) || null;
+function resolveStory(req, res) {
+  const story = getStoryBySlug(req.params.slug);
+  if (!story) {
+    res.status(404).json({ error: '스토리 없음' });
+    return null;
+  }
+  return story;
 }
 
 // 로어 엔트리 비동기 임베딩 (fire-and-forget)
@@ -48,15 +57,13 @@ async function embedLoreEntry(id, content) {
   }
 }
 
-// 스토리의 미임베딩 로어 일괄 처리
-async function embedLoreForStory(storyName) {
-  const entries = getUnembeddedLore(storyName);
+async function embedLoreForStory(storyId, label) {
+  const entries = getUnembeddedLore(storyId);
   let embedded = 0;
   let rpmCount = 0;
   for (const entry of entries) {
     if (!entry.content?.trim()) continue;
     try {
-      // Voyage 무료 플랜 3 RPM 제한 대응
       if (rpmCount >= 3) {
         await new Promise(r => setTimeout(r, 20000));
         rpmCount = 0;
@@ -71,29 +78,26 @@ async function embedLoreForStory(storyName) {
       console.error(`[lore-embed] id=${entry.id} 실패:`, err.message);
     }
   }
-  if (embedded > 0) console.log(`[lore-embed] ${storyName}: ${embedded}/${entries.length}건 임베딩 완료`);
+  if (embedded > 0) console.log(`[lore-embed] ${label}: ${embedded}/${entries.length}건 임베딩 완료`);
   return { embedded, skipped: entries.length - embedded };
 }
 
-// 이미지 자동 생성 트리거 (비동기, 응답 차단 안 함)
-// composition이 없으면 자동 생성 후 이미지 생성
-async function triggerAutoGenerate(storyName, hasImages = false) {
+async function triggerAutoGenerate(story, hasImages = false) {
   if (hasImages) {
-    console.log(`[AutoGen] ${storyName}: 이미지 포함 → 자동 생성 스킵`);
+    console.log(`[AutoGen] ${story.slug}: 이미지 포함 → 자동 생성 스킵`);
     return;
   }
   if (checkDependencies().length > 0) return;
 
   try {
-    // composition 없으면 먼저 생성
-    if (!loadComposition(storyName)) {
-      console.log(`[AutoGen] ${storyName}: 컴포지션 자동 생성 시작`);
-      buildComposition(storyName);
+    if (!loadComposition(story.slug)) {
+      console.log(`[AutoGen] ${story.slug}: 컴포지션 자동 생성 시작`);
+      buildComposition(story.slug);
     }
-    console.log(`[AutoGen] ${storyName}: 이미지 자동 생성 큐 추가`);
-    await enqueueGenerate(() => autoGenerate(storyName));
+    console.log(`[AutoGen] ${story.slug}: 이미지 자동 생성 큐 추가`);
+    await enqueueGenerate(() => autoGenerate(story));
   } catch (err) {
-    console.error(`[AutoGen] ${storyName} 실패:`, err.message);
+    console.error(`[AutoGen] ${story.slug} 실패:`, err.message);
   }
 }
 const upload = createMulter(multer);
@@ -104,34 +108,35 @@ router.get('/stories', (_req, res) => {
   const stories = getStories().map(s => {
     const desc = s.description || '';
     const hasExternalImages = EXTERNAL_DOMAINS.some(d => desc.includes(d));
-    return { ...s, imageCount: getStoryImageCount(s.name), hasExternalImages };
+    return { ...s, imageCount: getStoryImageCount(s.id), hasExternalImages };
   });
   res.json(stories);
 });
 
-// POST /api/admin/stories — 신규 스토리 수동 생성
+// POST /api/admin/stories — 신규 스토리 수동 생성 (slug 필수)
 router.post('/stories', (req, res) => {
   try {
-    const { name, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands } = req.body;
-    if (!name?.trim() || !char_name?.trim()) {
-      return res.status(400).json({ error: '스토리명과 캐릭터명은 필수입니다.' });
+    const { slug, title, char_name, description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands } = req.body;
+    if (!slug?.trim() || !title?.trim() || !char_name?.trim()) {
+      return res.status(400).json({ error: 'slug, title, char_name 필수' });
     }
-    const existing = getStory(name.trim());
-    if (existing) return res.status(409).json({ error: '이미 존재하는 스토리명입니다.' });
-    createStoryManual({ name: name.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands });
+    if (!SLUG_RE.test(slug.trim())) {
+      return res.status(400).json({ error: 'slug 패턴 위반: ^[a-z0-9][a-z0-9-]{2,49}$' });
+    }
+    if (getStoryBySlug(slug.trim())) return res.status(409).json({ error: '이미 존재하는 slug' });
+    createStoryManual({ slug: slug.trim(), title: title.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/admin/stories/:name/export — chara_card_v2 JSON 익스포트 (/:name보다 먼저 매칭)
-router.get('/stories/:name/export', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+// GET /api/admin/stories/:slug/export
+router.get('/stories/:slug/export', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
 
-  const loreEntries = getAllLoreIncludeDisabled(name);
+  const loreEntries = getAllLoreIncludeDisabled(story.id);
 
   const card = {
     spec: 'chara_card_v2',
@@ -160,7 +165,8 @@ router.get('/stories/:name/export', (req, res) => {
       extensions: {
         achat: {
           category: story.category ?? null,
-          story_name: name,
+          slug: story.slug,
+          title: story.title,
           narration_style: story.narration_style ?? '',
           narration_style_source: story.narration_style_source ?? 'unset',
         },
@@ -168,15 +174,14 @@ router.get('/stories/:name/export', (req, res) => {
     },
   };
 
-  const safeName = encodeURIComponent(name).replace(/'/g, '%27');
+  const safeName = encodeURIComponent(story.title).replace(/'/g, '%27');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${safeName}.json`);
   res.json(card);
 });
 
-// ── Composition 라우트 (/:name보다 먼저 매칭되어야 함) ──
+// ── Composition ──────────────────────────────────────
 
-// customScenes 한 블록(카테고리→씬배열 맵) 검증. 문제 있으면 에러 문자열, 없으면 null
 function validateCustomScenesBlock(block, allowedCategories, prefix = '') {
   if (typeof block !== 'object' || block === null || Array.isArray(block)) {
     return `${prefix}customScenes는 카테고리별 배열을 담은 객체여야 합니다`;
@@ -203,15 +208,12 @@ function validateCustomScenesBlock(block, allowedCategories, prefix = '') {
   return null;
 }
 
-// POST /api/admin/stories/:name/composition — 컴포지션 생성
-router.post('/stories/:name/composition', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리 없음' });
+router.post('/stories/:slug/composition', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
 
   try {
     const { basePrompt, baseNegative, characters, customScenes } = req.body || {};
-    // characters 입력 검증
     if (characters) {
       const keys = Object.keys(characters);
       if (keys.length > 10) return res.status(400).json({ error: '캐릭터는 최대 10명까지 지원합니다' });
@@ -219,7 +221,6 @@ router.post('/stories/:name/composition', (req, res) => {
         if (!/^[a-zA-Z0-9_]+$/.test(k)) return res.status(400).json({ error: `캐릭터 키는 영문/숫자/밑줄만 허용: ${k}` });
       }
     }
-    // customScenes 검증
     if (customScenes != null) {
       if (typeof customScenes !== 'object' || Array.isArray(customScenes)) {
         return res.status(400).json({ error: 'customScenes는 객체여야 합니다' });
@@ -227,7 +228,6 @@ router.post('/stories/:name/composition', (req, res) => {
       const allowedCategories = new Set(COMPOSITION_CATEGORIES.customAllowed);
       const charKeys = characters ? Object.keys(characters) : [];
       if (charKeys.length > 1) {
-        // 멀티 캐릭터: customScenes는 charKey로 중첩. 키가 모두 characters에 속해야 함
         for (const key of Object.keys(customScenes)) {
           if (!charKeys.includes(key)) {
             return res.status(400).json({ error: `customScenes의 키 '${key}'가 characters에 없습니다 (멀티는 charKey로 중첩해야 합니다)` });
@@ -236,50 +236,44 @@ router.post('/stories/:name/composition', (req, res) => {
           if (err) return res.status(400).json({ error: err });
         }
       } else {
-        // 싱글 캐릭터: 평면 카테고리 맵
         const err = validateCustomScenesBlock(customScenes, allowedCategories);
         if (err) return res.status(400).json({ error: err });
       }
     }
-    const composition = buildComposition(name, { basePrompt, baseNegative, characters, customScenes });
+    const composition = buildComposition(story.slug, { basePrompt, baseNegative, characters, customScenes });
     res.json({ ok: true, total: composition.images?.length || 0 });
   } catch (err) {
-    console.error(`[Composition] ${name} 실패:`, err.message);
+    console.error(`[Composition] ${story.slug} 실패:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/admin/stories/:name/composition — 컴포지션 조회
-router.get('/stories/:name/composition', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const composition = loadComposition(name);
+router.get('/stories/:slug/composition', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const composition = loadComposition(story.slug);
   if (!composition) return res.json({ exists: false, images: [] });
   res.json(composition);
 });
 
-// PUT /api/admin/stories/:name/composition — 컴포지션 수동 편집
-router.put('/stories/:name/composition', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리 없음' });
-
+router.put('/stories/:slug/composition', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   try {
-    saveComposition(name, req.body);
+    saveComposition(story.slug, req.body);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── 이미지 생성 라우트 ──
+// ── 이미지 생성 ──
 
-// POST /api/admin/stories/:name/generate — 이미지 생성 (composition 필수)
-router.post('/stories/:name/generate', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리 없음' });
+router.post('/stories/:slug/generate', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
 
-  const composition = loadComposition(name);
+  const composition = loadComposition(story.slug);
   if (!composition) return res.status(400).json({ error: '컴포지션이 없습니다. 먼저 컴포지션을 생성하세요.' });
 
   const issues = checkDependencies();
@@ -291,57 +285,53 @@ router.post('/stories/:name/generate', (req, res) => {
     return res.status(400).json({ error: 'sceneIds와 retryFailed는 동시에 사용할 수 없습니다' });
   }
 
-  // retryFailed: 아직 생성되지 않은 장면만 대상으로 설정
   if (retryFailed) {
-    const existing = new Set(getExistingSceneKeys(name));
+    const existing = new Set(getExistingSceneKeys(story.id));
     const allIds = (composition.images || []).map(img => img.id);
     const missing = allIds.filter(id => !existing.has(id));
     if (missing.length === 0) {
-      return res.status(400).json({ error: '재시도할 장면이 없습니다. 모든 장면이 이미 생성되어 있습니다.' });
+      return res.status(400).json({ error: '재시도할 장면이 없습니다.' });
     }
     sceneIds = missing;
   }
 
   const total = sceneIds?.length || composition.images?.length || 0;
   const queuePos = getQueueLength();
-  setQueuedGeneration(name, total);
-  res.json({ status: 'queued', storyName: name, total, queuePosition: queuePos });
+  setQueuedGeneration(story.slug, total);
+  res.json({ status: 'queued', slug: story.slug, total, queuePosition: queuePos });
   enqueueGenerate(async () => {
-    clearQueuedGeneration(name);
-    return autoGenerate(name, { sceneIds });
+    clearQueuedGeneration(story.slug);
+    return autoGenerate(story, { sceneIds });
   }).catch(err => {
-    clearQueuedGeneration(name);
-    console.error(`[AutoGen] ${name} 실패:`, err.message);
+    clearQueuedGeneration(story.slug);
+    console.error(`[AutoGen] ${story.slug} 실패:`, err.message);
   });
 });
 
-// POST /api/admin/stories/:name/cleanup — 좀비 이미지 정리
-router.post('/stories/:name/cleanup', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리 없음' });
+router.post('/stories/:slug/cleanup', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
 
   try {
-    const result = cleanupOrphanImages(name);
+    const result = cleanupOrphanImages(story);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/admin/stories/:name/generate/progress — SSE
-router.get('/stories/:name/generate/progress', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
+router.get('/stories/:slug/generate/progress', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
 
   const interval = setInterval(() => {
-    // 큐 마커가 있으면 DB job보다 우선 (이전 failed/completed job이 남아있을 수 있음)
-    const queued = getQueuedGeneration(name);
+    const queued = getQueuedGeneration(story.slug);
     if (queued) {
       res.write(`data: ${JSON.stringify({ status: 'queued', total: queued.total, completed: 0, failed: 0 })}\n\n`);
       return;
     }
-    const job = getLatestJob(name);
+    const job = getLatestJob(story.id);
     if (!job) {
       res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`);
       return;
@@ -353,64 +343,61 @@ router.get('/stories/:name/generate/progress', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
-// GET /api/admin/stories/:name/generate/status — 단순 조회
-router.get('/stories/:name/generate/status', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const queued = getQueuedGeneration(name);
+router.get('/stories/:slug/generate/status', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const queued = getQueuedGeneration(story.slug);
   if (queued) return res.json({ status: 'queued', total: queued.total, completed: 0, failed: 0 });
-  const job = getLatestJob(name);
+  const job = getLatestJob(story.id);
   res.json(job || { status: 'none' });
 });
 
-// POST /api/admin/generate/stop — 배치 큐 전체 중지
 router.post('/generate/stop', (req, res) => {
   const cleared = clearQueue();
   res.json({ ok: true, cleared });
 });
 
-// GET /api/admin/stories/:name — 단일 스토리 상세
-router.get('/stories/:name', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
-  if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
+// GET /api/admin/stories/:slug
+router.get('/stories/:slug', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   res.json({ ...story, commands: parseCommands(story.commands) });
 });
 
-// PUT /api/admin/stories/:name — 스토리 필드 수정
-router.put('/stories/:name', (req, res) => {
+// PUT /api/admin/stories/:slug
+router.put('/stories/:slug', (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
-    const story = getStory(name);
-    if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
-    updateStory(name, req.body);
+    const story = resolveStory(req, res);
+    if (!story) return;
+    updateStory(story.id, req.body);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/admin/stories/:name/lore — 로어북 목록
-router.get('/stories/:name/lore', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  res.json(getAllLoreIncludeDisabled(name));
+router.get('/stories/:slug/lore', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  res.json(getAllLoreIncludeDisabled(story.id));
 });
 
-// POST /api/admin/stories/:name/embed-lore — 미임베딩 로어 일괄 임베딩
-router.post('/stories/:name/embed-lore', async (req, res) => {
+router.post('/stories/:slug/embed-lore', async (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
-    const result = await embedLoreForStory(name);
+    const story = resolveStory(req, res);
+    if (!story) return;
+    const result = await embedLoreForStory(story.id, story.slug);
     res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/admin/stories/:name/lore — 로어 항목 추가
-router.post('/stories/:name/lore', (req, res) => {
+router.post('/stories/:slug/lore', (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
-    const result = insertSingleLoreEntry(name, req.body);
+    const story = resolveStory(req, res);
+    if (!story) return;
+    const result = insertSingleLoreEntry(story.id, req.body);
     const id = result.lastInsertRowid;
     if (req.body.content) embedLoreEntry(id, req.body.content);
     res.json({ ok: true, id });
@@ -419,8 +406,7 @@ router.post('/stories/:name/lore', (req, res) => {
   }
 });
 
-// PUT /api/admin/stories/:name/lore/:id — 로어 항목 수정
-router.put('/stories/:name/lore/:id', (req, res) => {
+router.put('/stories/:slug/lore/:id', (req, res) => {
   try {
     updateLoreEntry(req.params.id, req.body);
     if ('content' in req.body) embedLoreEntry(req.params.id, req.body.content);
@@ -430,8 +416,7 @@ router.put('/stories/:name/lore/:id', (req, res) => {
   }
 });
 
-// DELETE /api/admin/stories/:name/lore/:id — 로어 항목 삭제
-router.delete('/stories/:name/lore/:id', (req, res) => {
+router.delete('/stories/:slug/lore/:id', (req, res) => {
   try {
     deleteLoreEntry(req.params.id);
     res.json({ ok: true });
@@ -440,79 +425,76 @@ router.delete('/stories/:name/lore/:id', (req, res) => {
   }
 });
 
-// POST /api/admin/import/card
-// body: multipart, field "card" = JSON 파일, field "storyName" = 스토리명
+// ── Import (slug + title 본문 입력) ──
+
 router.post('/import/card', upload.single('card'), (req, res) => {
   try {
-    const storyName = req.body.storyName?.trim();
-    if (!storyName) return res.status(400).json({ error: 'storyName 필요' });
+    const slug = req.body.slug?.trim();
+    const title = req.body.title?.trim();
+    if (!slug || !title) return res.status(400).json({ error: 'slug, title 필요' });
+    if (!SLUG_RE.test(slug)) return res.status(400).json({ error: 'slug 패턴 위반' });
     if (!req.file)  return res.status(400).json({ error: '파일 없음' });
 
     const jsonData = fs.readFileSync(req.file.path, 'utf-8');
-    fs.unlinkSync(req.file.path); // tmp 파일 정리
+    fs.unlinkSync(req.file.path);
 
-    const result = parseAndImportCard(storyName, jsonData);
+    const result = parseAndImportCard(slug, title, jsonData);
+    const story = getStoryBySlug(slug);
     res.json({ ok: true, ...result });
-    // 로어 임베딩 (비동기)
-    if (result.loreCount > 0) embedLoreForStory(storyName).catch(e => console.error(`[lore-embed] ${storyName}:`, e.message));
-    // Card에는 이미지 없으므로 항상 트리거
-    triggerAutoGenerate(storyName, false);
+    if (result.loreCount > 0) embedLoreForStory(story.id, slug).catch(e => console.error(`[lore-embed] ${slug}:`, e.message));
+    triggerAutoGenerate(story, false);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/admin/import/images
-// body: multipart, field "images" = 이미지 파일들, field "storyName" = 스토리명
 router.post('/import/images', upload.array('images', 500), (req, res) => {
   try {
-    const storyName = req.body.storyName?.trim();
-    if (!storyName) return res.status(400).json({ error: 'storyName 필요' });
+    const slug = req.body.slug?.trim();
+    if (!slug) return res.status(400).json({ error: 'slug 필요' });
+    const story = getStoryBySlug(slug);
+    if (!story) return res.status(404).json({ error: '스토리 없음' });
     if (!req.files?.length) return res.status(400).json({ error: '파일 없음' });
 
-    const result = saveImages(storyName, req.files);
+    const result = saveImages(story.slug, story.id, req.files);
     res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/admin/import/zip
-// body: multipart, field "zip" = ZIP 파일, field "storyName" = 스토리명
 router.post('/import/zip', upload.single('zip'), (req, res) => {
   try {
-    const storyName = req.body.storyName?.trim();
-    if (!storyName) return res.status(400).json({ error: 'storyName 필요' });
+    const slug = req.body.slug?.trim();
+    const title = req.body.title?.trim();
+    if (!slug || !title) return res.status(400).json({ error: 'slug, title 필요' });
+    if (!SLUG_RE.test(slug)) return res.status(400).json({ error: 'slug 패턴 위반' });
     if (!req.file)  return res.status(400).json({ error: '파일 없음' });
 
-    const result = importFromZip(storyName, req.file.path);
+    const result = importFromZip(slug, title, req.file.path);
     fs.unlinkSync(req.file.path);
+    const story = getStoryBySlug(slug);
     res.json({ ok: true, ...result });
-    // 로어 임베딩 (비동기)
-    if (result.loreCount > 0) embedLoreForStory(storyName).catch(e => console.error(`[lore-embed] ${storyName}:`, e.message));
-    // 이미지 포함 시 스킵
-    triggerAutoGenerate(storyName, (result.imagesSaved || 0) > 0);
+    if (result.loreCount > 0) embedLoreForStory(story.id, slug).catch(e => console.error(`[lore-embed] ${slug}:`, e.message));
+    triggerAutoGenerate(story, (result.imagesSaved || 0) > 0);
   } catch (err) {
     if (req.file?.path) try { fs.unlinkSync(req.file.path); } catch {}
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/admin/stories/:name/url-mappings
-router.get('/stories/:name/url-mappings', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  res.json(getUrlMappings(name));
+router.get('/stories/:slug/url-mappings', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  res.json(getUrlMappings(story.id));
 });
 
-// POST /api/admin/stories/:name/url-mappings
-// body: [{ from: "https://cdn.../s/", charDir: "soha" }, ...]
-// 또는 텍스트 형식: "https://cdn.../s/ → soha\nhttps://cdn.../u/ → sua"
-router.post('/stories/:name/url-mappings', (req, res) => {
+router.post('/stories/:slug/url-mappings', (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
+    const story = resolveStory(req, res);
+    if (!story) return;
     let mappings = req.body.mappings;
 
-    // 텍스트 형식 파싱
     if (typeof mappings === 'string') {
       mappings = mappings.split('\n')
         .map(l => l.trim()).filter(Boolean)
@@ -523,44 +505,42 @@ router.post('/stories/:name/url-mappings', (req, res) => {
         .filter(Boolean);
     }
 
-    updateUrlMappings(name, mappings ?? []);
+    updateUrlMappings(story.id, mappings ?? []);
     res.json({ ok: true, count: mappings?.length ?? 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── Story Images (갤러리용) ──────────────────────────
+// ── Story Images (갤러리) ──
 
-// GET /api/admin/stories/:name/images — 스토리 이미지 목록
-router.get('/stories/:name/images', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
+router.get('/stories/:slug/images', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const db = getDB();
   const rows = db.prepare(
-    "SELECT char_dir, scene_key, filename, prompt, seed, source FROM story_images WHERE story_name = ? AND (source IS NULL OR source != 'qa_failed') ORDER BY char_dir, scene_key"
-  ).all(name);
+    "SELECT char_dir, scene_key, filename, prompt, seed, source FROM story_images WHERE story_id = ? AND (source IS NULL OR source != 'qa_failed') ORDER BY char_dir, scene_key"
+  ).all(story.id);
   res.json(rows);
 });
 
-// DELETE /api/admin/stories/:name/images/:sceneKey — 특정 이미지 삭제
-router.delete('/stories/:name/images/:sceneKey', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
+router.delete('/stories/:slug/images/:sceneKey', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const sceneKey = decodeURIComponent(req.params.sceneKey);
   const charDir = req.query.charDir ? decodeURIComponent(req.query.charDir) : '';
 
   try {
     const db = getDB();
-    const row = db.prepare('SELECT filename FROM story_images WHERE story_name = ? AND char_dir = ? AND scene_key = ?').get(name, charDir, sceneKey);
+    const row = db.prepare('SELECT filename FROM story_images WHERE story_id = ? AND char_dir = ? AND scene_key = ?').get(story.id, charDir, sceneKey);
     if (!row) return res.status(404).json({ error: '이미지 없음' });
 
-    // DB 삭제
-    deleteStoryImageBySceneKey(name, charDir, sceneKey);
+    deleteStoryImageBySceneKey(story.id, charDir, sceneKey);
 
-    // 파일 삭제
     const DATA_DIR = process.env.DATA_DIR ?? path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data');
     const filePath = charDir
-      ? path.join(DATA_DIR, 'stories', name, 'images', charDir, row.filename)
-      : path.join(DATA_DIR, 'stories', name, 'images', row.filename);
+      ? path.join(DATA_DIR, 'stories', story.slug, 'images', charDir, row.filename)
+      : path.join(DATA_DIR, 'stories', story.slug, 'images', row.filename);
     try { fs.unlinkSync(filePath); } catch {}
 
     res.json({ ok: true });
@@ -569,44 +549,42 @@ router.delete('/stories/:name/images/:sceneKey', (req, res) => {
   }
 });
 
-// POST /api/admin/stories/:name/images/:sceneKey/regenerate — 특정 이미지 재생성
-router.post('/stories/:name/images/:sceneKey/regenerate', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
+router.post('/stories/:slug/images/:sceneKey/regenerate', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const sceneKey = decodeURIComponent(req.params.sceneKey);
 
-  const composition = loadComposition(name);
+  const composition = loadComposition(story.slug);
   if (!composition) return res.status(400).json({ error: '컴포지션 없음' });
 
   const issues = checkDependencies();
   if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
 
   const queuePos = getQueueLength();
-  res.json({ status: 'queued', storyName: name, sceneKey, queuePosition: queuePos });
-  enqueueGenerate(() => autoGenerate(name, { sceneIds: [sceneKey] })).catch(err => console.error(`[Regen] ${name}/${sceneKey} 실패:`, err.message));
+  res.json({ status: 'queued', slug: story.slug, sceneKey, queuePosition: queuePos });
+  enqueueGenerate(() => autoGenerate(story, { sceneIds: [sceneKey] })).catch(err => console.error(`[Regen] ${story.slug}/${sceneKey} 실패:`, err.message));
 });
 
-// ── Story Notes ──────────────────────────────────────
+// ── Story Notes ──
 
-// GET /api/admin/stories/:name/note
-router.get('/stories/:name/note', (req, res) => {
-  const note = getStoryNote(decodeURIComponent(req.params.name));
+router.get('/stories/:slug/note', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const note = getStoryNote(story.id);
   res.json({ content: note?.content ?? '' });
 });
 
-// POST /api/admin/stories/:name/note
-router.post('/stories/:name/note', (req, res) => {
-  upsertStoryNote(decodeURIComponent(req.params.name), req.body.content ?? '');
+router.post('/stories/:slug/note', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  upsertStoryNote(story.id, req.body.content ?? '');
   res.json({ ok: true });
 });
 
-// ── Personas ─────────────────────────────────────────
+// ── Personas ──
 
-// GET /api/admin/personas
-router.get('/personas', (_req, res) => {
-  res.json(getPersonas());
-});
+router.get('/personas', (_req, res) => res.json(getPersonas()));
 
-// POST /api/admin/personas
 router.post('/personas', (req, res) => {
   const { name, content } = req.body;
   if (!name || !content) return res.status(400).json({ error: 'name, content 필요' });
@@ -614,20 +592,17 @@ router.post('/personas', (req, res) => {
   res.json({ ok: true });
 });
 
-// PUT /api/admin/personas/:id
 router.put('/personas/:id', (req, res) => {
   const { name, content } = req.body;
   updatePersona(req.params.id, name, content);
   res.json({ ok: true });
 });
 
-// DELETE /api/admin/personas/:id
 router.delete('/personas/:id', (req, res) => {
   const personas = getPersonas();
   if (personas.length <= 1) return res.status(400).json({ error: '최소 1개 페르소나 필요' });
   const target = getPersona(req.params.id);
   deletePersona(req.params.id);
-  // 삭제한 게 디폴트면 다른 걸 디폴트로
   if (target?.is_default) {
     const remaining = getPersonas();
     if (remaining.length) setDefaultPersona(remaining[0].id);
@@ -635,48 +610,61 @@ router.delete('/personas/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/admin/personas/:id/default
 router.post('/personas/:id/default', (req, res) => {
   setDefaultPersona(req.params.id);
   res.json({ ok: true });
 });
 
-// GET /api/admin/personas/check — 페르소나 존재 여부
 router.get('/personas/check', (_req, res) => {
   const personas = getPersonas();
   res.json({ exists: personas.length > 0, count: personas.length });
 });
 
-// POST /api/admin/stories/:name/persona
-router.post('/stories/:name/persona', (req, res) => {
+router.post('/stories/:slug/persona', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const { persona_id, persona_override } = req.body;
-  setStoryPersona(decodeURIComponent(req.params.name), persona_id, persona_override);
+  setStoryPersona(story.id, persona_id, persona_override);
   res.json({ ok: true });
 });
 
-// GET /api/admin/stories/:name/persona
-router.get('/stories/:name/persona', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getDB().prepare('SELECT persona_id, persona_override FROM stories WHERE name=?').get(name);
-  const persona = story?.persona_id ? getPersona(story.persona_id) : null;
-  res.json({ persona_id: story?.persona_id, persona_override: story?.persona_override, persona });
+router.get('/stories/:slug/persona', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const persona = story.persona_id ? getPersona(story.persona_id) : null;
+  res.json({ persona_id: story.persona_id, persona_override: story.persona_override, persona });
 });
 
-// POST /api/admin/stories/:name/rename
-router.post('/stories/:name/rename', (req, res) => {
+// POST /api/admin/stories/:slug/rename — title 변경 (slug는 불변)
+router.post('/stories/:slug/rename', (req, res) => {
   try {
-    const oldName = decodeURIComponent(req.params.name);
-    const newName = req.body.newName?.trim();
-    if (!newName) return res.status(400).json({ error: 'newName 필요' });
-    if (oldName === newName) return res.json({ ok: true });
-    if (getStory(newName)) return res.status(409).json({ error: '이미 존재하는 스토리명' });
+    const story = resolveStory(req, res);
+    if (!story) return;
+    const newTitle = req.body.newTitle?.trim() ?? req.body.newName?.trim();
+    if (!newTitle) return res.status(400).json({ error: 'newTitle 필요' });
+    updateStory(story.id, { title: newTitle });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    renameStory(oldName, newName);
+// POST /api/admin/stories/:slug/change-slug — slug 변경 (위험, 운영자용)
+router.post('/stories/:slug/change-slug', (req, res) => {
+  try {
+    const story = resolveStory(req, res);
+    if (!story) return;
+    const newSlug = req.body.newSlug?.trim();
+    if (!newSlug) return res.status(400).json({ error: 'newSlug 필요' });
+    if (!SLUG_RE.test(newSlug)) return res.status(400).json({ error: 'slug 패턴 위반' });
+    if (newSlug === story.slug) return res.json({ ok: true });
+    if (getStoryBySlug(newSlug)) return res.status(409).json({ error: '이미 존재하는 slug' });
 
-    // 이미지 디렉토리 rename
+    changeStorySlug(story.id, newSlug);
+
     const DATA_DIR = process.env.DATA_DIR ?? path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data');
-    const oldDir = path.join(DATA_DIR, 'stories', oldName);
-    const newDir = path.join(DATA_DIR, 'stories', newName);
+    const oldDir = path.join(DATA_DIR, 'stories', story.slug);
+    const newDir = path.join(DATA_DIR, 'stories', newSlug);
     if (fs.existsSync(oldDir)) fs.renameSync(oldDir, newDir);
 
     res.json({ ok: true });
@@ -685,13 +673,13 @@ router.post('/stories/:name/rename', (req, res) => {
   }
 });
 
-// DELETE /api/admin/stories/:name
-router.delete('/stories/:name', (req, res) => {
+router.delete('/stories/:slug', (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
-    deleteStoryImages(name);
-    deleteStoryImageFiles(name);
-    deleteStory(name);
+    const story = resolveStory(req, res);
+    if (!story) return;
+    deleteStoryImages(story.id);
+    deleteStoryImageFiles(story.slug);
+    deleteStoryById(story.id);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
