@@ -16,7 +16,8 @@ interface MessagesResponse {
 }
 
 interface Story {
-  name: string
+  slug: string
+  title: string
   char_name?: string
 }
 
@@ -108,7 +109,7 @@ export function useSession(slug: string) {
     ;(async () => {
       try {
         const stories = await api<Story[]>('/api/stories')
-        const story = stories.find(s => s.name === slug)
+        const story = stories.find(s => s.slug === slug)
         if (!story) { window.location.href = '/'; return }
         setCharName(story.char_name ?? '')
 

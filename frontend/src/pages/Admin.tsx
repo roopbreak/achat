@@ -14,7 +14,9 @@ interface GenerationJob {
 }
 
 interface StoryInfo {
-  name: string
+  id: number
+  slug: string
+  title: string
   char_name: string
   imageCount: number
   imported_at: number
@@ -98,13 +100,13 @@ export default function Admin() {
   // ── 스토리별 페르소나 ──
   const loadStoryPersona = async (name: string) => {
     if (!name) return
-    const data = await api<{ persona_id?: number; persona_override?: string }>(`/api/admin/stories/${encodeURIComponent(name)}/persona`)
+    const data = await api<{ persona_id?: number; persona_override?: string }>(`/api/admin/stories/${name}/persona`)
     setSpPersona(String(data.persona_id ?? '')); setSpOverride(data.persona_override ?? '')
   }
 
   const saveStoryPersona = async () => {
     if (!spStory) return
-    const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${encodeURIComponent(spStory)}/persona`, {
+    const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${spStory}/persona`, {
       method: 'POST', body: JSON.stringify({ persona_id: spPersona || null, persona_override: spOverride || null }),
     })
     setSpResult(res.ok ? '저장 완료' : (res.error ?? '오류'))
@@ -113,13 +115,13 @@ export default function Admin() {
   // ── 유저 노트 ──
   const loadNote = async (name: string) => {
     if (!name) return
-    const data = await api<{ content?: string }>(`/api/admin/stories/${encodeURIComponent(name)}/note`)
+    const data = await api<{ content?: string }>(`/api/admin/stories/${name}/note`)
     setNoteContent(data.content ?? '')
   }
 
   const saveNote = async () => {
     if (!noteStory) return
-    const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${encodeURIComponent(noteStory)}/note`, {
+    const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${noteStory}/note`, {
       method: 'POST', body: JSON.stringify({ content: noteContent }),
     })
     setNoteResult(res.ok ? '저장 완료' : (res.error ?? '오류'))
@@ -128,13 +130,13 @@ export default function Admin() {
   // ── URL 매핑 ──
   const loadMappings = async (name: string) => {
     if (!name) return
-    const list = await api<Array<{ from: string; charDir: string }>>(`/api/admin/stories/${encodeURIComponent(name)}/url-mappings`)
+    const list = await api<Array<{ from: string; charDir: string }>>(`/api/admin/stories/${name}/url-mappings`)
     if (list.length) setMappingText(list.map(m => `${m.from} → ${m.charDir}`).join('\n'))
   }
 
   const saveMappings = async () => {
     if (!mappingStory) { setMappingResult('스토리명을 입력하세요.'); return }
-    const res = await api<{ ok: boolean; count?: number; error?: string }>(`/api/admin/stories/${encodeURIComponent(mappingStory)}/url-mappings`, {
+    const res = await api<{ ok: boolean; count?: number; error?: string }>(`/api/admin/stories/${mappingStory}/url-mappings`, {
       method: 'POST', body: JSON.stringify({ mappings: mappingText }),
     })
     setMappingResult(res.ok ? `저장 완료 (${res.count}개 매핑)` : (res.error ?? '오류'))
@@ -143,7 +145,7 @@ export default function Admin() {
   // ── 컴포지션 ──
   const checkCompStatus = useCallback(async (slug: string) => {
     try {
-      const comp = await api<{ images?: unknown[] }>(`/api/admin/stories/${encodeURIComponent(slug)}/composition`)
+      const comp = await api<{ images?: unknown[] }>(`/api/admin/stories/${slug}/composition`)
       setCompStatus(prev => ({ ...prev, [slug]: 'exists' }))
       setCompTotal(prev => ({ ...prev, [slug]: comp.images?.length ?? 0 }))
     } catch {
@@ -155,7 +157,7 @@ export default function Admin() {
     setCompLoading(slug)
     setCompStatus(prev => ({ ...prev, [slug]: 'building' }))
     try {
-      const res = await api<{ ok: boolean; total?: number }>(`/api/admin/stories/${encodeURIComponent(slug)}/composition`, { method: 'POST' })
+      const res = await api<{ ok: boolean; total?: number }>(`/api/admin/stories/${slug}/composition`, { method: 'POST' })
       setCompStatus(prev => ({ ...prev, [slug]: 'exists' }))
       if (res.total !== undefined) setCompTotal(prev => ({ ...prev, [slug]: res.total! }))
     } catch (e: any) {
@@ -167,7 +169,7 @@ export default function Admin() {
   // ── 이미지 생성 ──
   const checkGenStatus = useCallback(async (slug: string) => {
     try {
-      const job = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(slug)}/generate/status`)
+      const job = await api<GenerationJob>(`/api/admin/stories/${slug}/generate/status`)
       setGenJobs(prev => ({ ...prev, [slug]: job }))
     } catch {}
   }, [])
@@ -175,12 +177,12 @@ export default function Admin() {
   const triggerGenerate = async (slug: string, options?: { retryFailed?: boolean }) => {
     setGenLoading(slug)
     try {
-      const queuedJob = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(slug)}/generate`, {
+      const queuedJob = await api<GenerationJob>(`/api/admin/stories/${slug}/generate`, {
         method: 'POST',
         body: options ? JSON.stringify(options) : undefined,
       })
       setGenJobs(prev => ({ ...prev, [slug]: queuedJob }))
-      const es = new EventSource(`/api/admin/stories/${encodeURIComponent(slug)}/generate/progress`)
+      const es = new EventSource(`/api/admin/stories/${slug}/generate/progress`)
       let noneCount = 0
       es.onmessage = (e) => {
         const job = JSON.parse(e.data) as GenerationJob
@@ -193,7 +195,7 @@ export default function Admin() {
     } catch (e: any) { alert(e.message || '생성 실패'); setGenLoading(null) }
   }
 
-  useEffect(() => { stories.forEach(s => { checkGenStatus(s.name); checkCompStatus(s.name) }) }, [stories, checkGenStatus, checkCompStatus])
+  useEffect(() => { stories.forEach(s => { checkGenStatus(s.slug); checkCompStatus(s.slug) }) }, [stories, checkGenStatus, checkCompStatus])
 
   // ── 스토리 삭제 ──
   const deleteStoryWithConfirm = async (name: string) => {
@@ -203,7 +205,7 @@ export default function Admin() {
     if (typed.trim() !== name) { alert('입력이 일치하지 않아 취소되었습니다.'); return }
     setDeletingStory(name)
     try {
-      await api(`/api/admin/stories/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      await api(`/api/admin/stories/${name}`, { method: 'DELETE' })
     } catch (e: any) {
       alert(e.message || '삭제 실패')
       setDeletingStory(null)
@@ -223,7 +225,7 @@ export default function Admin() {
   const filteredStories = (() => {
     const q = storyFilter.trim().toLowerCase()
     if (!q) return stories
-    return stories.filter(s => s.name.toLowerCase().includes(q) || (s.char_name || '').toLowerCase().includes(q))
+    return stories.filter(s => s.slug.toLowerCase().includes(q) || s.title.toLowerCase().includes(q) || (s.char_name || '').toLowerCase().includes(q))
   })()
 
   return (
@@ -261,11 +263,14 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {filteredStories.map(s => {
-                    const isThis = deletingStory === s.name
+                    const isThis = deletingStory === s.slug
                     const busy = deletingStory !== null
                     return (
-                      <tr key={s.name}>
-                        <td style={{ fontSize: 13 }}>{s.name}</td>
+                      <tr key={s.slug}>
+                        <td style={{ fontSize: 13 }}>
+                          <div>{s.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s.slug}</div>
+                        </td>
                         <td style={{ fontSize: 13, color: 'var(--text-dim)' }}>{s.char_name || '-'}</td>
                         <td style={{ textAlign: 'right', fontSize: 13 }}>{s.imageCount}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-dim)' }}>{fmtDate(s.imported_at)}</td>
@@ -274,14 +279,14 @@ export default function Admin() {
                             <button
                               className="btn btn-secondary"
                               style={{ fontSize: 11, padding: '3px 10px' }}
-                              onClick={() => navigate(`/chat/${encodeURIComponent(s.name)}`)}
+                              onClick={() => navigate(`/chat/${encodeURIComponent(s.slug)}`)}
                               disabled={busy}
                               title="채팅 열기"
                             >열기</button>
                             <button
                               className="btn btn-danger"
                               style={{ fontSize: 11, padding: '3px 10px' }}
-                              onClick={() => deleteStoryWithConfirm(s.name)}
+                              onClick={() => deleteStoryWithConfirm(s.slug)}
                               disabled={busy}
                             >{isThis ? '삭제 중...' : '삭제'}</button>
                           </div>
@@ -360,7 +365,7 @@ export default function Admin() {
         <div className="admin-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>NAI 이미지 자동 생성</h2>
-            <button className="btn btn-secondary" style={{ fontSize: 11, padding: '4px 10px', color: '#e55' }} onClick={async () => { if (!confirm('진행 중인 배치를 중지할까요?')) return; const r = await api<{ok:boolean,cleared:number}>('/api/admin/generate/stop', { method: 'POST' }); alert(`큐 ${r.cleared}개 중지됨`); stories.forEach(s => checkGenStatus(s.name)) }}>배치 중지</button>
+            <button className="btn btn-secondary" style={{ fontSize: 11, padding: '4px 10px', color: '#e55' }} onClick={async () => { if (!confirm('진행 중인 배치를 중지할까요?')) return; const r = await api<{ok:boolean,cleared:number}>('/api/admin/generate/stop', { method: 'POST' }); alert(`큐 ${r.cleared}개 중지됨`); stories.forEach(s => checkGenStatus(s.slug)) }}>배치 중지</button>
           </div>
           {stories.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>등록된 스토리가 없습니다.</div>
@@ -370,25 +375,28 @@ export default function Admin() {
               <thead><tr><th>스토리</th><th>이미지</th><th>컴포지션</th><th>생성</th></tr></thead>
               <tbody>
                 {stories.map(s => {
-                  const job = genJobs[s.name]
+                  const job = genJobs[s.slug]
                   const isQueued = job?.status === 'queued'
                   const isRunning = job?.status === 'running'
-                  const isGenerating = isQueued || isRunning || genLoading === s.name
-                  const comp = compStatus[s.name] || 'none'
-                  const isBusy = genLoading === s.name || compLoading === s.name
+                  const isGenerating = isQueued || isRunning || genLoading === s.slug
+                  const comp = compStatus[s.slug] || 'none'
+                  const isBusy = genLoading === s.slug || compLoading === s.slug
                   const isExternal = s.hasExternalImages
                   // 컴포지션 total 대비 생성된 이미지가 부족한 경우 미생성 장면 존재
-                  const total = compTotal[s.name] ?? 0
+                  const total = compTotal[s.slug] ?? 0
                   const hasMissing = comp === 'exists' && total > 0 && s.imageCount < total
                   return (
-                  <tr key={s.name}>
-                    <td>{s.name}</td>
+                  <tr key={s.slug}>
+                    <td>
+                      <div>{s.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s.slug}</div>
+                    </td>
                     <td>
                       {s.imageCount > 0 ? (
                         <button
                           className="btn btn-secondary"
                           style={{ fontSize: 12, padding: '2px 8px' }}
-                          onClick={() => navigate(`/gallery/${encodeURIComponent(s.name)}`)}
+                          onClick={() => navigate(`/gallery/${encodeURIComponent(s.slug)}`)}
                         >{s.imageCount}{total > 0 ? `/${total}` : ''}</button>
                       ) : (
                         <span>{s.imageCount}{total > 0 ? `/${total}` : ''}</span>
@@ -400,10 +408,10 @@ export default function Admin() {
                       ) : comp === 'exists' ? (
                         <span style={{ fontSize: 12 }}>
                           <span style={{ color: 'var(--accent)' }}>있음</span>
-                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => triggerComposition(s.name)} disabled={isBusy}>재생성</button>
+                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => triggerComposition(s.slug)} disabled={isBusy}>재생성</button>
                         </span>
                       ) : (
-                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerComposition(s.name)} disabled={isBusy}>생성</button>
+                        <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerComposition(s.slug)} disabled={isBusy}>생성</button>
                       )}
                     </td>
                     <td style={{ minWidth: 160 }}>
@@ -426,22 +434,22 @@ export default function Admin() {
                         <span style={{ fontSize: 12 }}>
                           <span style={{ color: 'var(--accent)' }}>{job.completed}/{job.total} 완료</span>
                           {hasMissing && (
-                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
                           )}
                         </span>
                       ) : job?.status === 'failed' ? (
                         <span style={{ fontSize: 12 }}>
                           <span style={{ color: '#e55' }}>실패</span>
-                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy || comp !== 'exists'}>재시도</button>
+                          {' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug)} disabled={isBusy || comp !== 'exists'}>재시도</button>
                           {hasMissing && (
-                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
                           )}
                         </span>
                       ) : comp === 'exists' ? (
                         <span style={{ fontSize: 12 }}>
-                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.name)} disabled={isBusy}>이미지 생성</button>
+                          <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug)} disabled={isBusy}>이미지 생성</button>
                           {hasMissing && (
-                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.name, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
+                            <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
                           )}
                         </span>
                       ) : (

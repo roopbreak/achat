@@ -4,8 +4,9 @@ import Nav from '../components/common/Nav'
 import { api } from '../lib/api'
 
 interface Story {
-  name: string
-  title?: string
+  id: number
+  slug: string
+  title: string
   char_name?: string
   summary?: string
   imported_at: number
@@ -59,7 +60,6 @@ export default function Home() {
     })()
   }, [])
 
-  // 현재 카테고리의 모든 태그 수집
   const availableTags = useMemo(() => {
     const filtered = category === '전체' ? stories : stories.filter(s => s.category === category)
     const tagCount = new Map<string, number>()
@@ -73,29 +73,28 @@ export default function Home() {
     const q = search.trim().toLowerCase()
     let list = [...stories]
 
-    // 카테고리 필터
     if (category !== '전체') list = list.filter(s => s.category === category)
-
-    // 태그 필터
     if (selectedTag) list = list.filter(s => parseTags(s.tags).includes(selectedTag))
-
-    // 검색
-    if (q) list = list.filter(s => (s.title || s.name).toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+    if (q) list = list.filter(s =>
+      s.title.toLowerCase().includes(q) ||
+      s.slug.toLowerCase().includes(q) ||
+      (s.char_name ?? '').toLowerCase().includes(q)
+    )
 
     switch (sort) {
       case 'date-desc': list.sort((a, b) => b.imported_at - a.imported_at); break
       case 'date-asc': list.sort((a, b) => a.imported_at - b.imported_at); break
-      case 'name-asc': list.sort((a, b) => a.name.localeCompare(b.name, 'ko')); break
-      case 'name-desc': list.sort((a, b) => b.name.localeCompare(a.name, 'ko')); break
+      case 'name-asc': list.sort((a, b) => a.title.localeCompare(b.title, 'ko')); break
+      case 'name-desc': list.sort((a, b) => b.title.localeCompare(a.title, 'ko')); break
     }
     return list
   }, [stories, sort, search, category, selectedTag])
 
-  const clearRecent = async (name: string) => {
-    if (!confirm(`"${name}" 의 모든 채팅 기록을 삭제할까요?`)) return
-    await api(`/api/stories/${encodeURIComponent(name)}/sessions`, { method: 'DELETE' })
-    sessionStorage.removeItem(`session_${name}`)
-    setRecent(prev => prev.filter(s => s.name !== name))
+  const clearRecent = async (slug: string, title: string) => {
+    if (!confirm(`"${title}" 의 모든 채팅 기록을 삭제할까요?`)) return
+    await api(`/api/stories/${slug}/sessions`, { method: 'DELETE' })
+    sessionStorage.removeItem(`session_${slug}`)
+    setRecent(prev => prev.filter(s => s.slug !== slug))
   }
 
   if (noPersona) {
@@ -119,16 +118,16 @@ export default function Home() {
             <h2 style={{ marginBottom: 12, fontSize: 16, color: 'var(--text-dim)' }}>최근 진행</h2>
             <div className="story-grid">
               {recent.map(s => (
-                <div key={s.name} className="story-card" style={{ position: 'relative' }}>
-                  <div onClick={() => navigate(`/story/${encodeURIComponent(s.name)}`)}>
-                    <h3>{s.title || s.name}</h3>
+                <div key={s.slug} className="story-card" style={{ position: 'relative' }}>
+                  <div onClick={() => navigate(`/story/${s.slug}`)}>
+                    <h3>{s.title}</h3>
                     <div className="char" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{s.char_name}</span>
                       <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{timeAgo(s.updated_at)}</span>
                     </div>
                   </div>
                   <button
-                    onClick={e => { e.stopPropagation(); clearRecent(s.name) }}
+                    onClick={e => { e.stopPropagation(); clearRecent(s.slug, s.title) }}
                     style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 16, padding: 4 }}
                     title="세션 삭제"
                   >✕</button>
@@ -205,8 +204,8 @@ export default function Home() {
           ) : sorted.map(s => {
             const storyTags = parseTags(s.tags)
             return (
-              <div key={s.name} className="story-card" onClick={() => navigate(`/story/${encodeURIComponent(s.name)}`)}>
-                <h3>{s.title || s.name}</h3>
+              <div key={s.slug} className="story-card" onClick={() => navigate(`/story/${s.slug}`)}>
+                <h3>{s.title}</h3>
                 {storyTags.length > 0 && (
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
                     {storyTags.map(t => (

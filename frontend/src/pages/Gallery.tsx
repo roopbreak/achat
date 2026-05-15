@@ -7,7 +7,8 @@ import { api } from '../lib/api'
 const CATEGORIES = ['전체', 'expression', 'daily', 'outfit', 'interaction', 'location', 'special', 'adult']
 
 interface StoryInfo {
-  name: string
+  slug: string
+  title: string
   char_name?: string
 }
 
@@ -247,7 +248,7 @@ export default function Gallery() {
           >
             <option value="">스토리 선택...</option>
             {stories.map(s => (
-              <option key={s.name} value={s.name}>{s.name}</option>
+              <option key={s.slug} value={s.slug}>{s.title} ({s.slug})</option>
             ))}
           </select>
           {slug && (

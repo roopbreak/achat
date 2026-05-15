@@ -4,7 +4,8 @@ import { api } from '../lib/api'
 import { renderMarkdown } from '../lib/markdown'
 
 interface Story {
-  name: string
+  slug: string
+  title: string
   char_name?: string
 }
 
@@ -22,7 +23,7 @@ interface HistoryMessage {
 
 export default function History() {
   const [stories, setStories] = useState<Story[]>([])
-  const [selectedStory, setSelectedStory] = useState<string | null>(null)
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [messages, setMessages] = useState<HistoryMessage[]>([])
   const [sessionTitle, setSessionTitle] = useState('')
@@ -32,16 +33,16 @@ export default function History() {
     api<Story[]>('/api/stories').then(setStories)
   }, [])
 
-  const selectStory = async (name: string) => {
-    setSelectedStory(name)
+  const selectStory = async (slug: string) => {
+    setSelectedSlug(slug)
     setMessages([])
     setSessionTitle('')
-    const list = await api<Session[]>(`/api/stories/${encodeURIComponent(name)}/sessions`)
+    const list = await api<Session[]>(`/api/stories/${slug}/sessions`)
     setSessions(list)
   }
 
-  const loadSession = async (sessionId: string, slug: string, turnCount: number) => {
-    setSessionTitle(`${slug} — 세션`)
+  const loadSession = async (sessionId: string, title: string, turnCount: number) => {
+    setSessionTitle(`${title} — 세션`)
     setSessionMeta(`${turnCount}턴`)
     const data = await api<{ messages: HistoryMessage[] }>(`/api/sessions/${sessionId}/messages?limit=99999`)
     setMessages(data.messages ?? [])
@@ -55,23 +56,23 @@ export default function History() {
           <h3 style={{ fontSize: 15, marginBottom: 12 }}>스토리</h3>
           <div>
             {stories.map(s => (
-              <div key={s.name}>
+              <div key={s.slug}>
                 <div
                   className="session-item"
-                  style={{ borderColor: selectedStory === s.name ? 'var(--accent)' : undefined }}
-                  onClick={() => selectStory(s.name)}
+                  style={{ borderColor: selectedSlug === s.slug ? 'var(--accent)' : undefined }}
+                  onClick={() => selectStory(s.slug)}
                 >
-                  <div className="title">{s.char_name}</div>
-                  <div className="meta">{s.name}</div>
+                  <div className="title">{s.title}</div>
+                  <div className="meta">{s.char_name ?? s.slug}</div>
                 </div>
-                {selectedStory === s.name && sessions.length > 0 && (
+                {selectedSlug === s.slug && sessions.length > 0 && (
                   <div style={{ marginTop: 8 }}>
                     {sessions.map(sess => (
                       <div
                         key={sess.id}
                         className="session-item"
                         style={{ marginBottom: 6, padding: '10px 14px' }}
-                        onClick={() => loadSession(sess.id, s.name, sess.turn_count)}
+                        onClick={() => loadSession(sess.id, s.title, sess.turn_count)}
                       >
                         <div className="title" style={{ fontSize: 13 }}>{sess.title ?? `세션 ${sess.id.slice(0, 8)}`}</div>
                         <div className="meta">{sess.turn_count}턴 · {new Date(sess.created_at * 1000).toLocaleDateString('ko')}</div>
