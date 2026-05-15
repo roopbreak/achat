@@ -70,12 +70,15 @@
 - [x] 원격 배포 (백업 → FS rename → DB 마이그레이션 → restart)
 - [x] 원격 운영 검증
 
-## 후속 작업 (다음 세션)
-- [ ] `feat/story-slug-migration` 브랜치를 `master`에 merge
-- [ ] 운영용 스크립트 추가 갱신: `scripts/upload-images.mjs`, `scripts/apply-custom-scenes.mjs` — `storyName` → `slug` 시그니처
-- [ ] `upload-images-config.json` slug 키로 갱신
-- [ ] 기존 스토리 description에 박혀있는 한글 URL(`/images/여사친의 스마트폰/...`) → slug URL 일괄 치환 (별도 도구로)
-- [ ] 1개월 후 `_orphan_*` 백업 테이블 + DB/FS tarball 정리
+## 후속 작업 진행 (2026-05-15 동일 세션)
+- [x] `feat/story-slug-migration` 브랜치를 `master`에 merge (44c8773)
+- [x] 운영용 스크립트 갱신: `upload-images.mjs`, `apply-custom-scenes.mjs`, `import-zips.mjs`, `register-from-md.mjs`, `import-stories.mjs`, `seed.mjs`, `generate-duo-scenes.mjs` — slug 시그니처
+- [x] `upload-images-config.json` slug 키로 갱신
+- [x] `scripts/fix-description-urls.mjs` 신규 도구 작성 + 원격 실행 (8개 스토리 22건 치환, 비ASCII URL 잔존 0건)
+- [x] 원격 master 체크아웃 + 운영 검증 (gf-phone/LEE/23, piled-up, momo 모두 200)
+
+## 남은 후속 작업 (별도 세션)
+- [ ] 1개월 후 `_orphan_*` 백업 테이블 + DB/FS tarball 정리 (백업 위치는 위 §백업 위치 참조)
 
 ## 다음 세션 시작 가이드
 - 신규 스토리 임포트는 반드시 `slug` + `title` 두 필드 모두 제공
