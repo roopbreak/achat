@@ -38,7 +38,7 @@ export default function Story() {
   const importZip = async () => {
     if (!zipName || !zipFile) { setZipResult('스토리명과 ZIP 파일을 선택하세요.'); return }
     const fd = new FormData()
-    fd.append('storyName', zipName); fd.append('zip', zipFile)
+    fd.append('slug', zipName); fd.append('zip', zipFile)
     setZipUploading(true); setZipResult('')
     try {
       const res = await apiRaw('/api/admin/import/zip', { method: 'POST', body: fd })
@@ -51,7 +51,7 @@ export default function Story() {
   const importCard = async () => {
     if (!cardName || !cardFile) { setCardResult('스토리명과 파일을 선택하세요.'); return }
     const fd = new FormData()
-    fd.append('storyName', cardName); fd.append('card', cardFile)
+    fd.append('slug', cardName); fd.append('card', cardFile)
     setCardResult('임포트 중...')
     const res = await apiRaw('/api/admin/import/card', { method: 'POST', body: fd })
     const json = await res.json()
@@ -62,7 +62,7 @@ export default function Story() {
   const importImages = async () => {
     if (!imgName || !imgFiles?.length) { setImgResult('스토리명과 파일을 선택하세요.'); return }
     const fd = new FormData()
-    fd.append('storyName', imgName)
+    fd.append('slug', imgName)
     for (const f of Array.from(imgFiles)) fd.append('images', f)
     setImgResult(`업로드 중... (${imgFiles.length}개)`)
     const res = await apiRaw('/api/admin/import/images', { method: 'POST', body: fd })

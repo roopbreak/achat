@@ -8,10 +8,11 @@ export interface Command {
 // 알려진 커맨드 그룹 (UI 표시 순서). 그 외/빈 값은 "기타"로 묶임
 export const COMMAND_GROUPS = ['기능', '모드', '분기'] as const
 
-// GET /api/stories/:name 응답 — 상세 페이지·채팅 가이드 패널 공용
+// GET /api/stories/:slug 응답 — 상세 페이지·채팅 가이드 패널 공용
 export interface StoryDetail {
-  name: string
-  title: string | null
+  id: number
+  slug: string
+  title: string
   char_name: string
   description: string
   scenario: string

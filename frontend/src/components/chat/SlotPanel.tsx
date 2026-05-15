@@ -9,20 +9,20 @@ interface Slot {
 
 interface Props {
   open: boolean
-  storyName: string
+  slug: string
   sessionId: string | null
   onLoadSlot: (sessionId: string) => void
   onClose: () => void
 }
 
-export default function SlotPanel({ open, storyName, sessionId, onLoadSlot, onClose }: Props) {
+export default function SlotPanel({ open, slug, sessionId, onLoadSlot, onClose }: Props) {
   const [slots, setSlots] = useState<Slot[]>([])
   const [slotName, setSlotName] = useState('')
 
   const loadSlots = useCallback(async () => {
-    const list = await api<Slot[]>(`/api/stories/${encodeURIComponent(storyName)}/slots`)
+    const list = await api<Slot[]>(`/api/stories/${encodeURIComponent(slug)}/slots`)
     setSlots(list)
-  }, [storyName])
+  }, [slug])
 
   useEffect(() => {
     if (open) loadSlots()
@@ -31,7 +31,7 @@ export default function SlotPanel({ open, storyName, sessionId, onLoadSlot, onCl
   const saveSlot = async () => {
     const name = slotName.trim()
     if (!name) return
-    await api(`/api/stories/${encodeURIComponent(storyName)}/slots`, {
+    await api(`/api/stories/${encodeURIComponent(slug)}/slots`, {
       method: 'POST',
       body: JSON.stringify({ slot_name: name, session_id: sessionId }),
     })
@@ -42,7 +42,7 @@ export default function SlotPanel({ open, storyName, sessionId, onLoadSlot, onCl
   const handleLoad = async (slotId: number, name: string) => {
     if (!confirm(`"${name}" 슬롯을 불러올까요? 현재 대화는 저장되지 않습니다.`)) return
     const res = await api<{ ok: boolean; sessionId: string }>(
-      `/api/stories/${encodeURIComponent(storyName)}/slots/${slotId}/load`,
+      `/api/stories/${encodeURIComponent(slug)}/slots/${slotId}/load`,
       { method: 'POST' },
     )
     if (res.ok) onLoadSlot(res.sessionId)

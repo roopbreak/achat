@@ -13,15 +13,15 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/chat/:storyName" element={<Chat />} />
+      <Route path="/chat/:slug" element={<Chat />} />
       <Route path="/story" element={<Story />} />
-      <Route path="/story/:storyName" element={<StoryDetail />} />
+      <Route path="/story/:slug" element={<StoryDetail />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/story-edit" element={<StoryEdit />} />
       <Route path="/history" element={<History />} />
       <Route path="/login" element={<Login />} />
       <Route path="/gallery" element={<Gallery />} />
-      <Route path="/gallery/:storyName" element={<Gallery />} />
+      <Route path="/gallery/:slug" element={<Gallery />} />
     </Routes>
   )
 }

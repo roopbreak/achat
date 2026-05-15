@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getStories, getStory, getDB, parseCommands } from '../lib/db.mjs';
+import { getStories, getStoryBySlug, getDB, parseCommands } from '../lib/db.mjs';
 
 const router = Router();
 
@@ -16,28 +16,28 @@ router.get('/', (_req, res) => {
 // GET /api/stories/recent — 최근 진행한 스토리 목록
 router.get('/recent', (_req, res) => {
   const rows = getDB().prepare(`
-    SELECT s.name, s.title, s.char_name, cs.updated_at, cs.id as session_id
+    SELECT s.id, s.slug, s.title, s.char_name, cs.updated_at, cs.id as session_id
     FROM stories s
     JOIN (
-      SELECT story_name, MAX(updated_at) as updated_at, id
+      SELECT story_id, MAX(updated_at) as updated_at, id
       FROM chat_sessions
-      GROUP BY story_name
-    ) cs ON cs.story_name = s.name
+      GROUP BY story_id
+    ) cs ON cs.story_id = s.id
     ORDER BY cs.updated_at DESC
     LIMIT 10
   `).all();
   res.json(rows);
 });
 
-// GET /api/stories/:name — 단일 스토리 (상세 페이지·채팅 가이드 패널용)
-// 주의: 정적 경로 /recent 보다 뒤에 선언해야 매칭이 가로채지 않음
-router.get('/:name', (req, res) => {
-  const name = decodeURIComponent(req.params.name);
-  const story = getStory(name);
+// GET /api/stories/:slug — 단일 스토리 (상세 페이지·채팅 가이드 패널용)
+router.get('/:slug', (req, res) => {
+  const slug = req.params.slug;
+  const story = getStoryBySlug(slug);
   if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
   res.json({
-    name: story.name,
-    title: story.title ?? null,
+    id: story.id,
+    slug: story.slug,
+    title: story.title,
     char_name: story.char_name,
     description: story.description ?? '',
     scenario: story.scenario ?? '',

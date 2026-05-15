@@ -20,9 +20,9 @@ interface Story {
   char_name?: string
 }
 
-export function useSession(storyName: string) {
+export function useSession(slug: string) {
   const [sessionId, setSessionId] = useState<string | null>(() =>
-    sessionStorage.getItem(`session_${storyName}`)
+    sessionStorage.getItem(`session_${slug}`)
   )
   const [messages, setMessages] = useState<Message[]>([])
   const [hasMore, setHasMore] = useState(false)
@@ -31,8 +31,8 @@ export function useSession(storyName: string) {
 
   const persistSessionId = useCallback((sid: string) => {
     setSessionId(sid)
-    sessionStorage.setItem(`session_${storyName}`, sid)
-  }, [storyName])
+    sessionStorage.setItem(`session_${slug}`, sid)
+  }, [slug])
 
   const loadMessages = useCallback(async (sid: string, before?: number) => {
     const url = before != null
@@ -59,14 +59,14 @@ export function useSession(storyName: string) {
 
   const resetSession = useCallback(async () => {
     const res = await api<{ sessionId: string }>(
-      `/api/stories/${encodeURIComponent(storyName)}/chat`,
+      `/api/stories/${encodeURIComponent(slug)}/chat`,
       { method: 'DELETE' },
     )
     persistSessionId(res.sessionId)
     const msgs = await loadMessages(res.sessionId)
     setMessages(msgs)
     return res.sessionId
-  }, [storyName, persistSessionId, loadMessages])
+  }, [slug, persistSessionId, loadMessages])
 
   const addMessage = useCallback((msg: Omit<Message, '_id'>) => {
     setMessages(prev => [...prev, { ...msg, _id: ++_msgId }])
@@ -108,7 +108,7 @@ export function useSession(storyName: string) {
     ;(async () => {
       try {
         const stories = await api<Story[]>('/api/stories')
-        const story = stories.find(s => s.name === storyName)
+        const story = stories.find(s => s.name === slug)
         if (!story) { window.location.href = '/'; return }
         setCharName(story.char_name ?? '')
 
@@ -116,7 +116,7 @@ export function useSession(storyName: string) {
         if (!sid) {
           try {
             const latest = await api<{ sessionId?: string }>(
-              `/api/stories/${encodeURIComponent(storyName)}/sessions/latest`
+              `/api/stories/${encodeURIComponent(slug)}/sessions/latest`
             )
             if (latest.sessionId) {
               sid = latest.sessionId
@@ -127,7 +127,7 @@ export function useSession(storyName: string) {
 
         if (!sid) {
           const res = await api<{ sessionId: string }>(
-            `/api/stories/${encodeURIComponent(storyName)}/chat`,
+            `/api/stories/${encodeURIComponent(slug)}/chat`,
             { method: 'DELETE' },
           )
           sid = res.sessionId
@@ -144,7 +144,7 @@ export function useSession(storyName: string) {
     })()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storyName])
+  }, [slug])
 
   return {
     sessionId, messages, hasMore, charName, loading,

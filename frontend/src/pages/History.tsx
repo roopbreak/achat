@@ -40,8 +40,8 @@ export default function History() {
     setSessions(list)
   }
 
-  const loadSession = async (sessionId: string, storyName: string, turnCount: number) => {
-    setSessionTitle(`${storyName} — 세션`)
+  const loadSession = async (sessionId: string, slug: string, turnCount: number) => {
+    setSessionTitle(`${slug} — 세션`)
     setSessionMeta(`${turnCount}턴`)
     const data = await api<{ messages: HistoryMessage[] }>(`/api/sessions/${sessionId}/messages?limit=99999`)
     setMessages(data.messages ?? [])

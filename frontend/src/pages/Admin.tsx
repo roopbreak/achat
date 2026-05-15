@@ -141,55 +141,55 @@ export default function Admin() {
   }
 
   // ── 컴포지션 ──
-  const checkCompStatus = useCallback(async (storyName: string) => {
+  const checkCompStatus = useCallback(async (slug: string) => {
     try {
-      const comp = await api<{ images?: unknown[] }>(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`)
-      setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
-      setCompTotal(prev => ({ ...prev, [storyName]: comp.images?.length ?? 0 }))
+      const comp = await api<{ images?: unknown[] }>(`/api/admin/stories/${encodeURIComponent(slug)}/composition`)
+      setCompStatus(prev => ({ ...prev, [slug]: 'exists' }))
+      setCompTotal(prev => ({ ...prev, [slug]: comp.images?.length ?? 0 }))
     } catch {
-      setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
+      setCompStatus(prev => ({ ...prev, [slug]: 'none' }))
     }
   }, [])
 
-  const triggerComposition = async (storyName: string) => {
-    setCompLoading(storyName)
-    setCompStatus(prev => ({ ...prev, [storyName]: 'building' }))
+  const triggerComposition = async (slug: string) => {
+    setCompLoading(slug)
+    setCompStatus(prev => ({ ...prev, [slug]: 'building' }))
     try {
-      const res = await api<{ ok: boolean; total?: number }>(`/api/admin/stories/${encodeURIComponent(storyName)}/composition`, { method: 'POST' })
-      setCompStatus(prev => ({ ...prev, [storyName]: 'exists' }))
-      if (res.total !== undefined) setCompTotal(prev => ({ ...prev, [storyName]: res.total! }))
+      const res = await api<{ ok: boolean; total?: number }>(`/api/admin/stories/${encodeURIComponent(slug)}/composition`, { method: 'POST' })
+      setCompStatus(prev => ({ ...prev, [slug]: 'exists' }))
+      if (res.total !== undefined) setCompTotal(prev => ({ ...prev, [slug]: res.total! }))
     } catch (e: any) {
       alert(e.message || '컴포지션 생성 실패')
-      setCompStatus(prev => ({ ...prev, [storyName]: 'none' }))
+      setCompStatus(prev => ({ ...prev, [slug]: 'none' }))
     } finally { setCompLoading(null) }
   }
 
   // ── 이미지 생성 ──
-  const checkGenStatus = useCallback(async (storyName: string) => {
+  const checkGenStatus = useCallback(async (slug: string) => {
     try {
-      const job = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/status`)
-      setGenJobs(prev => ({ ...prev, [storyName]: job }))
+      const job = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(slug)}/generate/status`)
+      setGenJobs(prev => ({ ...prev, [slug]: job }))
     } catch {}
   }, [])
 
-  const triggerGenerate = async (storyName: string, options?: { retryFailed?: boolean }) => {
-    setGenLoading(storyName)
+  const triggerGenerate = async (slug: string, options?: { retryFailed?: boolean }) => {
+    setGenLoading(slug)
     try {
-      const queuedJob = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(storyName)}/generate`, {
+      const queuedJob = await api<GenerationJob>(`/api/admin/stories/${encodeURIComponent(slug)}/generate`, {
         method: 'POST',
         body: options ? JSON.stringify(options) : undefined,
       })
-      setGenJobs(prev => ({ ...prev, [storyName]: queuedJob }))
-      const es = new EventSource(`/api/admin/stories/${encodeURIComponent(storyName)}/generate/progress`)
+      setGenJobs(prev => ({ ...prev, [slug]: queuedJob }))
+      const es = new EventSource(`/api/admin/stories/${encodeURIComponent(slug)}/generate/progress`)
       let noneCount = 0
       es.onmessage = (e) => {
         const job = JSON.parse(e.data) as GenerationJob
-        setGenJobs(prev => ({ ...prev, [storyName]: job }))
+        setGenJobs(prev => ({ ...prev, [slug]: job }))
         if (job.status === 'completed' || job.status === 'failed') { es.close(); setGenLoading(null); loadStories() }
         else if (job.status === 'none') { noneCount++; if (noneCount > 10) { es.close(); setGenLoading(null) } }
         else { noneCount = 0 }
       }
-      es.onerror = () => { es.close(); setGenLoading(null); checkGenStatus(storyName) }
+      es.onerror = () => { es.close(); setGenLoading(null); checkGenStatus(slug) }
     } catch (e: any) { alert(e.message || '생성 실패'); setGenLoading(null) }
   }
 

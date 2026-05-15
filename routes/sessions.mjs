@@ -1,49 +1,60 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import {
-  getSessionsByStory, getAllMessages, getSession,
+  getSessionsByStory, getSession,
   getSaveSlots, getSaveSlot, upsertSaveSlot,
-  createSession, insertMessage, getDB,
+  createSession, getDB, getStoryBySlug,
 } from '../lib/db.mjs';
 
-// ── /api/stories/:name/* 에 마운트되는 라우터 ─────────────
 export const storySessionsRouter = Router();
 
-// GET /api/stories/:name/sessions
-storySessionsRouter.get('/:name/sessions', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
-  res.json(getSessionsByStory(storyName));
+function resolveStory(req, res) {
+  const story = getStoryBySlug(req.params.slug);
+  if (!story) {
+    res.status(404).json({ error: '스토리 없음' });
+    return null;
+  }
+  return story;
+}
+
+// GET /api/stories/:slug/sessions
+storySessionsRouter.get('/:slug/sessions', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  res.json(getSessionsByStory(story.id));
 });
 
-// GET /api/stories/:name/sessions/latest — 가장 최근 세션 ID
-storySessionsRouter.get('/:name/sessions/latest', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
-  const db = getDB();
-  const row = db.prepare(
-    'SELECT id FROM chat_sessions WHERE story_name = ? ORDER BY updated_at DESC LIMIT 1'
-  ).get(storyName);
+// GET /api/stories/:slug/sessions/latest
+storySessionsRouter.get('/:slug/sessions/latest', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const row = getDB().prepare(
+    'SELECT id FROM chat_sessions WHERE story_id = ? ORDER BY updated_at DESC LIMIT 1'
+  ).get(story.id);
   res.json({ sessionId: row?.id ?? null });
 });
 
-// DELETE /api/stories/:name/sessions — 스토리의 모든 세션+메시지 삭제
-storySessionsRouter.delete('/:name/sessions', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
+// DELETE /api/stories/:slug/sessions — 스토리의 모든 세션+메시지 삭제
+storySessionsRouter.delete('/:slug/sessions', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const db = getDB();
-  const sessions = db.prepare('SELECT id FROM chat_sessions WHERE story_name=?').all(storyName);
+  const sessions = db.prepare('SELECT id FROM chat_sessions WHERE story_id=?').all(story.id);
   const delMsgs = db.prepare('DELETE FROM messages WHERE session_id=?');
   const delSession = db.prepare('DELETE FROM chat_sessions WHERE id=?');
-  const delSlots = db.prepare('DELETE FROM save_slots WHERE story_name=?');
+  const delSlots = db.prepare('DELETE FROM save_slots WHERE story_id=?');
   db.transaction(() => {
     for (const s of sessions) delMsgs.run(s.id);
     for (const s of sessions) delSession.run(s.id);
-    delSlots.run(storyName);
+    delSlots.run(story.id);
   })();
   res.json({ ok: true, deleted: sessions.length });
 });
 
-// POST /api/stories/:name/fork — 특정 지점에서 분기 (새 세션 생성)
-storySessionsRouter.post('/:name/fork', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
+// POST /api/stories/:slug/fork
+storySessionsRouter.post('/:slug/fork', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const { sessionId: srcSessionId, exchangeNumber } = req.body;
   if (!srcSessionId) return res.status(400).json({ error: 'sessionId 필요' });
 
@@ -57,7 +68,7 @@ storySessionsRouter.post('/:name/fork', (req, res) => {
   ).all(srcSessionId, exchNum);
 
   const newSessionId = randomUUID();
-  createSession(newSessionId, storyName);
+  createSession(newSessionId, story.id);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
@@ -69,15 +80,17 @@ storySessionsRouter.post('/:name/fork', (req, res) => {
   res.json({ ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
 });
 
-// GET /api/stories/:name/slots
-storySessionsRouter.get('/:name/slots', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
-  res.json(getSaveSlots(storyName));
+// GET /api/stories/:slug/slots
+storySessionsRouter.get('/:slug/slots', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  res.json(getSaveSlots(story.id));
 });
 
-// POST /api/stories/:name/slots
-storySessionsRouter.post('/:name/slots', (req, res) => {
-  const storyName = decodeURIComponent(req.params.name);
+// POST /api/stories/:slug/slots
+storySessionsRouter.post('/:slug/slots', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const { slot_name, session_id } = req.body;
   if (!slot_name || !session_id) return res.status(400).json({ error: 'slot_name, session_id 필요' });
 
@@ -92,12 +105,14 @@ storySessionsRouter.post('/:name/slots', (req, res) => {
     'SELECT COUNT(*) as cnt FROM messages WHERE session_id = ? AND role = ?'
   ).get(session_id, 'assistant').cnt;
 
-  upsertSaveSlot({ story_name: storyName, slot_name, session_id, max_exchange: maxExchange, turn_count: turnCount });
+  upsertSaveSlot({ story_id: story.id, slot_name, session_id, max_exchange: maxExchange, turn_count: turnCount });
   res.json({ ok: true });
 });
 
-// POST /api/stories/:name/slots/:slotId/load
-storySessionsRouter.post('/:name/slots/:slotId/load', (req, res) => {
+// POST /api/stories/:slug/slots/:slotId/load
+storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
   const slot = getSaveSlot(req.params.slotId);
   if (!slot) return res.status(404).json({ error: '슬롯 없음' });
 
@@ -107,9 +122,7 @@ storySessionsRouter.post('/:name/slots/:slotId/load', (req, res) => {
   ).all(slot.session_id, slot.max_exchange);
 
   const newSessionId = randomUUID();
-  const storyName    = decodeURIComponent(req.params.name);
-
-  createSession(newSessionId, storyName);
+  createSession(newSessionId, story.id);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
@@ -122,7 +135,7 @@ storySessionsRouter.post('/:name/slots/:slotId/load', (req, res) => {
   res.json({ ok: true, sessionId: newSessionId, turnCount: slot.turn_count });
 });
 
-// ── /api/sessions/* 에 마운트되는 라우터 ──────────────────
+// ── /api/sessions/* 라우터 ───────────────────────────────────
 export const sessionMessagesRouter = Router();
 
 // GET /api/sessions/:id/messages?limit=50&before=exchangeNumber

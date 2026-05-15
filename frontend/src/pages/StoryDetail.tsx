@@ -15,32 +15,32 @@ function parseTags(tags?: string | null): string[] {
 }
 
 export default function StoryDetail() {
-  const { storyName: rawName } = useParams<{ storyName: string }>()
-  const storyName = decodeURIComponent(rawName ?? '')
+  const { slug: rawName } = useParams<{ slug: string }>()
+  const slug = decodeURIComponent(rawName ?? '')
   const navigate = useNavigate()
 
   const [story, setStory] = useState<StoryDetailData | null>(null)
   const [status, setStatus] = useState<'loading' | 'ok' | 'notfound' | 'error'>('loading')
   const [descExpanded, setDescExpanded] = useState(false)
 
-  const hasSession = !!sessionStorage.getItem(`session_${storyName}`)
+  const hasSession = !!sessionStorage.getItem(`session_${slug}`)
 
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
     setDescExpanded(false)
-    api<StoryDetailData>(`/api/stories/${encodeURIComponent(storyName)}`)
+    api<StoryDetailData>(`/api/stories/${encodeURIComponent(slug)}`)
       .then(d => { if (!cancelled) { setStory(d); setStatus('ok') } })
       .catch((err: Error) => {
         if (cancelled) return
         setStatus(err.message.includes('404') ? 'notfound' : 'error')
       })
     return () => { cancelled = true }
-  }, [storyName])
+  }, [slug])
 
   useEffect(() => {
-    document.title = `${storyName} — achat-v2`
-  }, [storyName])
+    document.title = `${slug} — achat-v2`
+  }, [slug])
 
   if (status === 'loading') {
     return (
@@ -57,7 +57,7 @@ export default function StoryDetail() {
         <Nav />
         <div className="page" style={{ textAlign: 'center', paddingTop: 40 }}>
           <p style={{ color: 'var(--text-dim)', fontSize: 15, marginBottom: 16 }}>
-            {status === 'notfound' ? `"${storyName}" 스토리를 찾을 수 없습니다.` : '스토리 정보를 불러오지 못했습니다.'}
+            {status === 'notfound' ? `"${slug}" 스토리를 찾을 수 없습니다.` : '스토리 정보를 불러오지 못했습니다.'}
           </p>
           <Link to="/" className="btn btn-primary">홈으로</Link>
         </div>
@@ -77,7 +77,7 @@ export default function StoryDetail() {
         <Link to="/" style={{ color: 'var(--text-dim)', fontSize: 14 }}>&larr; 목록</Link>
 
         <div className="story-detail-head">
-          <h1>{story.title || story.name}</h1>
+          <h1>{story.title || story.slug}</h1>
           <div className="story-detail-meta">
             <span>{story.char_name}</span>
             {story.category && <span className="tag">{story.category}</span>}
@@ -125,7 +125,7 @@ export default function StoryDetail() {
         <div className="story-detail-cta">
           <button
             className="btn btn-primary"
-            onClick={() => navigate(`/chat/${encodeURIComponent(storyName)}`)}
+            onClick={() => navigate(`/chat/${encodeURIComponent(slug)}`)}
             style={{ fontSize: 15, padding: '10px 28px' }}
           >{hasSession ? '이어하기' : '시작하기'}</button>
         </div>

@@ -4,20 +4,20 @@ import CommandList from '../common/CommandList'
 interface Props {
   open: boolean
   story: StoryDetail | null
-  storyName: string
+  slug: string
   charName: string
   onClose: () => void
 }
 
 /** 채팅 화면 가이드 패널 — 캐릭터 소개 + 스토리 전용 !커맨드 목록 */
-export default function GuidePanel({ open, story, storyName, charName, onClose }: Props) {
+export default function GuidePanel({ open, story, slug, charName, onClose }: Props) {
   if (!open) return null
 
   return (
     <div className="guide-panel">
       <div className="guide-panel-head">
         <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-          가이드 — {story?.char_name || charName || storyName}
+          가이드 — {story?.char_name || charName || slug}
         </span>
         <button className="btn btn-secondary" onClick={onClose} style={{ fontSize: 12, padding: '4px 10px' }}>닫기</button>
       </div>

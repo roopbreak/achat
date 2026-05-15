@@ -20,10 +20,10 @@ interface Persona {
 }
 
 export default function Chat() {
-  const { storyName: rawName } = useParams<{ storyName: string }>()
-  const storyName = decodeURIComponent(rawName ?? '')
+  const { slug: rawName } = useParams<{ slug: string }>()
+  const slug = decodeURIComponent(rawName ?? '')
 
-  const session = useSession(storyName)
+  const session = useSession(slug)
   const settings = useSettings()
   const { stream } = useSSEStream()
 
@@ -52,36 +52,36 @@ export default function Chat() {
         const list = await api<Persona[]>('/api/admin/personas')
         setPersonas(list)
         const storyP = await api<{ persona_id?: number }>(
-          `/api/admin/stories/${encodeURIComponent(storyName)}/persona`
+          `/api/admin/stories/${encodeURIComponent(slug)}/persona`
         )
         setSelectedPersonaId(
           storyP.persona_id ?? list.find(p => p.is_default)?.id ?? list[0]?.id ?? null
         )
       } catch { /* no personas */ }
     })()
-  }, [storyName])
+  }, [slug])
 
   const changePersona = useCallback(async (id: number) => {
     setSelectedPersonaId(id)
-    await api(`/api/admin/stories/${encodeURIComponent(storyName)}/persona`, {
+    await api(`/api/admin/stories/${encodeURIComponent(slug)}/persona`, {
       method: 'POST',
       body: JSON.stringify({ persona_id: id, persona_override: null }),
     })
-  }, [storyName])
+  }, [slug])
 
   // 타이틀
   useEffect(() => {
-    document.title = `${storyName} — achat-v2`
-  }, [storyName])
+    document.title = `${slug} — achat-v2`
+  }, [slug])
 
   // 스토리 상세 로드 (가이드 패널용)
   useEffect(() => {
     let cancelled = false
-    api<StoryDetail>(`/api/stories/${encodeURIComponent(storyName)}`)
+    api<StoryDetail>(`/api/stories/${encodeURIComponent(slug)}`)
       .then(d => { if (!cancelled) setStoryDetail(d) })
       .catch(() => { if (!cancelled) setStoryDetail(null) })
     return () => { cancelled = true }
-  }, [storyName])
+  }, [slug])
 
   // ── 전송 ──
   const sendMessage = useCallback(async (text: string) => {
@@ -98,7 +98,7 @@ export default function Chat() {
 
     try {
       await stream(
-        `/api/stories/${encodeURIComponent(storyName)}/chat`,
+        `/api/stories/${encodeURIComponent(slug)}/chat`,
         { message: text, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
@@ -133,7 +133,7 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, stream, storyName, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 재생성 ──
   const handleRegen = useCallback(async (exchangeNumber: number, feedback: string) => {
@@ -148,7 +148,7 @@ export default function Chat() {
 
     try {
       await stream(
-        `/api/stories/${encodeURIComponent(storyName)}/regen`,
+        `/api/stories/${encodeURIComponent(slug)}/regen`,
         { sessionId: session.sessionId, feedback, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
@@ -172,7 +172,7 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, stream, storyName, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 수정 ──
   const handleEdit = useCallback(async (exchangeNumber: number, newContent: string) => {
@@ -181,7 +181,7 @@ export default function Chat() {
     setIsStreaming(true)
     setMatchedLore(null)
 
-    await api(`/api/stories/${encodeURIComponent(storyName)}/messages/${exchangeNumber}`, {
+    await api(`/api/stories/${encodeURIComponent(slug)}/messages/${exchangeNumber}`, {
       method: 'PUT',
       body: JSON.stringify({ sessionId: session.sessionId, content: newContent }),
     })
@@ -199,7 +199,7 @@ export default function Chat() {
 
     try {
       await stream(
-        `/api/stories/${encodeURIComponent(storyName)}/chat`,
+        `/api/stories/${encodeURIComponent(slug)}/chat`,
         { message: newContent, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => session.updateLastAssistant(fullText),
@@ -220,29 +220,29 @@ export default function Chat() {
       setIsStreaming(false)
       setStreamingExchange(null)
     }
-  }, [session, storyName, stream, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, slug, stream, settings.model, settings.maxTokens, settings.loreDebug])
 
   // ── 분기 ──
   const handleFork = useCallback(async (exchangeNumber: number) => {
     if (!confirm('이 지점에서 새 분기를 만들까요?')) return
     const res = await api<{ ok: boolean; sessionId: string }>(
-      `/api/stories/${encodeURIComponent(storyName)}/fork`,
+      `/api/stories/${encodeURIComponent(slug)}/fork`,
       { method: 'POST', body: JSON.stringify({ sessionId: session.sessionId, exchangeNumber }) },
     )
     if (!res.ok) return
     session.persistSessionId(res.sessionId)
     await session.loadMessages(res.sessionId)
-  }, [session, storyName])
+  }, [session, slug])
 
   // ── 삭제 ──
   const handleDelete = useCallback(async (exchangeNumber: number) => {
     if (!confirm('이 턴부터 이후 메시지를 모두 삭제할까요?')) return
-    await api(`/api/stories/${encodeURIComponent(storyName)}/messages/${exchangeNumber}`, {
+    await api(`/api/stories/${encodeURIComponent(slug)}/messages/${exchangeNumber}`, {
       method: 'DELETE',
       body: JSON.stringify({ sessionId: session.sessionId }),
     })
     session.removeFromExchange(exchangeNumber)
-  }, [session, storyName])
+  }, [session, slug])
 
   // ── 초기화 ──
   const handleReset = useCallback(async () => {
@@ -260,16 +260,16 @@ export default function Chat() {
     const format = prompt('형식 선택:\n1 = 텍스트 (.txt)\n2 = JSON (.json)', '1')
     if (format === '2') {
       const blob = new Blob([JSON.stringify(msgs, null, 2)], { type: 'application/json' })
-      download(blob, `${storyName}_${session.sessionId.slice(0, 8)}.json`)
+      download(blob, `${slug}_${session.sessionId.slice(0, 8)}.json`)
     } else {
       const text = msgs.map(m => {
         const role = m.role === 'user' ? '[유저]' : '[서술자]'
         return `${role}\n${m.content}`
       }).join('\n\n---\n\n')
       const blob = new Blob([text], { type: 'text/plain' })
-      download(blob, `${storyName}_${session.sessionId.slice(0, 8)}.txt`)
+      download(blob, `${slug}_${session.sessionId.slice(0, 8)}.txt`)
     }
-  }, [session.sessionId, storyName])
+  }, [session.sessionId, slug])
 
   // ── 슬롯 로드 ──
   const handleLoadSlot = useCallback(async (sid: string) => {
@@ -291,7 +291,7 @@ export default function Chat() {
   return (
     <div className="chat-wrap">
       <ChatHeader
-        storyName={storyName}
+        slug={slug}
         onReset={handleReset}
         onExport={handleExport}
         onToggleGuide={() => setGuideOpen(v => !v)}
@@ -319,11 +319,11 @@ export default function Chat() {
       <GuidePanel
         open={guideOpen}
         story={storyDetail}
-        storyName={storyName}
+        slug={slug}
         charName={session.charName}
         onClose={() => setGuideOpen(false)}
       />
-      <NotePanel open={noteOpen} storyName={storyName} onClose={() => setNoteOpen(false)} />
+      <NotePanel open={noteOpen} slug={slug} onClose={() => setNoteOpen(false)} />
       <SettingsPanel
         open={settingsOpen}
         fontSize={settings.fontSize}
@@ -343,7 +343,7 @@ export default function Chat() {
       />
       <SlotPanel
         open={slotsOpen}
-        storyName={storyName}
+        slug={slug}
         sessionId={session.sessionId}
         onLoadSlot={handleLoadSlot}
         onClose={() => setSlotsOpen(false)}
