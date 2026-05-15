@@ -12,3 +12,6 @@
 | 멀티 캐릭터 customScenes 적용 파이프라인 | 완료 | docs/handoff/multi-char-custom-scenes.md | 2026-05-14 |
 | AChat 스토리 하네스 구성 (페르소나 6인 + Codex) | 완료 | docs/handoff/achat-story-harness.md | 2026-05-14 |
 | 스토리 설명 영역 + 커맨드 ! 통일 | 완료 | docs/handoff/story-guide-and-commands.md | 2026-05-14 |
+| 「쌍둥이의 수유 대결」 듀오(2인) 컷 별도 구성 | 완료 | docs/handoff/twins-duo-scenes.md | 2026-05-14 |
+| Claude Code 기반 스토리 채팅 MVP | 완료 | docs/handoff/claude-code-chat-mvp.md | 2026-05-15 |
+| Story 식별자 영문 slug 정규화 (id+slug+title) | 완료 | docs/handoff/story-slug-migration.md | 2026-05-15 |
