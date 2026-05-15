@@ -44,12 +44,17 @@ function parseArgs() {
 function fixUrls(text, slug) {
   if (!text) return { result: text, changed: 0 };
   let changed = 0;
-  // /images/<first-seg>/  — 슬래시 또는 공백/따옴표/괄호 전까지
-  const re = /\/images\/([^\/\s"')]+)/g;
+  // /images/<first-seg> — 두 번째 슬래시 또는 마크다운 종료 문자 `)"'` 만나면 멈춤
+  // 공백은 허용 (한글 + 공백 포함 segment, 예: "여사친의 스마트폰", "gf-phone 스마트폰")
+  // segment 시작은 \s 외 (선행 공백 방지)
+  const re = /\/images\/([^\/)"']+)/g;
   const result = text.replace(re, (m, firstSeg) => {
-    if (firstSeg === slug) return m; // 이미 slug
+    const trimmed = firstSeg.replace(/\s+$/, ''); // 우측 trailing 공백/탭/개행 제거
+    if (trimmed === slug) return m; // 이미 slug
     changed++;
-    return `/images/${slug}`;
+    // 우측 trailing whitespace는 보존 (다음 토큰과의 구분)
+    const tail = firstSeg.slice(trimmed.length);
+    return `/images/${slug}${tail}`;
   });
   return { result, changed };
 }
@@ -107,11 +112,13 @@ const dryRun = ${dryRun ? 'true' : 'false'};
 function fixUrls(text, slug) {
   if (!text) return { result: text, changed: 0 };
   let changed = 0;
-  const re = /\\/images\\/([^\\/\\s"')]+)/g;
+  const re = /\\/images\\/([^\\/)"']+)/g;
   const result = text.replace(re, (m, firstSeg) => {
-    if (firstSeg === slug) return m;
+    const trimmed = firstSeg.replace(/\\s+\$/, '');
+    if (trimmed === slug) return m;
     changed++;
-    return '/images/' + slug;
+    const tail = firstSeg.slice(trimmed.length);
+    return '/images/' + slug + tail;
   });
   return { result, changed };
 }
