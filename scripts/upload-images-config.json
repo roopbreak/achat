@@ -1,0 +1,46 @@
+{
+  "_comment": "다운로드 폴더(babechat-studio/downloads) → AChat 서버 매핑. 외부 URL을 자체 서빙 URL로 치환. slug는 stories.slug.",
+  "_serverHost": "https://risu.ddsmdy.com",
+  "stories": [
+    {
+      "downloadFolder": "너 쌓여있잖아",
+      "slug": "piled-up",
+      "originalUrlPatterns": ["https://hjk100.com/TWG/"]
+    },
+    {
+      "downloadFolder": "모모",
+      "slug": "momo",
+      "originalUrlPatterns": ["https://fsion.uk/"]
+    },
+    {
+      "downloadFolder": "무인도에서하렘전쟁",
+      "slug": "island-harem",
+      "originalUrlPatterns": ["https://elcat.uk/a/"]
+    },
+    {
+      "downloadFolder": "섹트여동생 벗방누나",
+      "slug": "sect-noona",
+      "originalUrlPatterns": ["https://boniee.uk/BABE/2/", "https://n.boniee.uk/BABE/2/"]
+    },
+    {
+      "downloadFolder": "야구나 잘하라고",
+      "slug": "baseball-only",
+      "originalUrlPatterns": ["https://ssm99008.com/ch/"]
+    },
+    {
+      "downloadFolder": "남성 보존 클럽",
+      "slug": "male-clinic",
+      "originalUrlPatterns": ["https://xmsk.org/c/"]
+    },
+    {
+      "downloadFolder": "에어컨 없는 여름, 시골, X스",
+      "slug": "summer-countryside",
+      "originalUrlPatterns": ["https://pub-8d335208688149528dd8a208d1b79653.r2.dev/"]
+    },
+    {
+      "downloadFolder": "여사친의스마트폰",
+      "slug": "gf-phone",
+      "originalUrlPatterns": ["https://nochee.org/GT/"]
+    }
+  ]
+}
