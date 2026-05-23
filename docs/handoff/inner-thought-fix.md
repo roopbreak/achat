@@ -1,6 +1,6 @@
 # HANDOFF: 💭 속마음 슬롯 결함 일괄 보강
 > 참조 플랜: docs/plan/inner-thought-fix_2026-05-23.md
-> 상태: 활성 (1차 완료 / 2차 잔여 트랙 존재) | 마지막 업데이트: 2026-05-23
+> 상태: 완료 | 마지막 업데이트: 2026-05-23
 
 ## 현재 상태 (2026-05-23)
 
@@ -53,10 +53,20 @@
   - 단계별 게이트 (비성적/①키스/②애무/③전희 진입 후) — 단계 점프 금지
   - 거절·회피·동결 시 진도 0 동결, 체념 ≠ 동의
   - 자체 모드 카드(island-harem, summer-countryside, baseball-only, sect-noona, piled-up 등) 1차 우선
-- [ ] Codex 2차 리뷰 (BLOCKER 3건 식별 → 모두 반영)
-- [ ] 엔진 commit + push + 배포
-- [ ] 6개 카드 PUT
-- [ ] 검증
+- [x] Codex 2차 리뷰 (BLOCKER 3건 식별 → 모두 반영)
+- [x] 엔진 commit (`32f7698`) + push + `bash deploy.sh` 배포 (PID 971656)
+- [x] 6개 카드 PUT (first-love-temp, kang-seo-yoon, secret-hobby, yoon-ji-an, so-yoon, baseball-only)
+- [x] 검증 완료: 4개 새 세션 1턴씩 진행 — 잔여 카드 3개 + peach-milk에 `!음란모드` 활성 테스트 모두 통과
+  - so-yoon 사극체 완벽 적용 확인
+  - !음란모드 단계 게이트 정확 작동 (일상 장면 → 시선·미세 신호만 강화, 펠라·접촉 점프 없음, 카드 게이지 정상 작동)
+
+## 백업 위치
+- 1차 적용 카드 12개: `/tmp/achat-stories/backup/{slug}.json`
+- 2차 적용 카드 6개: 동일 위치
+- 변경안 JSON: `/tmp/achat-stories/changes-applied/` (1차), `/tmp/achat-stories/changes/` (2차)
+
+## 미해결 트랙
+- island-harem: 자체 `!속마음모드` 디자인 보존을 위해 글로벌 변경 보류. 사용자가 명시적으로 요청할 시 별도 진행
 
 ### 검증
 - [ ] sect-noona 1턴 채팅 진행 → 💭 활성화 확인 (굴복도 97이라 활성)
