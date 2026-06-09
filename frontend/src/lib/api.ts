@@ -48,7 +48,15 @@ export async function api<T = unknown>(
     window.location.href = '/login'
     throw new Error('Unauthorized')
   }
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  if (!res.ok) {
+    // 서버가 본문에 담은 사유(action/error/reason)를 살려 표면화 — 'HTTP 409'만으론 운영 불가
+    let detail = ''
+    try {
+      const body = await res.json() as { error?: string; reason?: string; action?: string }
+      detail = [body.action, body.error, body.reason].filter(Boolean).join(' — ')
+    } catch { /* JSON 본문 아님 → 상태코드만 */ }
+    throw new Error(detail ? `HTTP ${res.status}: ${detail}` : `HTTP ${res.status}`)
+  }
   return res.json() as Promise<T>
 }
 

@@ -17,7 +17,16 @@ import {
   getExistingSceneKeys, deleteStoryImageBySceneKey,
   parseCommands,
   listEtlReviewsWithStory, getEtlReview, updateEtlReviewProposal, setEtlReviewStatus,
+  listActors, getActor, insertActor, updateActor, deleteActor,
+  getActorAssets, insertActorAsset, deleteActorAssetsByActor,
+  getActorNumberRanges, insertActorNumberRange, deleteActorNumberRanges,
+  getStoryCharacters, getBindingsForStoryCharacter, insertStoryActorBinding, deleteStoryActorBinding,
+  getResolvedScenes, getResolvedRanges, hasStaleResolved,
+  getStoryRelease, listStoryReleases, setStoryCurrentRelease,
 } from '../lib/db.mjs';
+import { materializeStoryCharacter } from '../lib/actors/materialize.mjs';
+import { publishActorRelease, buildImageDomainData } from '../lib/actors/publish.mjs';
+import { buildActorCatalogText } from '../lib/actors/catalog.mjs';
 import { enqueueAll, isAutoApprovable } from '../lib/etl/queue.mjs';
 import { approveStory, approveAllAuto } from '../lib/etl/approve.mjs';
 import { embed } from '../lib/embedder.mjs';
@@ -770,6 +779,177 @@ router.post('/etl/queue/:slug/reject', (req, res) => {
   if (!story) return;
   setEtlReviewStatus(story.id, 'rejected', req.body?.note);
   res.json({ ok: true });
+});
+
+// ───────────────────────── WS-I 배우 캐스팅 (P3b-4 린 UI) ─────────────────────────
+// 배우/캐스팅을 JSON 으로 관리(ETL 교정 패턴과 동일 — 범위형 복잡도엔 폼보다 정확).
+// 발행/롤백은 release 단위(신규 세션만 영향, 기존 세션 핀 불변).
+
+// 배우 목록(자산/범위/캐스팅 수 요약)
+router.get('/actors', (_req, res) => {
+  const rows = listActors().map((a) => ({
+    id: a.id, name: a.name, source_type: a.source_type, selection_mode: a.selection_mode,
+    base_url: a.base_url,
+    assetCount: getActorAssets(a.id).length,
+    rangeCount: getActorNumberRanges(a.id).length,
+  }));
+  res.json(rows);
+});
+
+// 배우 상세(JSON 편집용 — assets/ranges 포함 round-trip)
+router.get('/actors/:id', (req, res) => {
+  const actor = getActor(Number(req.params.id));
+  if (!actor) return res.status(404).json({ error: '배우 없음' });
+  res.json({
+    id: actor.id, name: actor.name, description: actor.description,
+    source_type: actor.source_type, base_url: actor.base_url,
+    selection_mode: actor.selection_mode,
+    output_rules: actor.output_rules ? JSON.parse(actor.output_rules) : null,
+    constraints: actor.constraints ? JSON.parse(actor.constraints) : null,
+    assets: getActorAssets(actor.id).map((a) => ({
+      scene_key: a.scene_key, number: a.number, category: a.category, block: a.block,
+      description: a.description, filename: a.filename, ext: a.ext,
+    })),
+    ranges: getActorNumberRanges(actor.id).map((r) => ({
+      category: r.category, block: r.block, start_number: r.start_number, end_number: r.end_number,
+      guidance_text: r.guidance_text, sort_order: r.sort_order,
+    })),
+  });
+});
+
+// 배우 등록/수정(JSON 일괄 — id 있으면 update + assets/ranges 전체 교체)
+router.post('/actors', (req, res) => {
+  const { id, name, description, source_type, base_url, selection_mode, output_rules, constraints, assets = [], ranges = [] } = req.body ?? {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: 'name 필수' });
+  if (selection_mode && !['enumerated', 'ranged'].includes(selection_mode)) return res.status(400).json({ error: 'selection_mode 는 enumerated|ranged' });
+  if (!Array.isArray(assets) || !Array.isArray(ranges)) return res.status(400).json({ error: 'assets/ranges 는 배열' });
+  try {
+    let actorId;
+    getDB().transaction(() => {
+      if (id) {
+        if (!getActor(id)) throw new Error(`배우 ${id} 없음`);
+        actorId = id;
+        updateActor(actorId, { name, description, source_type, base_url, selection_mode, output_rules, constraints });
+        deleteActorAssetsByActor(actorId);
+        deleteActorNumberRanges(actorId);
+      } else {
+        actorId = insertActor({ name, description, source_type, base_url, selection_mode, output_rules, constraints });
+      }
+      for (const a of assets) insertActorAsset({ ...a, actor_id: actorId });
+      ranges.forEach((r, i) => insertActorNumberRange({ ...r, actor_id: actorId, sort_order: r.sort_order ?? i }));
+    })();
+    res.json({ ok: true, actorId });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/actors/:id', (req, res) => {
+  const actor = getActor(Number(req.params.id));
+  if (!actor) return res.status(404).json({ error: '배우 없음' });
+  deleteActor(actor.id);
+  res.json({ ok: true });
+});
+
+// 캐스팅 현황(배역+바인딩+resolved 상태+release 이력)
+router.get('/stories/:slug/casting', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const chars = getStoryCharacters(story.id).map((sc) => ({
+    story_character_id: sc.id, name: sc.name, story_role: sc.story_role,
+    bindings: getBindingsForStoryCharacter(sc.id).map((b) => ({
+      id: b.id, actor_id: b.actor_id, role_dir: b.role_dir,
+      output_rules_override: b.output_rules_override ? JSON.parse(b.output_rules_override) : null,
+      constraints_override: b.constraints_override ? JSON.parse(b.constraints_override) : null,
+    })),
+    resolvedScenes: getResolvedScenes(sc.id).length,
+    resolvedRanges: getResolvedRanges(sc.id).length,
+    stale: hasStaleResolved(sc.id),
+  }));
+  res.json({
+    storyId: story.id, slug: story.slug, title: story.title,
+    currentReleaseId: story.current_release_id,
+    releases: listStoryReleases(story.id),
+    characters: chars,
+  });
+});
+
+// 캐스팅 전체 교체(JSON): [{story_character_id, actor_id, role_dir, output_rules_override?, constraints_override?}]
+router.put('/stories/:slug/casting', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const bindings = req.body?.bindings;
+  if (!Array.isArray(bindings)) return res.status(400).json({ error: 'bindings 배열 필수' });
+  const validScIds = new Set(getStoryCharacters(story.id).map((sc) => sc.id));
+  for (const b of bindings) {
+    if (!validScIds.has(b.story_character_id)) return res.status(400).json({ error: `story_character_id ${b.story_character_id} 는 이 스토리 배역이 아님` });
+    if (!getActor(b.actor_id)) return res.status(400).json({ error: `배우 ${b.actor_id} 없음` });
+    if (!b.role_dir || !/^[A-Za-z0-9_-]{1,40}$/.test(b.role_dir)) return res.status(400).json({ error: `role_dir 형식 오류: ${b.role_dir}` });
+  }
+  try {
+    getDB().transaction(() => {
+      for (const scId of validScIds) {
+        for (const old of getBindingsForStoryCharacter(scId)) deleteStoryActorBinding(old.id);
+      }
+      for (const b of bindings) insertStoryActorBinding(b);
+    })();
+    res.json({ ok: true, count: bindings.length });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 전 배역 materialize(stale → fresh)
+router.post('/stories/:slug/casting/materialize', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const results = getStoryCharacters(story.id).map((sc) => materializeStoryCharacter(sc.id));
+  res.json({ ok: true, results });
+});
+
+// 카탈로그 미리보기 — frozen(현 release 동결본) / draft(발행 전 검증·수집본)
+router.get('/stories/:slug/casting/preview', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  if (story.current_release_id != null) {
+    // 손상(release 미존재/manifest 파싱 실패)을 draft 로 숨기지 않는다 — 운영자가
+    // "현재 서빙 상태"를 본다고 믿는 화면이므로 명시 에러(Codex 2).
+    const rel = getStoryRelease(story.current_release_id);
+    if (!rel) return res.status(409).json({ error: `current release ${story.current_release_id} 가 존재하지 않음(손상)` });
+    let man;
+    try { man = JSON.parse(rel.manifest); }
+    catch { return res.status(409).json({ error: `release ${rel.id} manifest 손상` }); }
+    if (man?.domains?.images?.source === 'v2-actors') {
+      return res.json({ mode: 'frozen', releaseId: rel.id, catalog: buildActorCatalogText(rel.id, man.domains.images.data) });
+    }
+    // images 가 legacy-live 인 정상 release → draft 미리보기로 진행(손상 아님)
+  }
+  const built = buildImageDomainData(story.id);
+  if (!built.ok) return res.status(409).json(built);
+  // 발행 전이라 release id 미정 — URL 의 {NEW} 는 publish 시 실제 번호로 대체됨을 표시.
+  res.json({ mode: 'draft', catalog: buildActorCatalogText('{NEW}', { roles: built.roles }) });
+});
+
+// 발행(images=v2-actors 새 release, 신규 세션부터 적용)
+router.post('/stories/:slug/casting/publish', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const result = publishActorRelease(story.id);
+  if (!result.ok) return res.status(409).json(result);
+  res.json(result);
+});
+
+// 롤백 — current_release_id 를 직전 version release 로(세션 핀은 그대로, 신규 세션만 영향)
+router.post('/stories/:slug/casting/rollback', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  if (story.current_release_id == null) return res.status(409).json({ error: '롤백할 release 없음(legacy)' });
+  const releases = listStoryReleases(story.id);
+  const cur = releases.find((r) => r.id === story.current_release_id);
+  const prev = releases.find((r) => cur && r.version === cur.version - 1);
+  if (!prev) return res.status(409).json({ error: '직전 release 없음 — 첫 release 는 롤백 불가(legacy 복귀는 수동)' });
+  setStoryCurrentRelease(story.id, prev.id);
+  res.json({ ok: true, from: cur.id, to: prev.id, toVersion: prev.version });
 });
 
 export default router;

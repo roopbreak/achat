@@ -54,6 +54,33 @@ interface EtlDetail {
   autoApprovable: boolean
 }
 
+interface ActorRow {
+  id: number
+  name: string
+  source_type: string
+  selection_mode: string
+  base_url: string | null
+  assetCount: number
+  rangeCount: number
+}
+
+interface CastingInfo {
+  storyId: number
+  slug: string
+  title: string
+  currentReleaseId: number | null
+  releases: { id: number; version: number; label: string | null; images_source: string | null }[]
+  characters: {
+    story_character_id: number
+    name: string
+    story_role: string
+    bindings: { id: number; actor_id: number; role_dir: string; output_rules_override?: unknown; constraints_override?: unknown }[]
+    resolvedScenes: number
+    resolvedRanges: number
+    stale: boolean
+  }[]
+}
+
 export default function Admin() {
   const navigate = useNavigate()
   const [stories, setStories] = useState<StoryInfo[]>([])
@@ -162,6 +189,129 @@ export default function Admin() {
     await loadEtlQueue()
   }
 
+  // ── 배우 캐스팅 (WS-I P3b-4 린 UI) ──
+  const [actors, setActors] = useState<ActorRow[]>([])
+  const [actorJson, setActorJson] = useState('')
+  const [castStory, setCastStory] = useState('')
+  const [casting, setCasting] = useState<CastingInfo | null>(null)
+  const [castJson, setCastJson] = useState('')
+  const [castPreview, setCastPreview] = useState('')
+  const [castMsg, setCastMsg] = useState('')
+  const [castBusy, setCastBusy] = useState(false)
+
+  const loadActors = useCallback(async () => {
+    setActors(await api<ActorRow[]>('/api/admin/actors'))
+  }, [])
+
+  const editActor = async (id: number) => {
+    const d = await api<Record<string, unknown>>(`/api/admin/actors/${id}`)
+    setActorJson(JSON.stringify(d, null, 2))
+  }
+
+  const newActorTemplate = () => {
+    setActorJson(JSON.stringify({
+      name: '', source_type: 'external', selection_mode: 'ranged', base_url: 'https://risu.ddsmdy.com/images/{slug}/{코드}/',
+      output_rules: { header: ['## 이미지 출력', '응답 시작 전 현재 장면에 맞는 이미지 1장 삽입. 캐릭터당 1장, 응답당 0~2장.'] },
+      constraints: { allowed_ranges: [[0, 153]], disallowed_numbers: [], fallback_numbers: [0] },
+      assets: [{ scene_key: '0', number: '0', category: '감정', block: 'sfw', description: '기본' }],
+      ranges: [{ category: '감정', block: 'sfw', start_number: 0, end_number: 16, guidance_text: '감정/표정' }],
+    }, null, 2))
+  }
+
+  const saveActor = async () => {
+    let body: unknown
+    try { body = JSON.parse(actorJson) } catch { setCastMsg('배우 JSON 파싱 오류'); return }
+    setCastBusy(true)
+    try {
+      const r = await api<{ ok?: boolean; actorId?: number; error?: string }>('/api/admin/actors', { method: 'POST', body: JSON.stringify(body) })
+      setCastMsg(r.error ? `저장 실패: ${r.error}` : `배우 저장 완료 (id ${r.actorId})`)
+      await loadActors()
+      if (casting) await loadCasting(casting.slug)
+    } catch (e: any) { setCastMsg(`저장 실패: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
+  const deleteActorUI = async (id: number, name: string) => {
+    if (!confirm(`배우 '${name}' 삭제? 캐스팅된 배역의 이미지가 사라집니다(기존 발행 release 는 불변).`)) return
+    setCastBusy(true)
+    try { await api(`/api/admin/actors/${id}`, { method: 'DELETE' }); await loadActors() }
+    finally { setCastBusy(false) }
+  }
+
+  const loadCasting = useCallback(async (slug: string) => {
+    const c = await api<CastingInfo>(`/api/admin/stories/${encodeURIComponent(slug)}/casting`)
+    setCasting(c)
+    // override 필드도 round-trip — 빠뜨리면 "불러와서 그대로 저장"이 기존 override 를 소거(Codex 1).
+    setCastJson(JSON.stringify({
+      bindings: c.characters.flatMap(ch => ch.bindings.map(b => ({
+        story_character_id: ch.story_character_id, actor_id: b.actor_id, role_dir: b.role_dir,
+        ...(b.output_rules_override != null ? { output_rules_override: b.output_rules_override } : {}),
+        ...(b.constraints_override != null ? { constraints_override: b.constraints_override } : {}),
+      }))),
+    }, null, 2))
+    setCastPreview('')
+  }, [])
+
+  const saveCasting = async () => {
+    if (!casting) return
+    let body: unknown
+    try { body = JSON.parse(castJson) } catch { setCastMsg('캐스팅 JSON 파싱 오류'); return }
+    setCastBusy(true)
+    try {
+      const r = await api<{ ok?: boolean; count?: number; error?: string }>(`/api/admin/stories/${encodeURIComponent(casting.slug)}/casting`, { method: 'PUT', body: JSON.stringify(body) })
+      setCastMsg(r.error ? `캐스팅 실패: ${r.error}` : `캐스팅 저장 (${r.count}건) — materialize 필요`)
+      await loadCasting(casting.slug)
+    } catch (e: any) { setCastMsg(`캐스팅 실패: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
+  const materializeCasting = async () => {
+    if (!casting) return
+    setCastBusy(true)
+    try {
+      const r = await api<{ results: { scenes: number; ranges: number }[] }>(`/api/admin/stories/${encodeURIComponent(casting.slug)}/casting/materialize`, { method: 'POST' })
+      const s = r.results.reduce((a, x) => a + x.scenes, 0); const g = r.results.reduce((a, x) => a + x.ranges, 0)
+      setCastMsg(`materialize 완료 (scenes ${s} / ranges ${g})`)
+      await loadCasting(casting.slug)
+    } catch (e: any) { setCastMsg(`materialize 실패: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
+  const previewCasting = async () => {
+    if (!casting) return
+    setCastBusy(true)
+    try {
+      const r = await api<{ mode?: string; catalog?: string; reason?: string; action?: string }>(`/api/admin/stories/${encodeURIComponent(casting.slug)}/casting/preview`)
+      if (r.catalog) { setCastPreview(r.catalog); setCastMsg(r.mode === 'frozen' ? '현재 release 동결 카탈로그' : '발행 전 미리보기 ({NEW} = 발행 시 release 번호)') }
+      else setCastMsg(`미리보기 불가: ${r.action || ''} ${r.reason || ''}`)
+    } catch (e: any) { setCastMsg(`미리보기 불가: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
+  const publishCasting = async () => {
+    if (!casting) return
+    if (!confirm(`${casting.slug} 를 v2-actors 로 발행할까요? 신규 세션부터 적용됩니다(기존 세션 불변, 롤백 가능).`)) return
+    setCastBusy(true)
+    try {
+      const r = await api<{ ok?: boolean; releaseId?: number; action?: string; reason?: string }>(`/api/admin/stories/${encodeURIComponent(casting.slug)}/casting/publish`, { method: 'POST' })
+      setCastMsg(r.ok ? `발행 완료 — release ${r.releaseId}` : `발행 차단: ${r.action} ${r.reason || ''}`)
+      await loadCasting(casting.slug)
+    } catch (e: any) { setCastMsg(`발행 실패: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
+  const rollbackCasting = async () => {
+    if (!casting) return
+    if (!confirm(`${casting.slug} 의 current release 를 직전 버전으로 되돌릴까요? (신규 세션만 영향)`)) return
+    setCastBusy(true)
+    try {
+      const r = await api<{ ok?: boolean; toVersion?: number; error?: string }>(`/api/admin/stories/${encodeURIComponent(casting.slug)}/casting/rollback`, { method: 'POST' })
+      setCastMsg(r.ok ? `롤백 완료 → v${r.toVersion}` : `롤백 불가: ${r.error}`)
+      await loadCasting(casting.slug)
+    } catch (e: any) { setCastMsg(`롤백 불가: ${e.message || e}`) }
+    finally { setCastBusy(false) }
+  }
+
   const loadStories = useCallback(async () => {
     const list = await api<StoryInfo[]>('/api/admin/stories')
     setStories(list)
@@ -172,7 +322,7 @@ export default function Admin() {
     setPersonas(list)
   }, [])
 
-  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue() }, [loadStories, loadPersonas, loadEtlQueue])
+  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors() }, [loadStories, loadPersonas, loadEtlQueue, loadActors])
 
   // ── 페르소나 ──
   const savePersona = async () => {
@@ -482,6 +632,91 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        {/* 배우 캐스팅 (WS-I) */}
+        <div className="admin-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10, flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>배우 캐스팅 (WS-I)</h2>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={newActorTemplate} disabled={castBusy}>+ 배우 템플릿</button>
+              <button className="btn" style={{ fontSize: 12 }} onClick={saveActor} disabled={castBusy || !actorJson.trim()}>배우 저장(JSON)</button>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
+            배우(이미지 모음)를 등록하고 스토리 배역에 캐스팅 → materialize → 미리보기 → 발행(v2-actors). 신규 세션만 적용, 기존 세션 핀 불변, 롤백 가능.
+          </div>
+          {castMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--accent, #6cf)' }}>{castMsg}</div>}
+
+          {/* 배우 목록 */}
+          {actors.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 8 }}>등록된 배우가 없습니다. [+ 배우 템플릿]으로 시작하세요.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+              {actors.map(a => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border, #333)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}>
+                  <span>{a.name}</span>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>#{a.id} {a.selection_mode === 'ranged' ? '범위형' : '개별형'} · 코드 {a.assetCount} · 대역 {a.rangeCount}</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => editActor(a.id)} disabled={castBusy}>편집</button>
+                  <button className="btn btn-danger" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => deleteActorUI(a.id, a.name)} disabled={castBusy}>삭제</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {actorJson && (
+            <div style={{ marginBottom: 10 }}>
+              <textarea value={actorJson} onChange={e => setActorJson(e.target.value)}
+                style={{ width: '100%', minHeight: 180, fontFamily: 'monospace', fontSize: 11 }} />
+            </div>
+          )}
+
+          {/* 스토리 캐스팅 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <select value={castStory} onChange={e => { setCastStory(e.target.value); if (e.target.value) loadCasting(e.target.value); else setCasting(null) }} style={{ fontSize: 13 }}>
+              <option value="">스토리 선택...</option>
+              {stories.map(s => <option key={s.slug} value={s.slug}>{s.title} ({s.slug})</option>)}
+            </select>
+            {casting && (
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                release: {casting.currentReleaseId == null ? 'legacy' : (() => {
+                  const cur = casting.releases.find(r => r.id === casting.currentReleaseId)
+                  return cur ? `v${cur.version} (${cur.images_source === 'v2-actors' ? 'v2-actors' : 'images legacy'})` : `#${casting.currentReleaseId}`
+                })()}
+              </span>
+            )}
+          </div>
+
+          {casting && (
+            <>
+              {casting.characters.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#e88', marginBottom: 8 }}>배역(story_characters) 없음 — 먼저 ETL 에서 캐릭터 승인(P3a)이 필요합니다.</div>
+              ) : (
+                <div style={{ fontSize: 12, marginBottom: 8 }}>
+                  {casting.characters.map(ch => (
+                    <div key={ch.story_character_id} style={{ marginBottom: 2 }}>
+                      배역 <b>{ch.name}</b> (sc {ch.story_character_id}) → {ch.bindings.length === 0 ? <span style={{ color: 'var(--text-dim)' }}>캐스팅 없음</span>
+                        : ch.bindings.map(b => b.role_dir).join(', ')}
+                      {' '}· resolved {ch.resolvedScenes}컷/{ch.resolvedRanges}대역
+                      {ch.stale && <span style={{ color: '#e88' }}> ⚠ stale — materialize 필요</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>캐스팅 JSON (bindings 전체 교체 — story_character_id / actor_id / role_dir):</div>
+              <textarea value={castJson} onChange={e => setCastJson(e.target.value)}
+                style={{ width: '100%', minHeight: 100, fontFamily: 'monospace', fontSize: 11 }} />
+              <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                <button className="btn btn-secondary" style={{ fontSize: 11 }} onClick={saveCasting} disabled={castBusy}>캐스팅 저장</button>
+                <button className="btn btn-secondary" style={{ fontSize: 11 }} onClick={materializeCasting} disabled={castBusy}>materialize</button>
+                <button className="btn btn-secondary" style={{ fontSize: 11 }} onClick={previewCasting} disabled={castBusy}>카탈로그 미리보기</button>
+                <button className="btn" style={{ fontSize: 11 }} onClick={publishCasting} disabled={castBusy}>발행(publish)</button>
+                <button className="btn btn-danger" style={{ fontSize: 11 }} onClick={rollbackCasting} disabled={castBusy || casting.currentReleaseId == null}>롤백</button>
+              </div>
+              {castPreview && (
+                <pre style={{ marginTop: 8, padding: 10, background: 'var(--bg-elev, #1a1a1a)', borderRadius: 6, fontSize: 11, whiteSpace: 'pre-wrap', maxHeight: 360, overflow: 'auto' }}>{castPreview}</pre>
+              )}
+            </>
           )}
         </div>
 
