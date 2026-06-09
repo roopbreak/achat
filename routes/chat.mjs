@@ -7,6 +7,7 @@ import {
   getPersona, getDefaultPersona,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
+import { resolveStoryView } from '../lib/story-resolver.mjs';
 import { streamWithContinuation } from '../lib/providers/auto-continue.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
@@ -52,7 +53,10 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
     createSession(sessionId, story.id, story.current_release_id ?? null);
     session = getSession(sessionId);
 
-    if (story.first_mes) {
+    // 0턴 first_mes 시드도 핀한 release 뷰에서 — buildContext 의 frozen first_mes 와 일치(Codex F1).
+    // legacy(release NULL)면 resolveStoryView 가 원본을 그대로 반환하므로 기존과 동일.
+    const seedView = resolveStoryView(story, session.release_id ?? null);
+    if (seedView.first_mes) {
       const persona = story.persona_id
         ? getPersona(story.persona_id)
         : getDefaultPersona();
@@ -60,7 +64,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
       insertMessage({
         session_id:      sessionId,
         role:            'assistant',
-        content:         story.first_mes.replaceAll('{{user}}', userName),
+        content:         seedView.first_mes.replaceAll('{{user}}', userName),
         exchange_number: 0,
       });
     }
