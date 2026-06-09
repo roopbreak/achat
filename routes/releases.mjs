@@ -49,7 +49,9 @@ function serveLocator(loc, res) {
     let host;
     try { host = new URL(loc).hostname.toLowerCase(); } catch { return res.status(404).json({ error: '로케이터 URL 오류' }); }
     if (!ALLOWED_IMAGE_HOSTS.has(host)) return res.status(403).json({ error: '허용되지 않은 이미지 호스트' });
-    return res.redirect(302, loc);
+    // base_url 에 한글/공백(예: '여사친의 스마트폰')이 있을 수 있음 → Location 헤더 안전 인코딩.
+    // encodeURI 는 %·/ 를 보존하므로 이미 인코딩된 URL 도 이중 인코딩되지 않는다.
+    return res.redirect(302, encodeURI(loc));
   }
   const m = loc.match(/^actors\/(\d+)\/(.+)$/);
   if (!m || m[2].includes('..') || m[2].includes('/')) return res.status(404).json({ error: '로케이터 형식 미상' });
