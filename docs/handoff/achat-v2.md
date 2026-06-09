@@ -5,7 +5,15 @@
 
 ## 현재 상태
 
-**P0·P1·P2·P3a 완료·배포**(`master`=...+P3a, 93d14ae). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3b 배우 캐스팅(WS-I)** → P3c 로어(WS-F).
+**P0·P1·P2·P3a 완료·배포**(`master`=...+P3a, 4b34e3c). **P3b 배우 캐스팅(WS-I) 설계 완료**(Codex 검수, 미착수). 다음 = **P3b-1 구현**(스키마+평탄화, draft-only inert) → P3b-2 카탈로그/cutover → P3b-3 ETL → P3b-4 UI → P3c 로어(WS-F).
+
+### P3b 설계 (2026-06-09) — 배우 캐스팅
+> 플랜: `docs/plan/achat-v2-p3b-actor-casting_2026-06-09.md`. Codex 적대적 리뷰(bjjivdy9n) 구조 결함 5건 전부 반영.
+
+- **모델**: 배우(이미지모음)=external/local 통합. 배역(story_character)에 M:N 캐스팅(role_dir). 엔진은 평탄화 `resolved_actor_scenes`만 조회. images 를 P3a release-manifest 의 `v2-actors` 도메인으로 cutover(세션 핀 계승).
+- **결정**: ①external 프록시 서빙(release-scoped) ②JSON 매핑표 ③별도 actor_inheritance 테이블 ④P3b-1만 먼저 ⑤2층 출력규칙(actor+binding override).
+- **Codex 5건 반영**: F1(critical) release-scoped 서빙 `/releases/:releaseId/images/...`(이미지 fetch 재현성), F2 `story_actor_asset_overrides` 1급 테이블(3층 override), F3 resolved input_fingerprint+rebuild_status(stale 동결 방지, 승인은 fresh만), F4 ETL 권위소스=build-payloads.mjs+검토큐, F5 P3b-1 draft-only 계약 + 규칙 동결(resolved_rule_text).
+- **스키마(migration 005 예정)**: actors/actor_assets/actor_inheritance(+base_revision_fingerprint)/story_actor_bindings/story_actor_asset_overrides/resolved_actor_scenes(+input_fingerprint/rebuild_status/resolved_rule_text/asset_locator).
 
 > P3a 배포 후 운영자 액션: admin "v2 마이그레이션(ETL)" 섹션에서 [스캔/갱신]→[자동승인 일괄](단일 51건)→다중 16건 개별 교정·승인. 승인해야 실제 v2 전환(그 전까지 inert, 전 스토리 legacy 채팅).
 
