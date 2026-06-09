@@ -7,13 +7,7 @@ import {
   getPersona, getDefaultPersona,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
-import { streamToSSE as claudeStream } from '../lib/claude-stream.mjs';
-import { streamToSSE as geminiStream } from '../lib/gemini-stream.mjs';
-
-function getStreamFn(model) {
-  if (model && model.startsWith('gemini-')) return geminiStream;
-  return claudeStream;
-}
+import { getGenerationProvider } from '../lib/providers/index.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
 import rateLimit from 'express-rate-limit';
@@ -88,8 +82,9 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
       res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
     }
 
-    const streamFn = getStreamFn(model);
-    assistantText = await streamFn(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
+    const provider = getGenerationProvider(model);
+    const result = await provider.stream({ systemBlocks, messages, res, model, maxTokens });
+    assistantText = result.finalText;
   } catch (err) {
     if (!res.writableEnded) {
       res.write(`event: error\ndata: ${JSON.stringify({ message: err.message })}\n\n`);
@@ -226,8 +221,9 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
       res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
     }
 
-    const streamFn = getStreamFn(model);
-    assistantText = await streamFn(systemBlocks, messages, res, model || undefined, maxTokens || undefined);
+    const provider = getGenerationProvider(model);
+    const result = await provider.stream({ systemBlocks, messages, res, model, maxTokens });
+    assistantText = result.finalText;
   } catch (err) {
     if (prevAssistant) {
       insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch });
