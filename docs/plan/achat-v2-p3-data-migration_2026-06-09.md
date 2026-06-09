@@ -89,6 +89,9 @@
 
 → P3a 구현 착수 가능. cutover 상태모델(release manifest shape)·승인 트랜잭션·fingerprint 계약이 §3/§4에 확정됨.
 
+## 6.5 P3a 완료·배포 (2026-06-09)
+엔진 코어(0e58f2b) + 린 검토 UI(69c610b) + Codex critical 수정(93d14ae) → `master` ff 머지 → deploy.sh → 원격 검증 통과(마이그레이션 [1,2,3,4]·stories 79 보존·inert·ETL scan 응답·라이브 채팅 SSE 정상). 운영자 승인(admin ETL 섹션) 전까지 inert. 다음 = P3b(WS-I 배우).
+
 ## 7. Codex 검수 이력
 - **P3 설계 적대적 리뷰(b50shkwsv, 2026-06-09)**: 단일 content_model 플래그 모델의 구조적 결함 5건 → **전부 수용**.
   1. 단일 플래그로 하이브리드(P3a/b/c) 표현 불가 → **release.manifest 도메인별 source 모델**로 개정.

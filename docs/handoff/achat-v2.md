@@ -5,7 +5,9 @@
 
 ## 현재 상태
 
-**P0·P1·P2 완료·배포**(`master`=v1+P0+P1+P2). **P3a 엔진 코어 진행 중**(`v2` 브랜치, 미커밋→커밋 예정). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3a 린 검토 UI** → P3b 배우 → P3c 로어.
+**P0·P1·P2·P3a 완료·배포**(`master`=...+P3a, 93d14ae). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3b 배우 캐스팅(WS-I)** → P3c 로어(WS-F).
+
+> P3a 배포 후 운영자 액션: admin "v2 마이그레이션(ETL)" 섹션에서 [스캔/갱신]→[자동승인 일괄](단일 51건)→다중 16건 개별 교정·승인. 승인해야 실제 v2 전환(그 전까지 inert, 전 스토리 legacy 채팅).
 
 ### P3 진행 내역 (2026-06-09) — 데이터 전환·자산
 > 상세 플랜: `docs/plan/achat-v2-p3-data-migration_2026-06-09.md`. Codex 적대적 리뷰(b50shkwsv)로 단일 플래그 모델 결함 5건 발굴 → **release-manifest per-domain 모델**로 개정.
@@ -19,7 +21,8 @@
 - **세션 release 핀 배선**: `db.createSession(id,storyId,releaseId)`, `chat.mjs`(생성 시 current_release_id 핀), `sessions.mjs`(fork/slot-load 는 소스 세션 release 상속).
 - **검증**: 실 데이터 79 스토리 = 51 자동승인 후보/28 검토필요. E2E(enqueue→approve→핀→resolver→buildContext v2 뷰 주입), fingerprint drift 거부, 다중 차단, 일괄승인 50/50, 서버 부팅 정상. 전부 DB 복사본/dry-run 검증(실 데이터 무변경, current_release_id 전부 NULL 유지).
 - **린 검토 UI 완료(미배포)**: admin 백엔드 라우트(`POST /etl/scan`·`GET /etl/queue`·`GET /etl/queue/:slug`·`POST /etl/approve-auto`·`POST /etl/queue/:slug/approve`·`PATCH /etl/queue/:slug`·`POST .../reject`) + 프론트 Admin.tsx "v2 마이그레이션(ETL)" 섹션(스캔/일괄자동승인/큐 테이블/상세 교정 textarea). 다중 캐릭터는 proposal 교정(JSON) 후 "교정 저장(플래그 해소)"→승인. 전체 스택 스모크(복사본): scan 79 → approve-auto **51/51 승인** → pending 28(검토필요). 프론트 빌드 통과.
-- **P3a 배포 준비 완료** — 다음: 커밋 → deploy → 원격 검증(자동승인 → v2 채팅 스모크: 신규 세션 v2, 기존 legacy 유지).
+- **P3a 배포·원격 검증 통과(2026-06-09, master 93d14ae)**: 마이그레이션 [1,2,3,4] 적용, stories 79 보존, current_release_id 전부 NULL(inert), etl_review_queue 존재, ETL scan 라우트 응답(79), 라이브 채팅 SSE 스트리밍 정상(legacy 경로 무영향). 배포 전 원격 DB 백업(`backups/*.pre-p3a-20260609-221936`).
+- **Codex 배포 전 코드 리뷰(bptuw7r9c)**: critical 2건 반영 — F1 first_mes 시드를 resolver 뷰에서(v2 재현성), F2 승인 시 validatePayload(플래그만 비우는 우회 차단). legacy 안전·승인 원자성·fingerprint·다중 재구성은 문제없음 확인.
 - ⚠️ 로컬 검증 시 stale `node --env-file=.env index.mjs` 서버 누수 주의(pkill 패턴이 `--env-file` 때문에 매칭 실패한 사고 있었음 → `pkill -f index.mjs` 사용).
 
 
@@ -72,7 +75,7 @@
 - [x] **P0**: CLAUDE.md 현행화 + WS-B 어댑터 골격 (2026-06-09 완료, 커밋 113a8dc)
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
 - [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
-- [~] **P3a**: WS-K ETL 엔진 코어(migration 004 + lib/etl/ + story-resolver + 세션 핀 배선) ✅ 완료(미배포) / 린 검토 UI ⬜ 남음
+- [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
 - [ ] **P3b**: WS-I 배우 캐스팅 / **P3c**: WS-F 로어
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
