@@ -123,3 +123,35 @@ buildImageSection 분기·서빙 라우트를 배선하지만, **어떤 release 
 - **F4 (수용, 계승 검증)**: current_release_id!=null 만으론 부족. **publish 는 현 manifest 파싱 가능 + domains.characters.source==='v2-frozen' + data.characters 배열 비어있지 않음을 hard fail 검증**(P3a 미승인/legacy-live characters 인데 images 만 v2-actors 인 손상 release 발행 차단).
 - **F5 (수용, 원자성)**: **publish 쓰기를 단일 db.transaction**(version 산출~insertStoryRelease~setStoryCurrentRelease). 동시 publish version 충돌은 story_release (story_id,version) UNIQUE 가 차단(두 번째 throw). better-sqlite 동기 모델이라 수집~발행 사이 자산 변경 race 없음(P3a approveStory 와 동일 패턴).
 - 세션 핀/first_mes 시드 일관성은 결함 없음 확인. resolveImageDomain 턴당 호출은 efficiency 만(구조 결함 아님) → resolveStoryView 와 통합해 release 1회 읽기로 처리.
+
+---
+
+## 10. P3b-3 ETL 설계 (2026-06-10) — 외부 범위형 흡수 (Codex bhdmtvhg4 논의)
+
+> 첫 샘플 = sieun-smartphone(slug `gf-phone`, id 78, char_name 이시은). **발견**: 외부 URL 시스템은 story_images=0(개별 메타 없음), 배우코드(LEE/GU/YU/JEO/3P) + 카테고리별 번호 범위(0~162) + 일부 특수코드 설명만. P3b-1/2 개별 자산 모델과 임피던스.
+
+### 10.1 모델 확장 결정 (Codex 권고 채택)
+- **`selection_mode` 분리**(source_type 와 직교): `enumerated`(개별, 현행) / `ranged`(범위형). actor_assets 하나로 우겨넣지 않는다.
+- **resolved_actor_scenes 불변 + ranged 전용 sibling 추가**: `actor_number_ranges` + `resolved_actor_ranges`. actor_assets 엔 명시 특수코드만.
+- **제약은 구조화 데이터**: actors.constraints JSON `{allowed_ranges:[[s,e]], disallowed_numbers:[], fallback_numbers:[]}`. output_rules 는 안내문(프롬프트), 검증은 constraints. binding override 는 **축소만**(확장 금지).
+- **서빙 경로 분리**: 개별형 `/releases/:id/images/:roleDir/:sceneKey`, 범위형 `/releases/:id/images/:roleDir/numbers/:num`(num 정수 + 동결 allowed_ranges 통과 시만 base_url+num 302, host whitelist 유지). 외부 실존 검증 안 함(포인터 동결).
+- **3P 제외**: LEE/YU 합성 role → actor 아닌 복합 role asset set. 첫 샘플은 LEE/GU/YU/JEO 만. 3P 는 후속 group role 검토.
+- **stale 원천 확장**: range/constraint/base_url/selection_mode 수정도 영향 resolved stale.
+
+### 10.2 스키마 (migration 006)
+- `actors` + `selection_mode TEXT DEFAULT 'enumerated'`, `constraints TEXT`(JSON).
+- `actor_number_ranges`(id, actor_id FK, category, block, start_number, end_number, guidance_text, sort_order).
+- `story_actor_bindings` + `constraints_override TEXT`(JSON, 축소만).
+- `resolved_actor_ranges`(id, story_character_id, actor_id, role_dir, category, block, start_number, end_number, guidance_text, input_fingerprint, rebuild_status, materialized_at). UNIQUE(story_character_id, role_dir, category, start_number).
+
+### 10.3 manifest images.data.roles[] 확장
+```
+{ role_dir, rule_text, selection_mode:'enumerated'|'ranged',
+  scenes:[{scene_key,category,block,description,asset_locator,number}],   // 명시/개별
+  ranges:[{category,block,start,end,guidance}],                            // ranged 전용
+  constraints:{allowed_ranges,disallowed_numbers,fallback_numbers} }       // ranged 검증
+```
+
+### 10.4 단계
+- **P3b-3a(엔진 확장, inert)**: migration 006 + CRUD + materialize(ranges 평탄화/fingerprint/stale) + catalog(ranged 렌더) + publish(동결) + 서빙(/numbers/:num). sieun 픽스처 검증.
+- **P3b-3b(sieun 실 cutover)**: P3a characters 승인 → LEE/GU/YU/JEO ranged actor 등록(범위+제약) → 캐스팅 → materialize → publishActorRelease → **prompt 전환**(lore 「이미지 카탈로그」 등 코드언어 → v2-actors 정합) → 원격 채팅 검증.
