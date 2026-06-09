@@ -5,9 +5,19 @@
 
 ## 현재 상태
 
-**P0·P1·P2·P3a 완료·배포**(`master`=...+P3a, 4b34e3c). **P3b-1 구현 완료**(스키마+CRUD+평탄화, draft-only inert, 로컬 검증·Codex 리뷰 통과 — 미커밋/미배포). 다음 = **P3b-2 카탈로그/resolver/cutover/release-scoped 서빙** → P3b-3 ETL → P3b-4 UI → P3c 로어(WS-F).
+**P0·P1·P2·P3a·P3b-1·P3b-2 완료·배포**(`master`=bafb9e5, 원격 검증 통과). 다음 = **P3b-3 ETL(이미지 전환)** → P3b-4 admin UI → P3c 로어(WS-F).
 
-### P3b-1 완료 (2026-06-09) — 배우 스키마+평탄화 (draft-only/inert)
+### P3b-2 완료 (2026-06-09) — 이미지 도메인 cutover (카탈로그·resolver·서빙) ✅ 배포
+> 플랜 §9. Codex 설계 리뷰(bj4245g1i) F1~F5 + 코드 리뷰(bpy5dd5ow) 3건 반영. master bafb9e5.
+
+- **엔진 코어**: images 도메인을 `legacy-live`→`v2-actors` 로 전환. 신규 `lib/actors/catalog.mjs`(동결 manifest→release-scoped URL 카탈로그 `/releases/:id/images/:role/:scene`), `lib/actors/publish.mjs`(`publishActorRelease` — characters 동결본 계승 + images 동결 발행, 단일 트랜잭션), `routes/releases.mjs`(release-scoped 서빙: external 302 / local 파일). 수정: `story-resolver`(`resolveRelease` — release 1회 읽어 storyView+imageDomain), `context-builder`(images 분기 + v2-actors 시 description 이미지 마크다운 strip), `index.mjs`(/releases 무인증 마운트), `chat.mjs`(세션 리셋 경로 release 핀).
+- **재현성 모델 = 포인터 동결**(사용자 결정): manifest 가 scene→asset_locator 매핑 고정(RANDOM 제거 + 배우 교체 시 과거 release 매핑 유지). 바이트 불변(content-addressed/external 다운로드)은 비목표 — 자산 local 화되는 P3b-3 이후 별도 판단.
+- **Codex 코드 리뷰 3건(전부 critical, 반영)**: ①세션 리셋 경로(chat.mjs DELETE)가 release 핀·동결 시드 누락→메인 경로와 동일 패턴 적용 ②캐스팅됐으나 미materialize 배역 누락 발행→`not-materialized` hard fail ③`/releases` 302 open-redirect→호스트 화이트리스트(`ALLOWED_IMAGE_HOSTS`, 기본 risu.ddsmdy.com).
+- **🚑 배포 직후 핫픽스(bafb9e5)**: P3b-2 이미지 분기에서 `const composition` 을 else 블록으로 옮겨 하단 charNames 참조가 깨짐 → 전 채팅 SSE `composition is not defined` 즉시 실패. 함수 스코프 복원. **교훈: 단위 테스트가 buildContext 전체를 실행 안 해 놓침** → 이후 buildContext 전체 실행 스모크 필수.
+- **검증**: 통합 23 + 수정 회귀 7 + 서빙 e2e(302/403/404/400) + buildContext 전체(legacy+v2-actors) 4 전부 통과. 배포 후 원격: 마이그레이션 5·stories 79 보존·**inert(v2-actors release 0/resolved 0/current_release_id 0)**·/releases 404·라이브 채팅 SSE 정상(cacheRead 32219 적중, legacy 무영향). 배포 전 원격 DB 백업(`backups/story-chat.db.pre-p3b-20260609-233755`).
+- **inert**: 어떤 release 도 images!=v2-actors 면 전 스토리 legacy 유지. 실 cutover(publishActorRelease 호출)는 P3b-3 ETL/P3b-4 UI 단계.
+
+### P3b-1 완료 (2026-06-09) — 배우 스키마+평탄화 (draft-only/inert) ✅ 배포(P3b-2 와 함께, master bafb9e5)
 > 플랜 §6-1. Codex 코드 리뷰(b2fbjxola) critical/correctness 5건 전부 반영.
 
 - **migration 005**(`005_ws_i_actors.mjs`): `actors`(source_type external/local·base_url·output_rules JSON) / `actor_assets`(UNIQUE(actor_id,scene_key)) / `actor_inheritance`(excluded/own_numbers·base_revision_fingerprint) / `story_actor_bindings`(story_character_id FK·role_dir·output_rules_override, **UNIQUE(sc_id,actor_id)+UNIQUE(sc_id,role_dir)**) / `story_actor_asset_overrides`(op replace/add/hide, UNIQUE(sc_id,scene_key)) / `resolved_actor_scenes`(asset_locator·resolved_rule_text·input_fingerprint·rebuild_status, UNIQUE(sc_id,role_dir,scene_key)).
@@ -15,7 +25,7 @@
 - **CRUD**(`lib/db.mjs` WS-I 섹션): actors/assets/inheritance/bindings/overrides/resolved + **F3 stale 계약** — 변경 원천 mutation(자산·상속·override·규칙·role_dir·binding추가·배우삭제)이 영향 resolved 를 stale 마킹(`markResolvedStaleByActor` recursive CTE 로 descendant 캐스팅까지 전파). 승인 게이트는 `hasStaleResolved`(fresh 만 허용).
 - **Codex 5건 반영**: F1(critical) `deleteActor` 가 직접 캐스팅 resolved 제거+descendant stale(고아/누락 차단), F2 `insertStoryActorBinding` stale 마킹, F3 flatten visited→branch별 path 복제(DAG 절단 버그), F4 UNIQUE(sc_id,role_dir)(materialize 충돌·삭제과다 차단), F5 `serializeResolvedRules` 재귀 키정렬(중첩 규칙 유실 차단). + undefined 바인딩 가드.
 - **검증**: 임시 DB 17 케이스(상속·로케이터·3층 override·fingerprint 드리프트→stale→fresh·idempotent·diamond 상속·중복 role_dir 거부·배우삭제 정합성) 전부 통과. 실 DB 복사본 마이그레이션 흡수(버전5·resolved 0행=inert). **inert 확인**: 엔진(context-builder/chat/images/resolver)·프론트 신규 테이블/함수 참조 0건.
-- ⚠️ **미커밋/미배포**. P3b-2 와 함께 또는 사용자 승인 시 커밋·배포(원격 검증 필요).
+- ✅ 커밋 ed1abfb → P3b-2 와 함께 배포(master bafb9e5, 원격 검증 통과).
 
 ### P3b 설계 (2026-06-09) — 배우 캐스팅
 > 플랜: `docs/plan/achat-v2-p3b-actor-casting_2026-06-09.md`. Codex 적대적 리뷰(bjjivdy9n) 구조 결함 5건 전부 반영.
@@ -94,7 +104,7 @@
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
 - [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
 - [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
-- [ ] **P3b**: WS-I 배우 캐스팅 — [x] P3b-1 스키마+CRUD+평탄화(draft-only inert, 미배포) / [ ] P3b-2 카탈로그·resolver·cutover·서빙 / [ ] P3b-3 ETL / [ ] P3b-4 UI · **P3c**: WS-F 로어
+- [ ] **P3b**: WS-I 배우 캐스팅 — [x] P3b-1 스키마+CRUD+평탄화 ✅배포 / [x] P3b-2 카탈로그·resolver·cutover·서빙 ✅배포(bafb9e5) / [ ] P3b-3 ETL(이미지 전환) / [ ] P3b-4 admin UI · **P3c**: WS-F 로어
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
