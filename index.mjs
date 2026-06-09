@@ -7,6 +7,7 @@ import { initDB } from './lib/db.mjs';
 import adminRouter      from './routes/admin.mjs';
 import storiesRouter    from './routes/stories.mjs';
 import imagesRouter     from './routes/images.mjs';
+import releasesRouter   from './routes/releases.mjs';
 import chatRouter       from './routes/chat.mjs';
 import { storySessionsRouter, sessionMessagesRouter } from './routes/sessions.mjs';
 import { authMiddleware } from './lib/auth.mjs';
@@ -48,6 +49,7 @@ app.use('/api', authMiddleware);
 app.use('/api/admin',          adminRouter);
 app.use('/api/stories',        storiesRouter);
 app.use('/images',             imagesRouter);
+app.use('/releases',           releasesRouter);        // P3b-2 release-scoped 서빙(<img> 직접 로드, 무인증)
 app.use('/api/stories',        chatRouter);
 app.use('/api/stories',        storySessionsRouter);  // /:name/sessions, /:name/slots
 app.use('/api/sessions',       sessionMessagesRouter); // /:id/messages

@@ -66,3 +66,60 @@ P3a 에서 images 도메인 = `legacy-live`. P3b 가 images 를 **`v2-actors`** 
   5. (medium) P3b-1 inert 조건 → **draft-only 계약 명시**(§6-1).
   - §7 권고 반영: external 프록시는 release-scoped, inheritance child 에 base_revision_fingerprint, 출력규칙 동결 시 resolved_rule_text 까지.
 - 채택 사유: 1·2 는 구현 전 필수 구조 수정(특히 1 = 재현성 파손 직접 원인). 전부 데이터 손실/재현성/재작업 직결, 대개편 완전성 원칙 부합.
+
+---
+
+## 9. P3b-2 구현 설계 (2026-06-09) — 카탈로그·resolver·cutover·release-scoped 서빙
+
+> P3b-1(스키마+평탄화, 커밋 ed1abfb) 완료 전제. P3b-2 = images 도메인을 `legacy-live`→`v2-actors` 로 전환하는 엔진 코어. **실 배우 데이터 투입(ETL)은 P3b-3, admin UI 는 P3b-4** — P3b-2 는 엔진 배선 + 수동 픽스처 검증까지.
+
+### 9.1 안전성: P3b-2 도 사실상 inert (운영 무영향)
+buildImageSection 분기·서빙 라우트를 배선하지만, **어떤 release 도 `images.source==='v2-actors'` 가 아니면**(P3b-3 ETL 전) 전 스토리가 legacy 경로 그대로다. 신규 release 발행(`publishActorRelease`)을 운영자가 호출해야만 v2-actors 가 된다. 즉 배선만으로는 기존/신규 채팅 무영향.
+
+### 9.2 카탈로그 생성 (`lib/actors/catalog.mjs`)
+- `resolved_actor_scenes`(또는 동결 manifest data) → 시스템 프롬프트 카탈로그 텍스트.
+- URL = **`/releases/:releaseId/images/:roleDir/:sceneKey`**(role_dir 은 binding NOT NULL → 항상 존재). 재현성: release_id 가 URL 에 박혀 과거 메시지가 항상 그 시점 자산으로 해석(F1).
+- role_dir 별 그룹 + 카테고리(actor_assets.category 직접 사용 — 기존 정규식 추정 대체) + 번호↔설명.
+- 헤더 규칙 = `resolved_rule_text` 파싱 후 `.header` 필드(있으면) → AI 출력규칙. 없으면 기본 헤더(기존 buildImageSection 헤더 재사용). **출력규칙 동결**(F5): 동일 자산이라도 규칙 텍스트 drift 방지(release 에 동결).
+
+### 9.3 manifest images 도메인 동결 + 승인 (`lib/actors/publish.mjs`)
+- `publishActorRelease(storyId)`:
+  1. 전제 검증: `current_release_id != null`(P3a 승인됨), story_characters 존재, 각 sc 의 resolved **전부 fresh**(`hasStaleResolved` 시 차단, F3), 캐스팅(binding) 1건 이상 + scenes 1건 이상.
+  2. **characters 도메인 계승**: 현재 release manifest 의 `domains.characters` 를 그대로 복사(동결 계승 — 재동결 안 함, 재현성).
+  3. **images 도메인 동결**: 모든 story_character 의 resolved_actor_scenes 를 모아 `domains.images = { source:'v2-actors', data:{ roles:[{ story_character_id, role_dir, rule_text, scenes:[{scene_key,category,block,description,asset_locator,number}] }] } }`.
+  4. 새 `story_release`(version+1) 발행 + `current_release_id` 갱신. lore 도메인 = 계승(아직 legacy-live).
+  - **세션 핀 계승**: chat.mjs 가 생성 시 `current_release_id` 핀 → 기존 세션(옛 release_id)은 옛 manifest(legacy/이전 images) 불변, 신규 세션만 v2-actors. 턴 중간 드리프트 없음.
+
+### 9.4 buildImageSection 분기 (`story-resolver` + `context-builder`)
+- resolver 에 `resolveImageDomain(releaseId)` 추가 → `{ source, data }`(release manifest 의 images 도메인) 또는 `null`(legacy).
+- buildContext: `const imgDom = resolveImageDomain(session?.release_id ?? null)`.
+  - `imgDom?.source==='v2-actors'` → `buildActorCatalogText(releaseId, imgDom.data)` 사용(**hasImageMapping 무시** — 카탈로그가 description 에서 분리됨, 플랜 §2).
+  - else → 기존 `getStoryImageIndex` + `buildImageSection`(legacy 무변경).
+- Block 3(STATIC_CACHE) 주입 위치 동일 — v2-actors 카탈로그는 release 동결이라 세션 내 불변 → 캐시 적합.
+
+### 9.5 release-scoped 서빙 (`routes/releases.mjs`)
+- `GET /releases/:releaseId/images/:roleDir/:sceneKey` — `/images` 와 동일하게 **auth 제외**(`<img>` 직접 로드), `/api` auth 앞에 마운트.
+- 동작: releaseId(정수)·roleDir·sceneKey(정규식) 검증 → release manifest.domains.images(source!=='v2-actors' 면 404) → data 에서 (roleDir,sceneKey) 매칭 asset_locator.
+  - `asset_locator` 가 `http(s)://` → **302 redirect**(external 프록시; 현 base_url 이 우리 도메인 risu.ddsmdy.com 라 302 로 충분. 핵심요구 "AI엔 우리 경로 통일" 은 카탈로그 URL=`/releases/...` 로 충족).
+  - `actors/{id}/{filename}` → `DATA_DIR/actors/{id}/{filename}` 로컬 파일 서빙(경로 탈출 가드 + 존재 확인).
+- legacy `/images/:slug/...` 는 현행 유지(원래 비재현적, 변경 안 함).
+
+### 9.6 단계 산출물
+- 신규: `lib/actors/catalog.mjs`, `lib/actors/publish.mjs`, `routes/releases.mjs` + db 헬퍼(getResolvedScenes 재사용, story 의 story_characters 조회).
+- 수정: `lib/story-resolver.mjs`(resolveImageDomain), `lib/context-builder.mjs`(images 분기), `index.mjs`(releases 라우트 마운트).
+- 검증(P3b-1 패턴): 수동 픽스처(actor+asset+binding+materialize)→publishActorRelease→세션 생성→buildContext v2-actors 카탈로그 텍스트/URL 확인→서빙 라우트 local/external(302) 확인→stale 차단→기존 세션 legacy 불변→실 DB 복사본 무영향(현 운영 스토리 전부 legacy 유지).
+
+### 9.7 검토 포인트(설계 리뷰 대상)
+- 재현성: manifest 동결 asset_locator + release-scoped URL 이 fetch 계층까지 재현 보장하는가(F1 핵심).
+- characters 계승 정확성: P3a 동결본을 손실 없이 계승하는가(재동결 금지).
+- 세션 핀 계승: 기존 세션이 새 release 로 끌려가지 않는가.
+- 빈/누락 처리: scenes 0, roleDir 미존재, local 파일 부재, source 미스매치.
+- 서빙 보안: 경로 탈출, releaseId 열거(=/images 동일 수준).
+
+### 9.8 Codex 설계 리뷰 반영 (bj4245g1i, 2026-06-09)
+- **F1 재현성 모델 — 사용자 결정: 포인터 동결**. manifest 가 scene_key→asset_locator 매핑을 고정(RANDOM 제거 + 배우 교체 시 과거 release 매핑 유지)하는 수준까지가 P3b-2 목표. 자산 파일 바이트 불변(content-addressed/external 다운로드)은 비목표 — legacy /images 가 원래 RANDOM 비결정적이었고, 진짜 콘텐츠 동결은 자산이 local 화되는 P3b-3 이후 별도 판단.
+- **F2 (수용, critical 정합)**: characters 계승 시 description 에 박힌 legacy `![](/images/...)` 잔재가 v2-actors 세션에서 옛 URL 배출 → cutover 오염. **v2-actors 모드에서 charSection 의 description 이미지 마크다운 strip** + hasImageMapping 무시.
+- **F3 (수용, 서빙 정합)**: URL 키 (releaseId, roleDir, sceneKey) 인데 role_dir 은 story 내 유일성 미보장(스키마는 UNIQUE(sc_id,role_dir)만). **publish 가 story 내 role_dir 중복 발견 시 hard fail**.
+- **F4 (수용, 계승 검증)**: current_release_id!=null 만으론 부족. **publish 는 현 manifest 파싱 가능 + domains.characters.source==='v2-frozen' + data.characters 배열 비어있지 않음을 hard fail 검증**(P3a 미승인/legacy-live characters 인데 images 만 v2-actors 인 손상 release 발행 차단).
+- **F5 (수용, 원자성)**: **publish 쓰기를 단일 db.transaction**(version 산출~insertStoryRelease~setStoryCurrentRelease). 동시 publish version 충돌은 story_release (story_id,version) UNIQUE 가 차단(두 번째 throw). better-sqlite 동기 모델이라 수집~발행 사이 자산 변경 race 없음(P3a approveStory 와 동일 패턴).
+- 세션 핀/first_mes 시드 일관성은 결함 없음 확인. resolveImageDomain 턴당 호출은 efficiency 만(구조 결함 아님) → resolveStoryView 와 통합해 release 1회 읽기로 처리.

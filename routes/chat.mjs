@@ -270,9 +270,11 @@ router.delete('/:slug/chat', (req, res) => {
   if (!story) return;
 
   const newSessionId = randomUUID();
-  createSession(newSessionId, story.id);
+  // 세션 리셋도 현재 release 핀 + 동결 뷰 시드 — 메인 생성 경로(L53/58)와 동일(Codex F1: 세션핀 오염 방지).
+  createSession(newSessionId, story.id, story.current_release_id ?? null);
+  const seedView = resolveStoryView(story, story.current_release_id ?? null);
 
-  if (story.first_mes) {
+  if (seedView.first_mes) {
     const persona = story.persona_id
       ? getPersona(story.persona_id)
       : getDefaultPersona();
@@ -280,7 +282,7 @@ router.delete('/:slug/chat', (req, res) => {
     insertMessage({
       session_id:      newSessionId,
       role:            'assistant',
-      content:         story.first_mes.replaceAll('{{user}}', userName),
+      content:         seedView.first_mes.replaceAll('{{user}}', userName),
       exchange_number: 0,
     });
   }
