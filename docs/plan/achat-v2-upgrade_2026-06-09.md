@@ -255,11 +255,11 @@ CLAUDE.md의 기술과 실제 코드가 어긋난 지점들. v2 착수 전 CLAUD
 - [x] WS-D 분량 auto-continue: 종료사유 수집 → in-memory continuation(buildContext 재호출 금지) → 단일하한+잘림 트리거 → max retry → 프론트 partial 보존 — `lib/providers/auto-continue.mjs`
 - [x] WS-E 캐싱: top-level auto caching, 1h TTL(extended-cache-ttl 베타 헤더), Block2.5→3 병합(breakpoint 4→3) — `context-builder`/`claude-stream`. Codex(bb4jji6xy) critical 없음, major/minor 2건 반영. 상세: `docs/handoff/achat-v2.md`
 
-### P2 — 스키마 토대 ✅ 완료(2026-06-09, `v2` 브랜치 미커밋)
+### P2 — 스키마 토대 ✅ 완료·배포(2026-06-09, `master` cd954a2, 원격 검증 통과)
 - [x] WS-H 마이그레이션 버전관리 체계: `lib/migrate.mjs`(러너) + `lib/migrations/{index,001_baseline}.mjs`. schema_migrations 이력 + 트랜잭션 단위 순차 적용 + 001_baseline 멱등(기존 운영 DB 무손실 흡수)
 - [x] WS-J 스키마(migration 002, ADDITIVE): characters(전역1급)/`story_characters`(조인 중심·작품별 변형)/character_greetings/character_examples/lore_packs+lore_pack_entries+story_lore_links/prompt_presets+preset_versions/card_import_sources + `owner_id` TEXT 'default'(stories/personas/chat_sessions). Codex(bbr7ems6w) critical 0, medium 2건 반영(prompt_presets.current_version_id **composite FK** 무결성 + owner_id try-catch 제거)
 - [x] WS-L 세션 리플레이(migration 003): **A=story_release 버전 핀**(JSON manifest 동결) + chat_sessions.release_id(NULL=legacy). **B=기존 세션 폐기**(throwaway, backfill 안 함 → cutover 시 일괄 제거). 엔진 배선은 cutover(P3+)
-- ⚠️ **미커밋 + 미배포**. 003 은 Codex 설계 리뷰(002까지) 이후 추가 — 배포 전 003 포함 최종 Codex 리뷰 + 원격 검증 필요
+- ✅ **배포 완료**(`master` cd954a2). 003 포함 최종 Codex 리뷰(bjnnavlhi) critical 0 → 배포 → 원격 서버 로그 `[migrate] applied 001/002/003` + schema_migrations [1,2,3] + 신규 테이블·release_id 라이브 확인
 - 🔑 **cutover 신호 주의(Codex)**: schema_migrations 버전 ≠ "신 스키마 데이터 가용". 002/003 직후 신규 테이블은 비어있고 구 flat 모델이 source of truth. WS-K/L 은 별도 cutover 플래그로 신/구 읽기 분기
 
 ### P3 — 데이터 전환·자산
