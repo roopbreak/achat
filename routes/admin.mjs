@@ -16,7 +16,10 @@ import {
   getLatestJob,
   getExistingSceneKeys, deleteStoryImageBySceneKey,
   parseCommands,
+  listEtlReviewsWithStory, getEtlReview, updateEtlReviewProposal, setEtlReviewStatus,
 } from '../lib/db.mjs';
+import { enqueueAll, isAutoApprovable } from '../lib/etl/queue.mjs';
+import { approveStory, approveAllAuto } from '../lib/etl/approve.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
 import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength, clearQueue } from '../lib/image-generator.mjs';
@@ -684,6 +687,89 @@ router.delete('/stories/:slug', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── WS-K ETL 검토 큐 (P3a) ───────────────────────────────
+
+// 큐 스캔/갱신 (구 flat → proposal dry-run 적재). 실 데이터 미변경.
+router.post('/etl/scan', (_req, res) => {
+  try {
+    const { summary } = enqueueAll();
+    res.json({ ok: true, summary });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 큐 목록 (스토리 조인 + 자동승인 가능 여부)
+router.get('/etl/queue', (req, res) => {
+  const rows = listEtlReviewsWithStory(req.query.status);
+  res.json(rows.map((r) => ({
+    storyId: r.story_id, slug: r.slug, title: r.title, charName: r.char_name,
+    status: r.status, charCount: r.char_count, confidence: r.confidence,
+    isV2: !!r.is_v2,
+    irrecoverableCount: JSON.parse(r.irrecoverable_fields || '[]').length,
+    unresolvedCount: JSON.parse(r.unresolved_bindings || '[]').length,
+    autoApprovable: isAutoApprovable(r),
+    updatedAt: r.updated_at,
+  })));
+});
+
+// 큐 상세 (proposal 파싱)
+router.get('/etl/queue/:slug', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const r = getEtlReview(story.id);
+  if (!r) return res.status(404).json({ error: '검토 항목 없음 (먼저 scan 필요)' });
+  res.json({
+    storyId: r.story_id, slug: story.slug, title: story.title, status: r.status,
+    charCount: r.char_count, confidence: r.confidence, sourceFingerprint: r.source_fingerprint,
+    irrecoverableFields: JSON.parse(r.irrecoverable_fields || '[]'),
+    unresolvedBindings: JSON.parse(r.unresolved_bindings || '[]'),
+    proposedPayload: JSON.parse(r.proposed_payload || '{}'),
+    note: r.note, autoApprovable: isAutoApprovable(r),
+  });
+});
+
+// 일괄 자동승인 (단일 캐릭터 + 무결 + fingerprint 신선)
+router.post('/etl/approve-auto', (_req, res) => {
+  try {
+    res.json({ ok: true, ...approveAllAuto() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 개별 승인 (fingerprint 재검증·미해결 차단은 approveStory 내부)
+router.post('/etl/queue/:slug/approve', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const result = approveStory(story.id);
+  if (!result.ok) return res.status(409).json(result);
+  res.json(result);
+});
+
+// 검토자 교정: proposal/플래그 갱신 (이름·personality 분배·char_dir 매핑 해소 후 플래그 비움)
+router.patch('/etl/queue/:slug', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const r = getEtlReview(story.id);
+  if (!r) return res.status(404).json({ error: '검토 항목 없음' });
+  if (r.status === 'approved') return res.status(409).json({ error: '이미 승인됨' });
+  try {
+    updateEtlReviewProposal(story.id, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 반려
+router.post('/etl/queue/:slug/reject', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  setEtlReviewStatus(story.id, 'rejected', req.body?.note);
+  res.json({ ok: true });
 });
 
 export default router;

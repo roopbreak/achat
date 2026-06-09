@@ -18,7 +18,9 @@
 - **StoryResolver**(`lib/story-resolver.mjs`): release_id NULL=legacy 무변경, v2-frozen=동결 캐릭터로 flat 뷰 합성(단일=무손실, 다중=구 임포터 규칙 재구성). buildContext 가 내부에서 경유(`context-builder.mjs:438` 직후).
 - **세션 release 핀 배선**: `db.createSession(id,storyId,releaseId)`, `chat.mjs`(생성 시 current_release_id 핀), `sessions.mjs`(fork/slot-load 는 소스 세션 release 상속).
 - **검증**: 실 데이터 79 스토리 = 51 자동승인 후보/28 검토필요. E2E(enqueue→approve→핀→resolver→buildContext v2 뷰 주입), fingerprint drift 거부, 다중 차단, 일괄승인 50/50, 서버 부팅 정상. 전부 DB 복사본/dry-run 검증(실 데이터 무변경, current_release_id 전부 NULL 유지).
-- **남은 P3a**: 린 검토 UI(admin 백엔드 라우트 — 큐 목록/상세/일괄·개별 승인/다중 캐릭터 교정 + 프론트 린 뷰). 그 후 커밋한 엔진코어와 묶어 배포.
+- **린 검토 UI 완료(미배포)**: admin 백엔드 라우트(`POST /etl/scan`·`GET /etl/queue`·`GET /etl/queue/:slug`·`POST /etl/approve-auto`·`POST /etl/queue/:slug/approve`·`PATCH /etl/queue/:slug`·`POST .../reject`) + 프론트 Admin.tsx "v2 마이그레이션(ETL)" 섹션(스캔/일괄자동승인/큐 테이블/상세 교정 textarea). 다중 캐릭터는 proposal 교정(JSON) 후 "교정 저장(플래그 해소)"→승인. 전체 스택 스모크(복사본): scan 79 → approve-auto **51/51 승인** → pending 28(검토필요). 프론트 빌드 통과.
+- **P3a 배포 준비 완료** — 다음: 커밋 → deploy → 원격 검증(자동승인 → v2 채팅 스모크: 신규 세션 v2, 기존 legacy 유지).
+- ⚠️ 로컬 검증 시 stale `node --env-file=.env index.mjs` 서버 누수 주의(pkill 패턴이 `--env-file` 때문에 매칭 실패한 사고 있었음 → `pkill -f index.mjs` 사용).
 
 
 ### P2 완료 내역 (2026-06-09) — 스키마 토대 ✅ 배포·원격 검증 통과
