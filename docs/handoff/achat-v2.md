@@ -5,7 +5,16 @@
 
 ## 현재 상태
 
-**P0·P1·P2·P3a·P3b-1·P3b-2·P3b-3 완료·배포**(`master`=869f9ac, 원격 검증 통과). 다음 = **P3b-4 admin UI**(배우 등록·캐스팅·카탈로그 미리보기) → P3c 로어(WS-F).
+**P0·P1·P2·P3a·P3b(1~4) 완료·배포**(`master`=32c9d4b, 원격 검증 통과). **P3b 배우 캐스팅(WS-I) 전체 완료**. 다음 = **P3c 로어(WS-F)**(정규식 키 + 전역 로어팩) → P4 (WS-M API 계약 + WS-A UI 라이브러리).
+
+### P3b-4 완료 (2026-06-10) — 배우 캐스팅 admin 린 UI ✅ 배포
+> 사용자 결정: 린 UI(JSON 관리 — ETL 교정 패턴, 범위형 복잡도엔 폼보다 정확). Codex 리뷰(biysj1npg) 2건 반영. master 32c9d4b.
+
+- **백엔드**(routes/admin.mjs "WS-I 배우 캐스팅" 섹션): 배우 CRUD(`GET/POST/DELETE /actors`, `GET /actors/:id` JSON round-trip, POST 는 id 지정 시 update+assets/ranges 전체 교체 단일 트랜잭션) / 캐스팅(`GET/PUT /stories/:slug/casting` bindings 전체 교체+검증) / `POST .../materialize`(전 배역) / `GET .../preview`(frozen=현 release 동결 카탈로그, draft=`buildActorCatalogText('{NEW}',…)` 발행 전 초안 — 손상 release 는 409 명시) / `POST .../publish` / `POST .../rollback`(직전 version, 신규 세션만 영향).
+- **publish.mjs 분리**: `buildImageDomainData`(검증·수집, 쓰기 없음) + `publishActorRelease`(발행) — 미리보기와 발행이 동일 검증(F2~F5) 공유. db 헬퍼: `listStoryReleases`(images_source 요약)·`deleteActorAssetsByActor`.
+- **프론트**(Admin.tsx "배우 캐스팅 (WS-I)"): 배우 칩 목록(+템플릿/편집/삭제) + JSON textarea, 스토리 select → release 상태·배역별 캐스팅/resolved/stale 표시 → 캐스팅 JSON → [캐스팅 저장][materialize][미리보기][발행][롤백] + 카탈로그 pre 뷰.
+- **Codex 2건**: F1 캐스팅 round-trip 이 override 소거(불러와 저장하면 데이터 손상) → bindings 에 output_rules_override/constraints_override 포함. F2 preview 가 손상 current release 를 draft 로 숨김 → 409 명시. + `api()` 에러 본문(action/error/reason) 표면화(publish 차단 사유 UI 노출, 전 admin 화면 혜택).
+- **검증**: 프론트 빌드 + 원격 DB 복사본(⚠️ WAL 포함 복사 필수 — .db 만 scp 하면 미체크포인트 변경 누락) e2e: 배우 CRUD·캐스팅·frozen/draft 미리보기·롤백 v2→v1·재발행 v3·검증에러 + 수정 회귀(override round-trip·손상 release 409). 배포 후 원격: 배우 4명·gf-phone v2 캐스팅 현황·frozen 미리보기·legacy 스토리 안내·라이브 채팅 무영향. 백업 pre-p3b4-20260610-084153.
 
 ### P3b-3 완료 (2026-06-10) — 외부 범위형 흡수 + sieun 첫 실 cutover ✅ 배포
 > 플랜 §10. Codex 논의(bhdmtvhg4)+코드리뷰(bkayj3wcw). master 869f9ac.
@@ -112,7 +121,8 @@
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
 - [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
 - [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
-- [ ] **P3b**: WS-I 배우 캐스팅 — [x] P3b-1 스키마+평탄화 ✅ / [x] P3b-2 카탈로그·서빙 ✅ / [x] P3b-3 ranged 흡수+sieun 첫 cutover ✅배포(869f9ac) / [ ] P3b-4 admin UI(배우 등록·캐스팅·미리보기) · **P3c**: WS-F 로어
+- [x] **P3b**: WS-I 배우 캐스팅 전체 완료 — P3b-1 스키마+평탄화 / P3b-2 카탈로그·서빙 / P3b-3 ranged 흡수+sieun 첫 cutover / P3b-4 admin 린 UI ✅배포(32c9d4b)
+- [ ] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩)
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
