@@ -5,7 +5,21 @@
 
 ## 현재 상태
 
-**P0·P1·P2 완료·배포**(`master`=v1+P0+P1+P2). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3 (WS-K 데이터 전환 ETL + WS-I 배우 캐스팅 + WS-F 로어)**.
+**P0·P1·P2 완료·배포**(`master`=v1+P0+P1+P2). **P3a 엔진 코어 진행 중**(`v2` 브랜치, 미커밋→커밋 예정). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3a 린 검토 UI** → P3b 배우 → P3c 로어.
+
+### P3 진행 내역 (2026-06-09) — 데이터 전환·자산
+> 상세 플랜: `docs/plan/achat-v2-p3-data-migration_2026-06-09.md`. Codex 적대적 리뷰(b50shkwsv)로 단일 플래그 모델 결함 5건 발굴 → **release-manifest per-domain 모델**로 개정.
+
+**핵심 설계**: cutover 단위 = `story_release`. `stories.current_release_id`(NULL=legacy). 세션이 생성 시 release 핀(`chat_sessions.release_id`) → 그 release manifest 의 도메인별 source(characters=v2-frozen / lore·images=legacy-live)로 읽음. **기존 세션(release_id NULL)은 legacy 고정 = 턴 중간 드리프트 없음**(Codex F2). 신규 세션만 v2. P3a=characters 도메인만 frozen, lore/images 는 P3b/c.
+
+**P3a 엔진 코어 완료(미커밋)**:
+- **migration 004**(`004_ws_k_etl.mjs`): `stories.current_release_id`(FK→story_release) + `etl_review_queue`(source_fingerprint/confidence/irrecoverable_fields/unresolved_bindings/proposed_payload — Codex F3·F4 안전장치 1급화).
+- **WS-K ETL**(`lib/etl/`): `extract.mjs`(변환+sha256 fingerprint+단일/다중 분기), `queue.mjs`(dry-run 적재+isAutoApprovable), `approve.mjs`(승인 트랜잭션: fingerprint 재검증→characters/story_characters insert→story_release 생성→current_release_id, irrecoverable/unresolved 있으면 차단).
+- **StoryResolver**(`lib/story-resolver.mjs`): release_id NULL=legacy 무변경, v2-frozen=동결 캐릭터로 flat 뷰 합성(단일=무손실, 다중=구 임포터 규칙 재구성). buildContext 가 내부에서 경유(`context-builder.mjs:438` 직후).
+- **세션 release 핀 배선**: `db.createSession(id,storyId,releaseId)`, `chat.mjs`(생성 시 current_release_id 핀), `sessions.mjs`(fork/slot-load 는 소스 세션 release 상속).
+- **검증**: 실 데이터 79 스토리 = 51 자동승인 후보/28 검토필요. E2E(enqueue→approve→핀→resolver→buildContext v2 뷰 주입), fingerprint drift 거부, 다중 차단, 일괄승인 50/50, 서버 부팅 정상. 전부 DB 복사본/dry-run 검증(실 데이터 무변경, current_release_id 전부 NULL 유지).
+- **남은 P3a**: 린 검토 UI(admin 백엔드 라우트 — 큐 목록/상세/일괄·개별 승인/다중 캐릭터 교정 + 프론트 린 뷰). 그 후 커밋한 엔진코어와 묶어 배포.
+
 
 ### P2 완료 내역 (2026-06-09) — 스키마 토대 ✅ 배포·원격 검증 통과
 - **WS-H 마이그레이션 체계**: `lib/migrate.mjs`(러너) + `lib/migrations/{index,001_baseline}.mjs`. 순번 기반 up 마이그레이션 + `schema_migrations` 이력 테이블 + 트랜잭션 단위 순차 적용(`transactional:false` opt-out). 001_baseline = v1 스키마 스냅샷(동결, IF NOT EXISTS 멱등) → 기존 운영 DB를 "구버전 감지" 없이 흡수. `db.mjs` initDB 의 인라인 `db.exec(스키마)` → `runMigrations(db)` 로 교체.
@@ -55,15 +69,17 @@
 
 - [x] **P0**: CLAUDE.md 현행화 + WS-B 어댑터 골격 (2026-06-09 완료, 커밋 113a8dc)
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
-- [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료, **미커밋·미배포**)
-- [ ] **P3**: WS-K 데이터 전환 ETL + WS-I 배우 캐스팅 + WS-F 로어
+- [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
+- [~] **P3a**: WS-K ETL 엔진 코어(migration 004 + lib/etl/ + story-resolver + 세션 핀 배선) ✅ 완료(미배포) / 린 검토 UI ⬜ 남음
+- [ ] **P3b**: WS-I 배우 캐스팅 / **P3c**: WS-F 로어
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드
 
 1. **P0·P1·P2 완료·배포 상태**. `master`=v1+P0+P1+P2(cd954a2). P2 신규 파일: `lib/migrate.mjs`, `lib/migrations/{index,001_baseline,002_ws_j_schema,003_ws_l_session_release}.mjs`. 수정: `lib/db.mjs`(initDB → runMigrations). Codex 리뷰 2회 통과(critical 0), 원격 검증 통과.
-2. **P3 착수 (WS-K ETL → WS-I 배우 → WS-F 로어)**:
+1.5. **P3a 이어받기 = 린 검토 UI** (엔진 코어는 완료·커밋됨). admin 백엔드 라우트(`GET /api/admin/etl/queue` 목록, `GET .../etl/:slug` 상세, `POST .../etl/approve-auto` 일괄, `POST .../etl/:slug/approve` 개별, 다중 캐릭터 교정 PATCH) + 프론트 린 검토 뷰(fingerprint/confidence/소실·미해결/캐릭터 diff/승인). 엔진 함수 재사용: `lib/etl/{queue,approve}.mjs`, `lib/db.mjs`의 listEtlReviews/getEtlReview/setEtlReviewStatus. UI 완성 후 P3a 전체를 배포(원격 검증: 자동승인 → v2 채팅 스모크). ⚠️ cutover 후에도 신규 세션만 v2, 기존은 legacy 유지 확인.
+2. **이후 P3b/c (WS-I 배우 → WS-F 로어)**:
    - **WS-K**: 구 flat 데이터(stories description concat, lore_entries, story_images, url_mappings, composition.json) → 신 모델(characters/story_characters/lore_packs/...) 역파싱. **반자동 + 검토 큐**(멀티캐릭터 description concat 역분해는 정확도 낮음). 🔑 **cutover 플래그 설계** — 이때 신·구 읽기 분기 기준 확정(schema_migrations 버전 ❌). ETL 후 cleanup 마이그레이션(004)에서 stories 구 flat 컬럼 제거 + 기존 세션 폐기(B=3 결정).
    - **WS-I**: actors/actor_assets/`story_actor_bindings`(story_character_id FK), 3층 조회·`resolved_actor_scenes`, external/local 통합, 카탈로그 자동생성, ian-after 마이그레이션. 상세 plan §WS-I.
    - **WS-F**: 정규식 키 + 전역 로어팩(lore_packs 활용).

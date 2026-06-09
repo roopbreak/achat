@@ -49,7 +49,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
 
   if (!session) {
     sessionId = randomUUID();
-    createSession(sessionId, story.id);
+    createSession(sessionId, story.id, story.current_release_id ?? null);
     session = getSession(sessionId);
 
     if (story.first_mes) {

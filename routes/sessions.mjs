@@ -68,7 +68,8 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
   ).all(srcSessionId, exchNum);
 
   const newSessionId = randomUUID();
-  createSession(newSessionId, story.id);
+  // 포크는 소스 세션의 release 를 상속(재현성: legacy 포크=legacy, v2 포크=그 release)
+  createSession(newSessionId, story.id, getSession(srcSessionId)?.release_id ?? null);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
@@ -122,7 +123,8 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
   ).all(slot.session_id, slot.max_exchange);
 
   const newSessionId = randomUUID();
-  createSession(newSessionId, story.id);
+  // 슬롯 로드도 소스 세션의 release 상속
+  createSession(newSessionId, story.id, getSession(slot.session_id)?.release_id ?? null);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
