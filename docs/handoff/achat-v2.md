@@ -5,7 +5,15 @@
 
 ## 현재 상태
 
-**P0·P1 완료**(`v2` 브랜치). 설계는 RisuAI 소스 비교 + Codex 3회 검수로 확정, 사용자 승인(2026-06-09). 다음 = **P2 (WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 스냅샷)**.
+**P0·P1·P2 완료**(`v2` 브랜치, P2 미커밋). 설계는 RisuAI 소스 비교 + Codex 검수로 확정. 다음 = **P3 (WS-K 데이터 전환 ETL + WS-I 배우 캐스팅 + WS-F 로어)**.
+
+### P2 완료 내역 (2026-06-09) — 스키마 토대 (미커밋·미배포)
+- **WS-H 마이그레이션 체계**: `lib/migrate.mjs`(러너) + `lib/migrations/{index,001_baseline}.mjs`. 순번 기반 up 마이그레이션 + `schema_migrations` 이력 테이블 + 트랜잭션 단위 순차 적용(`transactional:false` opt-out). 001_baseline = v1 스키마 스냅샷(동결, IF NOT EXISTS 멱등) → 기존 운영 DB를 "구버전 감지" 없이 흡수. `db.mjs` initDB 의 인라인 `db.exec(스키마)` → `runMigrations(db)` 로 교체.
+- **WS-J 스키마**(`002_ws_j_schema.mjs`, **ADDITIVE**): characters(전역1급)/**story_characters**(조인 중심·작품별 변형: story_specific_scenario·first_mes·actor_binding_policy·preset_override_id)/character_greetings/character_examples/lore_packs+lore_pack_entries+story_lore_links(N:M)/prompt_presets+preset_versions/card_import_sources + `owner_id` TEXT 'default'(stories/personas/chat_sessions). 기존 flat stories/lore_entries/story_images 는 **보존**(WS-K ETL 이 읽어야 하므로) → ETL 후 cleanup 마이그레이션에서 구컬럼 제거.
+- **WS-L 세션 리플레이**(`003_ws_l_session_release.mjs`): **A=story_release 버전 핀**(story_id+version UNIQUE, JSON manifest 로 resolved 컨텍스트 동결 — 캐릭터 수정/삭제돼도 재현성 유지) + `chat_sessions.release_id`(NULL=legacy 구 모델 읽기). **B=기존 v1 세션 폐기**(backfill 기계장치 안 만듦, throwaway → cutover 시 일괄 제거). 엔진 배선(세션 생성 시 release 생성/참조, manifest 로 조립)은 cutover(P3+).
+- **Codex 리뷰**(bbr7ems6w, 002 까지): **critical 0**, medium 2 반영 — ① prompt_presets.current_version_id 를 plain INTEGER→**composite FK** `(current_version_id,id)→preset_versions(id,preset_id)` 로 무결성 확보(타 preset 버전/존재X 버전 차단), ② owner_id try-catch 제거(트랜잭션 롤백이라 무가치). medium 3(cutover 신호) = 주석 기록. **003 은 리뷰 이후 추가 → 배포 전 003 포함 최종 Codex 리뷰 필요.**
+- **로컬 검증**: 신규 부트스트랩/재실행 멱등/기존 DB 흡수(3케이스) + composite FK 무결성/cascade/owner_id/release FK 전부 통과. 실 DB(story-chat.db) 버전 [1,2,3] 적용, **stories 79·messages 93·sessions 27 무손실**.
+- 🔑 **cutover 신호 함정**: `schema_migrations>=2/3` ≠ "신 스키마 데이터 가용". 적용 직후 신규 테이블은 비어있고 구 flat 모델이 source of truth. WS-K/WS-L 엔진은 **마이그레이션 버전이 아닌 별도 cutover 플래그/데이터 존재 여부**로 신·구 읽기를 분기할 것.
 
 ### P1 완료 내역 (2026-06-09)
 - **WS-D 분량 auto-continue** (`lib/providers/auto-continue.mjs` 신규): 잘림(`finishReason==='length'`) 또는 글자수<`CONTINUE_FLOORS` 하한이면 in-memory 이어쓰기 누적(buildContext 재호출 금지). `MAX_CONTINUE=2` + 진전없음 가드 + content_filter/error 즉시 중단. `routes/chat.mjs` 2개 호출지점을 `streamWithContinuation`으로 배선.
@@ -46,18 +54,20 @@
 
 - [x] **P0**: CLAUDE.md 현행화 + WS-B 어댑터 골격 (2026-06-09 완료, 커밋 113a8dc)
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
-- [ ] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 스냅샷
+- [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료, **미커밋·미배포**)
 - [ ] **P3**: WS-K 데이터 전환 ETL + WS-I 배우 캐스팅 + WS-F 로어
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드
 
-1. **P0·P1 완료 상태**(`v2` 브랜치). `master`=v1 운영 유지. P0/P1 엔진 개선(어댑터·분량·캐싱)은 저위험이라 검증 후 `master` 조기 머지 가능(plan §4.1). 단 배포 전 원격 검증 필수.
-2. **P2 착수 (WS-H 마이그레이션 체계 → WS-J 스키마 → WS-L 세션 스냅샷)** — 여기서부터 스키마 토대. ⚠️ 순서 중요(Codex): **WS-H(마이그레이션 버전관리 체계)가 WS-J 스키마보다 먼저**. 현재 `db.mjs`는 단일 `db.exec()` + ad-hoc ALTER라 clean-slate 스키마 교체 기반이 없음.
-   - **WS-H**: 마이그레이션 버전관리 도구(순번 기반 up 마이그레이션 + 적용 이력 테이블). clean-slate 교체를 안전하게.
-   - **WS-J**: `stories`(컨테이너) / `characters`(전역 1급) / **`story_characters`(조인 — 중심, 작품별 변형)** / `character_greetings` / `mes_example` / `lore_packs`+`story_lore_links` / `prompt_presets`+`preset_versions` / `card_import_sources` + 모든 1급 엔티티에 `owner_id`(future-proof, default owner). 상세: plan §WS-J.
-   - **WS-L**: `session_context_snapshot` 또는 `story_release`(카드/배우/프리셋 버전 핀) — 스키마 재설계 후 과거 대화 재현성 보존. 상세 §WS-L.
-3. **순서 엄수**: 어댑터(WS-B✅) → 분량/캐싱(WS-D/E✅) → **스키마(WS-H/J/L)** → 데이터전환/배우/로어(WS-K/I/F) → 계약/UI(WS-M/A) → DSL/관찰성(WS-C/G).
-4. 각 워크스트림: 독립 PR + 로컬 테스트 + Codex 리뷰(대개편 프레이밍: 완전성 우선) + 배포 후 원격 검증.
-5. Codex 호출은 **foreground `task` + `run_in_background: true`** (`--background` 금지).
+1. **P0·P1·P2 완료 상태**(`v2` 브랜치). `master`=v1 운영 유지. P2 스키마(마이그레이션 003파일 = `lib/migrations/`)는 **미커밋·미배포**. 신규 파일: `lib/migrate.mjs`, `lib/migrations/{index,001_baseline,002_ws_j_schema,003_ws_l_session_release}.mjs`. 수정: `lib/db.mjs`(initDB → runMigrations).
+2. **배포 전 할 일**: ① 003 포함 최종 Codex 리뷰(002까지만 리뷰됨) ② 커밋 ③ 배포 후 원격 검증(서버 부팅 시 003까지 적용 + 데이터 무손실 확인). P2 는 ADDITIVE(기존 테이블 비파괴)라 저위험이지만 원격 DB 첫 마이그레이션이므로 검증 필수.
+3. **P3 착수 (WS-K ETL → WS-I 배우 → WS-F 로어)**:
+   - **WS-K**: 구 flat 데이터(stories description concat, lore_entries, story_images, url_mappings, composition.json) → 신 모델(characters/story_characters/lore_packs/...) 역파싱. **반자동 + 검토 큐**(멀티캐릭터 description concat 역분해는 정확도 낮음). 🔑 **cutover 플래그 설계** — 이때 신·구 읽기 분기 기준 확정(schema_migrations 버전 ❌). ETL 후 cleanup 마이그레이션(004)에서 stories 구 flat 컬럼 제거 + 기존 세션 폐기(B=3 결정).
+   - **WS-I**: actors/actor_assets/`story_actor_bindings`(story_character_id FK), 3층 조회·`resolved_actor_scenes`, external/local 통합, 카탈로그 자동생성, ian-after 마이그레이션. 상세 plan §WS-I.
+   - **WS-F**: 정규식 키 + 전역 로어팩(lore_packs 활용).
+4. **순서 엄수**: 어댑터(WS-B✅) → 분량/캐싱(WS-D/E✅) → 스키마(WS-H/J/L✅) → **데이터전환/배우/로어(WS-K/I/F)** → 계약/UI(WS-M/A) → DSL/관찰성(WS-C/G).
+5. **마이그레이션 추가 절차**: `lib/migrations/NNN_name.mjs`(default export `{version,name,up(db)}`) 작성 → `index.mjs` 배열에 import 추가(version 오름차순). 배포된 마이그레이션 파일은 절대 수정 금지(이미 적용된 DB엔 재실행 안 됨). FK-off 테이블 리빌드 필요 시 `transactional:false`.
+6. 각 워크스트림: 독립 PR + 로컬 테스트 + Codex 리뷰(대개편 프레이밍: 완전성 우선) + 배포 후 원격 검증.
+7. Codex 호출은 **foreground `task` + `run_in_background: true`** (`--background` 금지).
