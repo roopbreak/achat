@@ -5,7 +5,15 @@
 
 ## 현재 상태
 
-**P0·P1·P2·P3a·P3b-1·P3b-2 완료·배포**(`master`=bafb9e5, 원격 검증 통과). 다음 = **P3b-3 ETL(이미지 전환)** → P3b-4 admin UI → P3c 로어(WS-F).
+**P0·P1·P2·P3a·P3b-1·P3b-2·P3b-3 완료·배포**(`master`=869f9ac, 원격 검증 통과). 다음 = **P3b-4 admin UI**(배우 등록·캐스팅·카탈로그 미리보기) → P3c 로어(WS-F).
+
+### P3b-3 완료 (2026-06-10) — 외부 범위형 흡수 + sieun 첫 실 cutover ✅ 배포
+> 플랜 §10. Codex 논의(bhdmtvhg4)+코드리뷰(bkayj3wcw). master 869f9ac.
+
+**P3b-3a(ranged 엔진 확장, e704b8e)**: 외부 URL "범위 가이드" 시스템 흡수. **selection_mode 분리**(enumerated/ranged, source_type 와 직교 — 개별 모델 불변). migration 006: actors.selection_mode/constraints, actor_number_ranges, story_actor_bindings.constraints_override, resolved_actor_ranges(resolved_rule_text 포함). flatten(constraints 머지·축소만·isNumberAllowed) / materialize(ranged 평탄화) / catalog(번호대역+예시+제약 렌더) / publish(selection_mode·base_url·ranges·constraints 동결) / 서빙(`/numbers/:num` allowed_ranges 검증 후 base_url+num 302). Codex 2건 반영: F1 순수 ranged role rule_text 동결(range row 에도), F2 allowed_ranges=[] 의미 통일(표준 교집합+키 존재 분기+invalid-constraints 차단). + catalog 번호 숫자정렬, 서빙 한글 base_url encodeURI(17d7fcf).
+
+**P3b-3b(sieun=gf-phone 첫 실 cutover, 869f9ac)**: 스크립트 `docs/stories/sieun-smartphone/v2-cutover.mjs`. 🔑 **발견**: P3a 가 description `---` 4분할을 4캐릭터로 오판(실제 = 헤더/이시은/구태양/관계망 문서 섹션). → **이시은 1 character 단일 교정 승인** + 이시은 배역에 **배우 4개 다중 캐스팅**(LEE 0~153 / GU·JEO 0만 / YU 0~153, **3P 제외**=합성 role). 원격 DB 복사본 dry-run→commit→서빙 e2e 검증 후 원격 실행. **검증**: sieun current_release_id=2 images=v2-actors, 신규 세션 채팅에서 AI 가 `/releases/2/images/LEE/numbers/62` 출력(v2 작동, legacy URL 소멸), 서빙 302/403 범위검증, **v2 전환 1개(sieun)만·나머지 78 legacy**. 배포 전 백업 pre-sieun-20260610-081502. 롤백 = current_release_id 직전값.
+- ⚠️ **자동화 범위 학습(첫 샘플 결론)**: 외부 범위형은 build-payloads/description/lore 분산 + 배우코드 스토리별 상이 + P3a `---` 오판 → **완전 자동 불가**. 스토리별 cutover 스크립트(배우 데이터 수기)가 현실적. 79개 일괄은 스토리군별 스크립트 + 검토. lore 「이미지 카탈로그」는 sieun 의 경우 constant=0 키워드라 충돌 없었음(상시 주입 X) — 다른 스토리는 constant=1 카탈로그 로어 비활성 필요할 수 있음(케이스별).
 
 ### P3b-2 완료 (2026-06-09) — 이미지 도메인 cutover (카탈로그·resolver·서빙) ✅ 배포
 > 플랜 §9. Codex 설계 리뷰(bj4245g1i) F1~F5 + 코드 리뷰(bpy5dd5ow) 3건 반영. master bafb9e5.
@@ -104,7 +112,7 @@
 - [x] **P1**: WS-D 분량 auto-continue + WS-E 캐싱 (2026-06-09 완료)
 - [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
 - [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
-- [ ] **P3b**: WS-I 배우 캐스팅 — [x] P3b-1 스키마+CRUD+평탄화 ✅배포 / [x] P3b-2 카탈로그·resolver·cutover·서빙 ✅배포(bafb9e5) / [ ] P3b-3 ETL(이미지 전환) / [ ] P3b-4 admin UI · **P3c**: WS-F 로어
+- [ ] **P3b**: WS-I 배우 캐스팅 — [x] P3b-1 스키마+평탄화 ✅ / [x] P3b-2 카탈로그·서빙 ✅ / [x] P3b-3 ranged 흡수+sieun 첫 cutover ✅배포(869f9ac) / [ ] P3b-4 admin UI(배우 등록·캐스팅·미리보기) · **P3c**: WS-F 로어
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
