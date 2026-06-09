@@ -13,7 +13,7 @@
 - **프론트 partial 보존** (`useSSEStream`/`Chat.tsx`): `onError(message, partialText)` — 이어쓰기 중간 실패 시 누적 본문을 `[오류]`로 덮지 않고 보존(`withPartial`). token_info를 턴 동안 누적 합산.
 - **Codex 리뷰**(task bb4jji6xy): **Critical 없음**. major(이어쓰기 시 토큰/캐시 지표 미누적) + minor(maxTokens floor 기준 불일치) 2건 수용 — 둘 다 정합성/관측 정확성 문제(이론적 위험 아님).
 - **로컬 검증**: 잘림 3세그먼트 누적 정지 / 정상종료+하한미달 657→1169자 도달 즉시 정지 / 세션 간 시스템 프리픽스 32212토큰 cache read 적중 / 1h TTL·4 breakpoint 에러 없음. (`claude-api` 레퍼런스로 top-level auto-cache·breakpoint 한계·최소 캐시 토큰 확정.)
-- ⚠️ **미배포**. P0/P1 엔진 개선은 저위험이라 검증 후 master 조기 머지 가능(plan §4.1). 배포 시 원격 검증 필요.
+- ✅ **배포 완료**(2026-06-09). `v2`→`master` fast-forward 머지 → `bash deploy.sh` → 원격(risu.ddsmdy.com) 검증: 채팅 스모크에서 `finish=max_tokens`(P0)·3세그먼트 cache read(P1 WS-E)·`[auto-continue] segments=3`(P1 WS-D) 라이브 확인. master = v1+P0+P1, v2는 이후 P2부터 분기.
 
 ### P0 완료 내역 (2026-06-09)
 - **CLAUDE.md 현행화**: React 19/Vite/TS 스택, Claude+Gemini 멀티프로바이더, 요약 트리거 50, `lib/providers/` 추가, env(GEMINI_API_KEY/CLAUDE_MODEL).
