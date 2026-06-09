@@ -19,6 +19,14 @@ interface Persona {
   is_default?: boolean
 }
 
+// WS-D: 이어쓰기 중간 실패 시 누적 본문을 버리지 않고 보존한다.
+// partial이 있으면 본문 뒤에 중단 안내만 덧붙이고, 없으면 오류 메시지로 대체.
+function withPartial(partial: string, message: string): string {
+  return partial.trim()
+    ? `${partial}\n\n_[⚠️ 생성 중단됨: ${message}]_`
+    : `[오류: ${message}]`
+}
+
 export default function Chat() {
   const { slug: rawName } = useParams<{ slug: string }>()
   const slug = decodeURIComponent(rawName ?? '')
@@ -32,6 +40,7 @@ export default function Chat() {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [matchedLore, setMatchedLore] = useState<LoreDebugEntry[] | null>(null)
   const streamingRef = useRef(false) // 동기 guard (더블 클릭 방지)
+  const partialRef = useRef('')      // 스트림 중 누적 본문(throw 경로 보존용)
 
   // 패널 토글
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -95,6 +104,7 @@ export default function Chat() {
     session.addMessage({ role: 'user', content: text, exchange_number: -1 })
     // 빈 어시스턴트 메시지 추가
     session.addMessage({ role: 'assistant', content: '', exchange_number: -1 })
+    partialRef.current = ''
 
     try {
       await stream(
@@ -102,6 +112,7 @@ export default function Chat() {
         { message: text, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
+            partialRef.current = fullText
             session.updateLastAssistant(fullText)
           },
           onDone: (exchangeNumber, fullText) => {
@@ -120,14 +131,14 @@ export default function Chat() {
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message) => {
-            session.updateLastAssistant(`[오류: ${message}]`)
+          onError: (message, partialText) => {
+            session.updateLastAssistant(withPartial(partialText, message))
           },
           onSessionId: (sid) => session.persistSessionId(sid),
         },
       )
     } catch (err) {
-      session.updateLastAssistant(`[오류: ${(err as Error).message}]`)
+      session.updateLastAssistant(withPartial(partialRef.current, (err as Error).message))
     } finally {
       streamingRef.current = false
       setIsStreaming(false)
@@ -145,6 +156,7 @@ export default function Chat() {
 
     // 기존 어시스턴트 메시지 비우기
     session.replaceAssistantByExchange(exchangeNumber, '')
+    partialRef.current = ''
 
     try {
       await stream(
@@ -152,6 +164,7 @@ export default function Chat() {
         { sessionId: session.sessionId, feedback, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
+            partialRef.current = fullText
             session.replaceAssistantByExchange(exchangeNumber, fullText)
           },
           onDone: (_exNum, fullText) => {
@@ -160,13 +173,13 @@ export default function Chat() {
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message) => {
-            session.replaceAssistantByExchange(exchangeNumber, `[오류: ${message}]`)
+          onError: (message, partialText) => {
+            session.replaceAssistantByExchange(exchangeNumber, withPartial(partialText, message))
           },
         },
       )
     } catch (err) {
-      session.replaceAssistantByExchange(exchangeNumber, `[오류: ${(err as Error).message}]`)
+      session.replaceAssistantByExchange(exchangeNumber, withPartial(partialRef.current, (err as Error).message))
     } finally {
       streamingRef.current = false
       setIsStreaming(false)
@@ -196,25 +209,29 @@ export default function Chat() {
     // assistant placeholder 추가 (user 턴은 재사용)
     session.addMessage({ role: 'assistant', content: '', exchange_number: -1 })
     setStreamingExchange(-1)
+    partialRef.current = ''
 
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
         { message: newContent, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
         {
-          onToken: (_token, fullText) => session.updateLastAssistant(fullText),
+          onToken: (_token, fullText) => {
+            partialRef.current = fullText
+            session.updateLastAssistant(fullText)
+          },
           onDone: (exNum, fullText) => {
             session.updateLastAssistant(fullText, exNum)
             setStreamingExchange(null)
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message) => session.updateLastAssistant(`[오류: ${message}]`),
+          onError: (message, partialText) => session.updateLastAssistant(withPartial(partialText, message)),
           onSessionId: (sid) => session.persistSessionId(sid),
         },
       )
     } catch (err) {
-      session.updateLastAssistant(`[오류: ${(err as Error).message}]`)
+      session.updateLastAssistant(withPartial(partialRef.current, (err as Error).message))
     } finally {
       streamingRef.current = false
       setIsStreaming(false)

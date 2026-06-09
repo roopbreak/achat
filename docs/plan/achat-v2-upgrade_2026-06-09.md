@@ -251,9 +251,9 @@ CLAUDE.md의 기술과 실제 코드가 어긋난 지점들. v2 착수 전 CLAUD
 - [x] CLAUDE.md 현행화 (React/Vite 스택, Claude+Gemini 멀티프로바이더, 요약 트리거 50)
 - [x] WS-B 어댑터 골격: `ModelSpec` 레지스트리(capability), `MessagePart[]` 입력, 반환형 `{finalText,finishReason,usage,cacheUsage,segments,providerMeta}`, Claude/Gemini 스트림 어댑터 래핑, Generation/Embedding 분리 — `lib/providers/`(7파일). Codex 리뷰(bg8okil57) critical/major/minor 3건 반영. 상세: `docs/handoff/achat-v2.md`
 
-### P1 — 분량·캐싱 (엔진 즉효)
-- [ ] WS-D 분량 auto-continue: 종료사유 수집 → in-memory continuation(buildContext 재호출 금지) → 단일하한+잘림 트리거 → max retry → 프론트 partial 보존
-- [ ] WS-E 캐싱: top-level auto caching, 1h TTL, Block2.5→3 병합(breakpoint 확보)
+### P1 — 분량·캐싱 (엔진 즉효) ✅ 완료(2026-06-09)
+- [x] WS-D 분량 auto-continue: 종료사유 수집 → in-memory continuation(buildContext 재호출 금지) → 단일하한+잘림 트리거 → max retry → 프론트 partial 보존 — `lib/providers/auto-continue.mjs`
+- [x] WS-E 캐싱: top-level auto caching, 1h TTL(extended-cache-ttl 베타 헤더), Block2.5→3 병합(breakpoint 4→3) — `context-builder`/`claude-stream`. Codex(bb4jji6xy) critical 없음, major/minor 2건 반영. 상세: `docs/handoff/achat-v2.md`
 
 ### P2 — 스키마 토대
 - [ ] WS-H 마이그레이션 버전관리 체계(clean-slate 교체 기반)

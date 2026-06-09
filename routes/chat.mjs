@@ -7,7 +7,7 @@ import {
   getPersona, getDefaultPersona,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
-import { getGenerationProvider } from '../lib/providers/index.mjs';
+import { streamWithContinuation } from '../lib/providers/auto-continue.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
 import rateLimit from 'express-rate-limit';
@@ -75,15 +75,17 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   let assistantText = '';
 
   try {
-    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, message.trim(), maxTokens || 4096, { model });
+    // buildContext의 OUTPUT_TARGET 하한과 auto-continue의 CONTINUE_FLOORS 기준을
+    // 동일 maxTokens로 통일(생략 시 4096). Codex minor 수용.
+    const effectiveMaxTokens = maxTokens || 4096;
+    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, message.trim(), effectiveMaxTokens, { model });
 
     if (loreDebug && matchedLore.length) {
       const loreInfo = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
       res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
     }
 
-    const provider = getGenerationProvider(model);
-    const result = await provider.stream({ systemBlocks, messages, res, model, maxTokens });
+    const result = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens });
     assistantText = result.finalText;
   } catch (err) {
     if (!res.writableEnded) {
@@ -214,15 +216,15 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
 
   let assistantText = '';
   try {
-    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, userContent, maxTokens || 4096, { model });
+    const effectiveMaxTokens = maxTokens || 4096;
+    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, userContent, effectiveMaxTokens, { model });
 
     if (loreDebug && matchedLore.length) {
       const loreInfo = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
       res.write(`event: lore\ndata: ${JSON.stringify(loreInfo)}\n\n`);
     }
 
-    const provider = getGenerationProvider(model);
-    const result = await provider.stream({ systemBlocks, messages, res, model, maxTokens });
+    const result = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens });
     assistantText = result.finalText;
   } catch (err) {
     if (prevAssistant) {

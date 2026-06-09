@@ -16,7 +16,8 @@ interface SSECallbacks {
   onToken: (text: string, fullText: string) => void
   onDone: (exchangeNumber: number, fullText: string) => void
   onTokenInfo: (info: TokenInfo) => void
-  onError: (message: string) => void
+  // partialText = 오류 시점까지 누적된 본문(WS-D 이어쓰기 중간 실패 보존용)
+  onError: (message: string, partialText: string) => void
   onSessionId?: (sessionId: string) => void
   onLore?: (entries: LoreDebugEntry[]) => void
 }
@@ -65,6 +66,9 @@ export function useSSEStream() {
       const decoder = new TextDecoder()
       let buffer = ''
       let fullText = ''
+      // WS-D 이어쓰기 시 token_info가 세그먼트마다 온다 → 턴 전체 누적값을 표시
+      // (마지막 세그먼트값만 보이면 비용·캐시 관측이 틀림. Codex major 수용)
+      const info: Required<TokenInfo> = { cacheRead: 0, cacheCreated: 0, input: 0, output: 0 }
 
       while (true) {
         const { done, value } = await reader.read()
@@ -95,11 +99,15 @@ export function useSSEStream() {
           } else if (evt === 'done') {
             callbacks.onDone(data.exchangeNumber, fullText)
           } else if (evt === 'token_info') {
-            callbacks.onTokenInfo(data)
+            info.cacheRead += data.cacheRead ?? 0
+            info.cacheCreated += data.cacheCreated ?? 0
+            info.input += data.input ?? 0
+            info.output += data.output ?? 0
+            callbacks.onTokenInfo({ ...info })
           } else if (evt === 'lore') {
             callbacks.onLore?.(data)
           } else if (evt === 'error') {
-            callbacks.onError(data.message)
+            callbacks.onError(data.message, fullText)
           }
         }
       }
