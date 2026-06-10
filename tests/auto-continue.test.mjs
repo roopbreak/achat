@@ -110,6 +110,44 @@ test('MAX_CONTINUE 소진: 총 3호출 상한', async () => {
   assert.equal(calls.length, 3);
 });
 
+// ── 3번안: 어중간한 완결 미발동 + 잘림 과잉 차단 + 주인공 침범 금지 ──
+
+test('3번안: 정상종료 + 본문 floor 절반 이상 → 이어쓰기 안 함', async () => {
+  // floor=1600, RATIO 0.5 → 800. 본문 1000자(800~1600 어중간)는 짧아도 그대로 둠
+  const text = '본문이 어중간하게 끝났다. ' + '가'.repeat(990) + '\n\n' + TAIL1;
+  const { res, calls } = await run([makeResult(text)]);
+  assert.equal(calls.length, 1, '이어쓰기 미발동');
+  assert.equal(res.providerMeta.continued, false);
+  assert.equal(res.finalText, text, '원문 무변경');
+});
+
+test('3번안: 정상종료 + 본문 절반 미만(800↓) → 1회 보강', async () => {
+  const body1 = '너무 짧게 끝났다. ' + '가'.repeat(300); // ~310자 < 800
+  const { res, calls } = await run([
+    makeResult(body1 + '\n\n' + TAIL1),
+    makeResult('이어지는 충분한 본문. ' + '나'.repeat(1400) + '\n\n' + TAIL2),
+  ]);
+  assert.equal(calls.length, 2, '짧은 완결은 보강');
+  assert.ok(res.providerMeta.continued);
+});
+
+test('3번안: 잘림이어도 본문이 하한 넘으면 종료(폭주 차단)', async () => {
+  // 1차에서 이미 본문 1700자(>=floor 1600) + 잘림 → 더 이어쓰지 않는다
+  const text = '충분히 긴 본문이 잘렸다. ' + '가'.repeat(1690);
+  const { res, calls } = await run([makeResult(text, 'length')]);
+  assert.equal(calls.length, 1, '잘림이어도 하한 충족 시 종료');
+  assert.equal(res.providerMeta.continued, false);
+});
+
+test('주인공 침범 금지 지시가 이어쓰기 프롬프트에 포함', async () => {
+  const { calls } = await run([
+    makeResult('짧다. ' + '가'.repeat(200) + '\n\n' + TAIL1),
+    makeResult('이어짐. ' + '나'.repeat(1500) + '\n\n' + TAIL2),
+  ]);
+  const user = calls[1].messages.at(-1);
+  assert.ok(user.content.includes('주인공의 행동·대사·선택은 절대 생성하지'), '주인공 침범 금지 명시');
+});
+
 // ── splitTail 단위: 레포 실존 커스텀 포맷 (Codex 배포리뷰 critical) ──
 const { splitTail } = await import('../lib/providers/auto-continue.mjs');
 
