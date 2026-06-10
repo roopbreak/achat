@@ -33,6 +33,7 @@ import {
   insertLorePackEntry, listLorePackEntries, deleteLorePackEntries,
   updateLorePackEntryEmbedding, getUnembeddedLorePackEntries,
   setStoryLoreLinks, listStoryLoreLinks,
+  createGenerationJob, updateGenerationJob,
   listPresets, getPreset, getPresetVersionBody, createPreset, updatePresetMeta,
   publishPresetVersion, rollbackPresetVersion, deletePreset, setStoryPreset,
 } from '../lib/db.mjs';
@@ -43,21 +44,11 @@ import { enqueueAll, isAutoApprovable } from '../lib/etl/queue.mjs';
 import { approveStory, approveAllAuto } from '../lib/etl/approve.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { importFromZip } from '../lib/zip-handler.mjs';
-import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength, clearQueue } from '../lib/image-generator.mjs';
+import { autoGenerate, checkDependencies, cleanupOrphanImages, enqueueGenerate, getQueueLength, clearQueue, compositionFingerprint } from '../lib/image-generator.mjs';
 import { buildComposition, loadComposition, saveComposition, COMPOSITION_CATEGORIES } from '../lib/composition-builder.mjs';
 
 const router = Router();
-const queuedGenerations = new Map();
-
-function setQueuedGeneration(slug, total) {
-  queuedGenerations.set(slug, { total });
-}
-function clearQueuedGeneration(slug) {
-  queuedGenerations.delete(slug);
-}
-function getQueuedGeneration(slug) {
-  return queuedGenerations.get(slug) || null;
-}
+// (P5b) queued 상태는 generation_jobs 행으로 영속 — in-memory Map 제거
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{2,49}$/;
 
@@ -319,17 +310,22 @@ router.post('/stories/:slug/generate', (req, res) => {
     sceneIds = missing;
   }
 
-  const total = sceneIds?.length || composition.images?.length || 0;
+  // P5b: queued job 을 DB 에 먼저 기록(영속) — 서버 재시작 시 resume 대상이 된다.
+  const targetIds = (sceneIds?.length ? sceneIds : (composition.images || []).map(img => img.id));
+  const total = targetIds.length;
+  const jobId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  createGenerationJob(jobId, story.id, total, {
+    slug: story.slug, sceneIds: targetIds,
+    composition_fingerprint: compositionFingerprint(composition),
+  }, targetIds, 'queued');
   const queuePos = getQueueLength();
-  setQueuedGeneration(story.slug, total);
-  res.json({ status: 'queued', slug: story.slug, total, queuePosition: queuePos });
-  enqueueGenerate(async () => {
-    clearQueuedGeneration(story.slug);
-    return autoGenerate(story, { sceneIds });
-  }).catch(err => {
-    clearQueuedGeneration(story.slug);
-    console.error(`[AutoGen] ${story.slug} 실패:`, err.message);
-  });
+  res.json({ status: 'queued', slug: story.slug, total, queuePosition: queuePos, jobId });
+  enqueueGenerate(() => autoGenerate(story, { sceneIds: sceneIds?.length ? sceneIds : null, jobId }))
+    .catch(err => {
+      console.error(`[AutoGen] ${story.slug} 실패:`, err.message);
+      // 큐 등록 거부(가득 참)·실행 전 실패 시 ghost queued 방지(Codex P5b M4)
+      try { updateGenerationJob(jobId, { status: 'failed', error: err.message, finished_at: new Date().toISOString() }); } catch {}
+    });
 });
 
 router.post('/stories/:slug/cleanup', (req, res) => {
@@ -350,11 +346,6 @@ router.get('/stories/:slug/generate/progress', (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
 
   const interval = setInterval(() => {
-    const queued = getQueuedGeneration(story.slug);
-    if (queued) {
-      res.write(`data: ${JSON.stringify({ status: 'queued', total: queued.total, completed: 0, failed: 0 })}\n\n`);
-      return;
-    }
     const job = getLatestJob(story.id);
     if (!job) {
       res.write(`data: ${JSON.stringify({ status: 'none' })}\n\n`);
@@ -370,15 +361,18 @@ router.get('/stories/:slug/generate/progress', (req, res) => {
 router.get('/stories/:slug/generate/status', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  const queued = getQueuedGeneration(story.slug);
-  if (queued) return res.json({ status: 'queued', total: queued.total, completed: 0, failed: 0 });
   const job = getLatestJob(story.id);
   res.json(job || { status: 'none' });
 });
 
 router.post('/generate/stop', (req, res) => {
   const cleared = clearQueue();
-  res.json({ ok: true, cleared });
+  // DB 의 queued job 도 함께 취소 — 영구 queued 잔재·재시작 resume 방지(Codex P5b M4).
+  // running 은 현재 실행 중(메모리 큐로는 중단 불가) — 기존 동작 유지.
+  const cancelled = getDB().prepare(
+    "UPDATE generation_jobs SET status='cancelled', error='운영자 중지', finished_at=datetime('now') WHERE status='queued'"
+  ).run().changes;
+  res.json({ ok: true, cleared, cancelled });
 });
 
 // GET /api/admin/stories/:slug
@@ -584,9 +578,17 @@ router.post('/stories/:slug/images/:sceneKey/regenerate', (req, res) => {
   const issues = checkDependencies();
   if (issues.length > 0) return res.status(503).json({ error: '이미지 생성 불가', issues });
 
+  const jobId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  createGenerationJob(jobId, story.id, 1, {
+    slug: story.slug, sceneIds: [sceneKey],
+    composition_fingerprint: compositionFingerprint(composition),
+  }, [sceneKey], 'queued');
   const queuePos = getQueueLength();
-  res.json({ status: 'queued', slug: story.slug, sceneKey, queuePosition: queuePos });
-  enqueueGenerate(() => autoGenerate(story, { sceneIds: [sceneKey] })).catch(err => console.error(`[Regen] ${story.slug}/${sceneKey} 실패:`, err.message));
+  res.json({ status: 'queued', slug: story.slug, sceneKey, queuePosition: queuePos, jobId });
+  enqueueGenerate(() => autoGenerate(story, { sceneIds: [sceneKey], jobId })).catch(err => {
+    console.error(`[Regen] ${story.slug}/${sceneKey} 실패:`, err.message);
+    try { updateGenerationJob(jobId, { status: 'failed', error: err.message, finished_at: new Date().toISOString() }); } catch {}
+  });
 });
 
 // ── Story Notes ──

@@ -15,6 +15,7 @@ import rateLimit from 'express-rate-limit';
 import {
   ChatRequestBodySchema, RegenRequestBodySchema, ChatResetResponseSchema,
 } from '@achat/contracts';
+import { logEvent } from '../lib/logger.mjs';
 import { writeSSE, respond } from '@achat/contracts/server';
 
 /** zod 이슈를 ErrorResponse.reason 문자열로 요약 */
@@ -91,6 +92,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   res.flushHeaders();
   writeSSE(res, 'message_start', { sessionId });
 
+  const turnStart = Date.now();
   let assistantText = '';
   let genResult = null;
 
@@ -152,6 +154,15 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
     userMessageId, assistantMessageId: assistantRowId,
   });
   res.end();
+
+  // P5b 구조적 turn 로그 — 비용·캐시·세그먼트·지연 관측(plan §3.1)
+  logEvent('turn', {
+    slug: story.slug, sessionId, exchange: exchNum, model: model ?? null,
+    input: genResult.usage?.inputTokens ?? 0, output: genResult.usage?.outputTokens ?? 0,
+    cacheRead: genResult.cacheUsage?.cacheRead ?? 0, cacheCreated: genResult.cacheUsage?.cacheCreated ?? 0,
+    segments: genResult.providerMeta?.segmentCount ?? 1, finish: genResult.finishReason,
+    chars: assistantText.length, elapsedMs: Date.now() - turnStart,
+  });
 
   setImmediate(async () => {
     const vec = await embed(assistantText.slice(0, 2000));

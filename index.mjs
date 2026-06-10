@@ -27,6 +27,11 @@ fs.mkdirSync(path.join(DATA_DIR, 'tmp'),     { recursive: true });
 // DB 초기화
 initDB(DB_PATH);
 
+// P5b: 미완료 이미지 생성 job resume (scene 단위, fingerprint 검증 — plan §3.3)
+import('./lib/image-generator.mjs').then(({ resumeGenerationJobs }) => {
+  try { resumeGenerationJobs(); } catch (e) { console.warn('[resume] 실패:', e.message); }
+});
+
 const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
