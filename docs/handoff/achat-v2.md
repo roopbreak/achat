@@ -5,7 +5,18 @@
 
 ## 현재 상태
 
-**P0~P3 + P4a + P4b-0/1 완료·배포**(`master`=c90d31f, 원격 검증 통과). 다음 = **P4b-2**(채팅 화면 전면 개편 — **사용자 결정: 현 다크+보라 톤 유지, 구조만 현대화**) → P4b-3(잔여 페이지 + 구 라우트 제거) → P5. P4 플랜 §3 참조.
+**P0~P3 + P4a + P4b-0/1/2 완료·배포**(`master`=8495af7, 원격 검증 통과). 다음 = **P4b-3**(잔여 페이지 전환: Story/StoryDetail/History/StoryEdit/Gallery 보수 + legacy admin DTO + 구 exchange 라우트 제거 + global.css 데드 클래스 정리 + 번들 code-split 검토) → P5(WS-C preset DSL + WS-G 관찰성). P4 플랜 §3 참조.
+
+### P4b-2 완료 (2026-06-10) — 채팅 화면 전면 개편 ✅ 배포
+> 사용자 결정: 현 다크+보라 톤 유지, 구조만 현대화. Codex 리뷰(b17ejripo) critical 0·major 3·minor 3 전부 반영. master 8495af7. 백업 pre-p4b2-20260610-115615.
+
+- **헤더**: 이모지 → lucide 아이콘+Tooltip(aria-label). **패널 4종**: 설정→Sheet / 노트→Dialog / 슬롯→Dialog(**Query ['slots',slug] 전환** + 저장 invalidate) / 가이드→Sheet(w-full max-w 모바일 보호). 기존 open/onClose prop 인터페이스 유지.
+- **메시지 액션**: 호버 ⋯ DropdownMenu — **sm 미만 상시 노출 + focus-visible**(모바일·키보드 접근, Codex major). 인라인 수정/재생성 폼 유지.
+- **SSE v2 표시**: continue_start 인디케이터 + 세그먼트 누적 수 + length 잘림 경고 + beginTurn 시 토큰바 리셋. **ChatMessages 에 ResizeObserver**(하단 바 마운트로 clientHeight 축소 시 하단 고정 보정, Codex major).
+- **스트리밍 코어 보존**: StreamingText(rAF·이미지 분할 렌더)·스크롤 로직 무변경.
+- 🔑 **TooltipProvider 전역 누락 → 전체 블랙스크린** — 빌드는 통과하고 런타임에만 터짐. 브라우저 검증에서 발견·수정(main.tsx). **shadcn 컴포넌트 추가 시 Provider 요구사항 체크 필수.**
+- **docs/guide 신설**(사용자 요청): `story-creation-webengine.md`(create-story 파이프라인 + v1 호환/v2 확장 비교표) + `story-creation-claude-code.md`(stories/ 파일 체계).
+- **검증**: 빌드 + 브라우저(패널 4종 열림/닫힘·드롭다운·입력바·채팅 렌더). 원격: 신규 번들 서빙 + 라이브 채팅 SSE v2 풀 시퀀스(3세그먼트 auto-continue 포함) + 테스트 턴 정리.
 
 ### P4b-0/1 완료 (2026-06-10) — WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 ✅ 배포
 > 플랜 §3.2. Codex 리뷰(b3wtgqqac) critical 0·major 3·minor 1 전부 반영. master c90d31f. 백업 pre-p4b1-20260610-112948.
@@ -156,7 +167,8 @@
 - [x] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩) ✅배포(e9cd80a)
 - [x] **P4a**: WS-M API 계약 패키지(workspace + SSE v2 + messageId 좌표 + admin 계약) ✅배포(74e37a5)
 - [x] **P4b-0/1**: WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 + 셸/Login/Home ✅배포(c90d31f)
-- [ ] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화 — 사용자 결정) / **P4b-3**: 잔여 페이지+구 라우트 제거
+- [x] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화) ✅배포(8495af7)
+- [ ] **P4b-3**: 잔여 페이지(Story/StoryDetail/History/StoryEdit/Gallery) + legacy admin DTO + 구 exchange 라우트 제거 + 데드 클래스·code-split 정리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드
