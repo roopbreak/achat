@@ -5,7 +5,17 @@
 
 ## 현재 상태
 
-**P0~P3 + P4a 완료·배포**(`master`=74e37a5, 원격 검증 통과). 다음 = **P4b**(WS-A UI 라이브러리: P4b-0 토큰 브리지 → P4b-1 Tailwind v4+shadcn+Query 셋업 → P4b-2 채팅 전면 개편 → P4b-3 잔여 페이지) → P5(WS-C preset DSL + WS-G 관찰성). P4 플랜 §3 참조.
+**P0~P3 + P4a + P4b-0/1 완료·배포**(`master`=c90d31f, 원격 검증 통과). 다음 = **P4b-2**(채팅 화면 전면 개편 — **사용자 결정: 현 다크+보라 톤 유지, 구조만 현대화**) → P4b-3(잔여 페이지 + 구 라우트 제거) → P5. P4 플랜 §3 참조.
+
+### P4b-0/1 완료 (2026-06-10) — WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 ✅ 배포
+> 플랜 §3.2. Codex 리뷰(b3wtgqqac) critical 0·major 3·minor 1 전부 반영. master c90d31f. 백업 pre-p4b1-20260610-112948.
+
+- **P4b-0 토큰 브리지**: `frontend/src/index.css` 신설(Tailwind v4 `@import` + `@theme inline` + shadcn 변수 — **다크 전용 :root 직정의**, v1 팔레트 hex 그대로). legacy `--accent/--accent2/--danger` 사용처 34곳 → `--primary/--brand-2/--destructive` 일괄 개명(**--accent 이름 충돌 해소** — shadcn accent=호버 표면). global.css :root 는 별칭만. CSS import 순서: index.css → global.css.
+- **preflight 시각 회귀 보정**(브라우저 8페이지 전수 점검으로 발견): `.btn` white-space:nowrap(admin 버튼 CJK 줄꺾임) + 마크다운 ul/ol/blockquote 복원(.msg-assistant/.history-msg — preflight 가 목록 스타일 제거).
+- **P4b-1 셋업**: @tailwindcss/vite + `@` alias(**TS6 — baseUrl deprecated, paths 만**) + components.json(new-york/neutral) + shadcn ui 6종(button/input/card/badge/separator/skeleton) + lib/utils(cn) + **QueryClientProvider**(staleTime 30s·refetchOnWindowFocus false). 서버 상태 ownership 표 = 플랜 §3.2 확정(**채팅 메시지는 transient local 소유, Query 비관여**).
+- **전환**: Nav(스티키+활성 경계 매칭), Login(Card), Home(useQuery stories/recent/personas-check + clearRecent mutation→invalidate + Skeleton). personas-check 는 staleTime 0(비전환 Admin CRUD 가 invalidate 못 쏨 — 기존 동작 동등성).
+- **검증**: 빌드 + 로컬 브라우저 시각 회귀 8페이지 + 실채팅 1턴 풀사이클(스트리밍 delta/auto-continue 토큰 누적 바/persisted 후 액션). 원격: dark HTML·신규 번들 서빙·stories 79·서버 정상.
+- 기록: 번들 560kB(zod+Query+radix) — code-split 은 P4b-3 정리 항목.
 
 ### P4a 완료 (2026-06-10) — WS-M API 계약 패키지 ✅ 배포
 > 플랜: `docs/plan/achat-v2-p4-contract-ui_2026-06-10.md` §2 (Codex 설계 리뷰 14건 반영표 §7). Codex 코드 리뷰(bci4634xt) critical 2·major 3 전부 반영. master 74e37a5. 백업 pre-p4a-20260610-105822.
@@ -145,7 +155,8 @@
 - [x] **P3b**: WS-I 배우 캐스팅 전체 완료 — P3b-1 스키마+평탄화 / P3b-2 카탈로그·서빙 / P3b-3 ranged 흡수+sieun 첫 cutover / P3b-4 admin 린 UI ✅배포(32c9d4b)
 - [x] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩) ✅배포(e9cd80a)
 - [x] **P4a**: WS-M API 계약 패키지(workspace + SSE v2 + messageId 좌표 + admin 계약) ✅배포(74e37a5)
-- [ ] **P4b**: WS-A UI 라이브러리 — P4b-0 토큰 브리지 / P4b-1 셋업(Tailwind v4+shadcn+Query, ownership 표) / P4b-2 채팅 전면 개편 / P4b-3 잔여 페이지+구 라우트 제거
+- [x] **P4b-0/1**: WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 + 셸/Login/Home ✅배포(c90d31f)
+- [ ] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화 — 사용자 결정) / **P4b-3**: 잔여 페이지+구 라우트 제거
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드
