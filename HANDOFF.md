@@ -15,3 +15,4 @@
 | 「쌍둥이의 수유 대결」 듀오(2인) 컷 별도 구성 | 완료 | docs/handoff/twins-duo-scenes.md | 2026-05-14 |
 | Claude Code 기반 스토리 채팅 MVP | 완료 | docs/handoff/claude-code-chat-mvp.md | 2026-05-15 |
 | Story 식별자 영문 slug 정규화 (id+slug+title) | 완료 | docs/handoff/story-slug-migration.md | 2026-05-15 |
+| AChat v2 대개편 (UI + 시스템 전면 재설계) | 활성 | docs/handoff/achat-v2.md | 2026-06-09 |

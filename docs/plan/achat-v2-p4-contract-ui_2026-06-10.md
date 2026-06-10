@@ -171,12 +171,12 @@ event: error                data: { message, phase: 'generation'|'persistence', 
 
 ## TODO 체크리스트
 
-### P4a — WS-M 계약
-- [ ] npm workspace 전환 + `packages/contracts`(TS·tsc·zod) + 루트/프론트 의존 배선 + deploy.sh 수정
-- [ ] 계약 정의: sse/chat/stories/sessions/admin/common + server·client 헬퍼(writeSSE/respond/파서)
-- [ ] 백엔드 배선: provider throw 화 + delta/usage(segmentIndex) + auto-continue continue_start + chat.mjs 종결 2단계 + 요청 검증(side effect 전) + messageId write API
-- [ ] 프론트 수용: useSSEStream v2(+v1 병행) + api.ts 계약 import + Chat.tsx id 좌표 전환
-- [ ] 검증(§2.6) → Codex 코드 리뷰 → 배포 ① → 원격 검증(install 동작 포함)
+### P4a — WS-M 계약 ✅ 완료·배포(2026-06-10, master 74e37a5)
+- [x] npm workspace 전환 + `packages/contracts`(TS·tsc·zod) + 루트/프론트 의존 배선 + deploy.sh 수정 (+ package-lock 커밋 전환, restart.sh dist 가드 — Codex 코드리뷰 M3)
+- [x] 계약 정의: sse/chat/stories/sessions/admin/common + server·client 헬퍼(writeSSE/respond/파서)
+- [x] 백엔드 배선: provider throw 화 + delta/usage(segmentIndex) + auto-continue continue_start + chat.mjs 종결 2단계 + 요청 검증(side effect 전) + messageId write API(sessionId 소속 증명 + 절단 요약 정합 — Codex 코드리뷰 C1·C2)
+- [x] 프론트 수용: useSSEStream v2(+v1 병행) + api.ts 계약 import + Chat.tsx id 좌표 전환 (+ regen 실패 id 클리어 M1, v1 done 시 재fetch M2)
+- [x] 검증(§2.6) → Codex 코드 리뷰(critical 2·major 3 반영) → 배포 ① → 원격 검증 통과
 
 ### P4b — WS-A UI
 - [ ] P4b-0: 토큰 브리지(global.css→shadcn 변수 수렴)

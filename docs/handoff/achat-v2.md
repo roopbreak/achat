@@ -1,11 +1,22 @@
 # HANDOFF: AChat v2 대개편 (UI + 시스템 전면 재설계)
 
-> 참조 플랜: `docs/plan/achat-v2-upgrade_2026-06-09.md` (마스터) + `docs/plan/achat-cache-lore-improvements_2026-06-09.md` (엔진 하위)
-> 상태: 활성 | 마지막 업데이트: 2026-06-09
+> 참조 플랜: `docs/plan/achat-v2-upgrade_2026-06-09.md` (마스터) + `docs/plan/achat-v2-p4-contract-ui_2026-06-10.md` (P4 하위)
+> 상태: 활성 | 마지막 업데이트: 2026-06-10
 
 ## 현재 상태
 
-**P0·P1·P2·P3(a·b·c) 완료·배포**(`master`=e9cd80a, 원격 검증 통과). **P3 전체 완료**(데이터 전환 ETL + 배우 캐스팅 + 로어 강화). 다음 = **P4**(WS-M API 계약 패키지 → WS-A UI 라이브러리(shadcn) — 채팅 화면 전면 개편) → P5(WS-C preset DSL + WS-G 관찰성).
+**P0~P3 + P4a 완료·배포**(`master`=74e37a5, 원격 검증 통과). 다음 = **P4b**(WS-A UI 라이브러리: P4b-0 토큰 브리지 → P4b-1 Tailwind v4+shadcn+Query 셋업 → P4b-2 채팅 전면 개편 → P4b-3 잔여 페이지) → P5(WS-C preset DSL + WS-G 관찰성). P4 플랜 §3 참조.
+
+### P4a 완료 (2026-06-10) — WS-M API 계약 패키지 ✅ 배포
+> 플랜: `docs/plan/achat-v2-p4-contract-ui_2026-06-10.md` §2 (Codex 설계 리뷰 14건 반영표 §7). Codex 코드 리뷰(bci4634xt) critical 2·major 3 전부 반영. master 74e37a5. 백업 pre-p4a-20260610-105822.
+
+- **npm workspace 전환**: 루트 workspaces(frontend, packages/*) + `packages/contracts`(@achat/contracts — TS 소스→tsc dist .js+.d.ts, zod 단일 의존). **package-lock.json 커밋 전환**(.gitignore 해제 — 배포 결정성, Codex M3) + restart.sh dist 가드(미존재/스테일 시 선빌드). deploy.sh = 루트 단일 install → contracts:build → 프론트 빌드 → 재시작. ⚠️ 백엔드 dev 시 계약 수정하면 `npm run contracts:build` 필요.
+- **SSE v2 계약**(클린 컷, 프론트 파서만 v1 병행): `message_start`(보조 — X-Session-Id 헤더가 1차)/`delta·usage(segmentIndex)`/`continue_start`/`lore{entries}`/**`generation_complete`+`message_persisted` 2단계 종결**(생성/영속 실패 분리)/`error(phase)`. provider(claude/gemini-stream)는 **typed throw 만**(error 방출·res.end 제거) — 종결 ownership 은 라우트 단독. emitter/respond 는 `@achat/contracts/server`(dev/test 만 schema.parse — NODE_ENV 게이트, 루트 dev 스크립트에 NODE_ENV=development 추가됨. prod passthrough).
+- **messageId 좌표 완결**(Codex critical: 두 좌표계 공존 금지): `message_persisted` 에 user/assistantMessageId + `PUT/DELETE /api/messages/:id`(**sessionId 소속 증명** — 교차 세션 mutate 403) + 프론트 수정/삭제 id 전환. 구 exchange 라우트는 deprecated 유예(P4b-3 제거). **절단 시 요약 정합 수정**(구 라우트 잠복 버그): 절단이 요약 구간 침범 시 전체 summarized 리셋+summary 무효, 밖이면 보존 — ⚠️ maxSummarized 는 DELETE **이전** 조회(이후 조회하면 판정 항상 false — 실테스트로 잡음).
+- **프론트**: useSSEStream 재작성(`parseChatStreamEvent` + v1 번역 — 배포 윈도/롤백 보호, persisted 의 id null 이면 재fetch), api.ts 수기 interface → 계약 재export, regen 실패 시 id 클리어(죽은 id 404 방지), persistence 실패 별도 안내. 메시지 목록 `SELECT *` → 명시 컬럼(**embedding 차단**).
+- **admin 계약**: P3 신규 표면(ETL/배우/로어팩) zod — 봉투 엄격·운영자 JSON 내부 unknown. fixture 대조가 `confidence` TEXT(high|low) 드리프트 즉시 검출(검증 설계 효용 입증). admin 라우트 respond 배선은 P4b-3.
+- **검증**: round-trip 34 + admin fixture(etl 79) + 실채팅 e2e(정상/이어쓰기 3세그 continue_start/오류 phase/write API C1·C2/구 라우트) + tsc·vite 빌드. **원격**: 부팅·79 스토리·SSE v2 풀시퀀스(cacheRead 적중)·write API 403/PUT/DELETE·embedding 차단·구 라우트 유예 전부 확인.
+- 기록(채택 안 함): 클라 abort 시 writeSSE 의 writableEnded 가드가 소켓 destroy 까지 완전 커버하는지는 잔여 리스크(Codex 기록만). regen 실패 복구 row 의 embedding 미복원은 기존 동작.
 
 ### P3c 완료 (2026-06-10) — WS-F 로어 강화 (정규식 키 + 전역 로어팩) ✅ 배포
 > 설계 §"P3c 구현 설계"(p3 플랜 끝). Codex 설계(bzwkvzw3o)+코드(b3k9o6ui3) 리뷰. master e9cd80a.
@@ -133,7 +144,8 @@
 - [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
 - [x] **P3b**: WS-I 배우 캐스팅 전체 완료 — P3b-1 스키마+평탄화 / P3b-2 카탈로그·서빙 / P3b-3 ranged 흡수+sieun 첫 cutover / P3b-4 admin 린 UI ✅배포(32c9d4b)
 - [x] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩) ✅배포(e9cd80a)
-- [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
+- [x] **P4a**: WS-M API 계약 패키지(workspace + SSE v2 + messageId 좌표 + admin 계약) ✅배포(74e37a5)
+- [ ] **P4b**: WS-A UI 라이브러리 — P4b-0 토큰 브리지 / P4b-1 셋업(Tailwind v4+shadcn+Query, ownership 표) / P4b-2 채팅 전면 개편 / P4b-3 잔여 페이지+구 라우트 제거
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드
