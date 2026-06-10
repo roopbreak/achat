@@ -5,7 +5,17 @@
 
 ## 현재 상태
 
-**P0·P1·P2·P3a·P3b(1~4) 완료·배포**(`master`=32c9d4b, 원격 검증 통과). **P3b 배우 캐스팅(WS-I) 전체 완료**. 다음 = **P3c 로어(WS-F)**(정규식 키 + 전역 로어팩) → P4 (WS-M API 계약 + WS-A UI 라이브러리).
+**P0·P1·P2·P3(a·b·c) 완료·배포**(`master`=e9cd80a, 원격 검증 통과). **P3 전체 완료**(데이터 전환 ETL + 배우 캐스팅 + 로어 강화). 다음 = **P4**(WS-M API 계약 패키지 → WS-A UI 라이브러리(shadcn) — 채팅 화면 전면 개편) → P5(WS-C preset DSL + WS-G 관찰성).
+
+### P3c 완료 (2026-06-10) — WS-F 로어 강화 (정규식 키 + 전역 로어팩) ✅ 배포
+> 설계 §"P3c 구현 설계"(p3 플랜 끝). Codex 설계(bzwkvzw3o)+코드(b3k9o6ui3) 리뷰. master e9cd80a.
+
+- **C1 정규식 키**: `keywordMatch` 에 `/패턴/flags` 지원(flags **[giu] 만 인정** — `[a-z]*` 면 평문 '/foo/bar' 가 정규식 오인, Codex critical / i·u 유효, g strip=lastIndex 오염 방지) + `-/패턴/` NOT + 컴파일 캐시·실패 무시·길이 200 가드. 평문 AND(+)/NOT(-)/ANY 회귀 없음.
+- **C2 전역 로어팩**(002 스키마 활성화): 팩/엔트리/링크 CRUD + 병합 뷰 `getEffective{Constant,All,Embedded}Lore` — 팩 엔트리 id `pack-{N}` 문자열화(dedupe Set 충돌 방지, 쓰기 경로 분리), **병합 insertion_order = 링크 순서로 치환**(Codex F1: 링크/엔트리 순서는 별개 축 — 단일 축化, 팩 내부 순서는 stable sort 보존), 동순위 전속 우선. buildContext 호출부만 교체. **lore 도메인 legacy-live 유지**(로어는 QA 로 자주 수정 — 최신 반영 우선. frozen 은 비범위).
+- **F2 임베딩 무효화 계약**: 팩 편집 = 엔트리 전체 교체(새 행 embedding NULL) → stale vector 불가. round-trip GET 도 embedding 제외. 재임베딩은 `POST /lore-packs/:id/embed`(RPM 가드).
+- **admin**: `/lore-packs` CRUD(JSON round-trip) + embed + `/stories/:slug/lore-links` 전체 교체. Admin.tsx "전역 로어팩 (WS-F)" 린 섹션(팩 칩+JSON 편집+임베딩 버튼, 스토리 링크 JSON).
+- **검증**: 통합 17(정규식/NOT/invalid/정렬 축/id 고유/Block3 병합/cascade) + admin API e2e + 정규식 오인 회귀 5 + 프론트 빌드. 원격: 로어팩 API 정상, legacy/sieun-v2 채팅 모두 무영향(링크 없는 스토리 = 빈 팩 병합 = 동작 동일). 백업 pre-p3c-20260610-090306.
+- 비범위(기록): BM25·로컬 임베딩(마스터플랜 "(선택)"), lore frozen cutover.
 
 ### P3b-4 완료 (2026-06-10) — 배우 캐스팅 admin 린 UI ✅ 배포
 > 사용자 결정: 린 UI(JSON 관리 — ETL 교정 패턴, 범위형 복잡도엔 폼보다 정확). Codex 리뷰(biysj1npg) 2건 반영. master 32c9d4b.
@@ -122,7 +132,7 @@
 - [x] **P2**: WS-H 마이그레이션 체계 + WS-J 스키마 + WS-L 세션 리플레이 (2026-06-09 완료·배포, master cd954a2)
 - [x] **P3a**: WS-K ETL 엔진 코어 + 린 검토 UI ✅ 완료·배포(master 93d14ae, 원격 검증 통과). 운영자 승인 대기(inert)
 - [x] **P3b**: WS-I 배우 캐스팅 전체 완료 — P3b-1 스키마+평탄화 / P3b-2 카탈로그·서빙 / P3b-3 ranged 흡수+sieun 첫 cutover / P3b-4 admin 린 UI ✅배포(32c9d4b)
-- [ ] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩)
+- [x] **P3c**: WS-F 로어(정규식 키 + 전역 로어팩) ✅배포(e9cd80a)
 - [ ] **P4**: WS-M API 계약 + WS-A UI 라이브러리
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
