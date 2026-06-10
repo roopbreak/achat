@@ -140,6 +140,12 @@ export function useSSEStream() {
               callbacks.onLore?.(evt.entries)
               break
             case 'generation_complete':
+              // auto-continue 발동 턴: 서버 재조립본으로 누적 텍스트 교체 —
+              // 이후 onPersisted/onError(partial)도 교정된 텍스트를 사용한다
+              if (evt.finalText != null && evt.finalText !== fullText) {
+                fullText = evt.finalText
+                callbacks.onToken('', fullText)
+              }
               callbacks.onGenerationComplete?.({
                 finishReason: evt.finishReason,
                 continued: evt.continued,

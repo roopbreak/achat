@@ -118,10 +118,12 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   }
 
   // 생성 종료(저장 전) — 저장 실패와 분리(Codex critical 6)
+  // 이어쓰기 발동 턴은 서버 재조립본(finalText)을 실어 클라 말풍선 교체 유도
   writeSSE(res, 'generation_complete', {
     finishReason: genResult.finishReason,
     continued: genResult.providerMeta?.continued ?? false,
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
+    ...(genResult.providerMeta?.continued ? { finalText: genResult.finalText } : {}),
   });
 
   let exchNum, userMessageId, assistantRowId;
@@ -242,10 +244,12 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
     return;
   }
 
+  // regen 경로도 동일하게 finalText 전달(Codex high 4 수용)
   writeSSE(res, 'generation_complete', {
     finishReason: genResult.finishReason,
     continued: genResult.providerMeta?.continued ?? false,
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
+    ...(genResult.providerMeta?.continued ? { finalText: genResult.finalText } : {}),
   });
 
   let assistantRowId;

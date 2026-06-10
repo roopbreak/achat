@@ -52,6 +52,12 @@ export const GenerationCompleteEventSchema = z.object({
   finishReason: FinishReasonSchema,
   continued: z.boolean(),
   segmentCount: z.number().int().min(1),
+  /**
+   * auto-continue 발동 턴의 서버 재조립 본문(꼬리 절제 + 상태창 재배치).
+   * 클라 delta 누적과 다르므로 수신 시 말풍선을 이 값으로 교체한다.
+   * 미발동 턴은 생략(페이로드 증가 0).
+   */
+  finalText: z.string().optional(),
 })
 
 /** DB 저장 완료 — 정상 종결. messageId 는 저장 후에만 존재한다. */

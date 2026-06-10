@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node index.mjs",
     "dev": "NODE_ENV=development node --watch index.mjs",
+    "test": "node --experimental-test-module-mocks --test tests/*.test.mjs",
     "contracts:build": "npm run build -w @achat/contracts",
     "build:frontend": "cd frontend && npm install && npm run build"
   },
