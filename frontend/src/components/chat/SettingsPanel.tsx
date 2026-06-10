@@ -77,6 +77,7 @@ export default function SettingsPanel({
         <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
         <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
         <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+        <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
       </select>
 
       <label style={{ fontSize: 13, color: 'var(--text-dim)', marginLeft: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
