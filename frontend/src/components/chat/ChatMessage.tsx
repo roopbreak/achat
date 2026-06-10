@@ -1,6 +1,13 @@
 import { useState, useRef } from 'react'
+import { GitBranch, MoreHorizontal, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import StreamingText from './StreamingText'
 import type { Message } from '../../hooks/useSession'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface Props {
   message: Message
@@ -34,35 +41,62 @@ export default function ChatMessage({
     }
   }
 
+  const actionsMenu = showActions && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="메시지 메뉴"
+          // 모바일(hover 없음)·키보드 포커스에서도 접근 가능해야 한다(Codex P4b-2 major 1):
+          // 기본 노출, sm 이상에서만 hover-hide
+          className="msg-menu-btn size-7 text-muted-foreground transition-opacity focus-visible:opacity-100 data-[state=open]:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        >
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {role === 'user' ? (
+          <DropdownMenuItem onClick={() => { setShowEdit(true); setEditText(content) }}>
+            <Pencil /> 수정 + 재생성
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => setShowRegen(true)}>
+            <RotateCcw /> 재생성
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => onFork(exchange_number)}>
+          <GitBranch /> 이 지점에서 분기
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={() => onDelete(message)}>
+          <Trash2 /> 이 턴부터 삭제
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   if (role === 'user') {
     return (
-      <div className="msg msg-user" data-exchange={exchange_number}>
-        <div className="msg-body" style={{ whiteSpace: 'pre-wrap' }}>{content}</div>
-        {showActions && (
-          <div className="msg-actions">
-            <button className="msg-action-btn" onClick={() => {
-              setShowEdit(!showEdit)
-              setEditText(content)
-            }}>✏ 수정</button>
-            <button className="msg-action-btn" onClick={() => onFork(exchange_number)}>⑃ 분기</button>
-            <button className="msg-action-btn" onClick={() => onDelete(message)}>✕ 삭제</button>
-          </div>
-        )}
+      <div className="msg msg-user group" data-exchange={exchange_number}>
+        <div className="flex items-start justify-between gap-1">
+          <div className="msg-body" style={{ whiteSpace: 'pre-wrap' }}>{content}</div>
+          {actionsMenu}
+        </div>
         {showEdit && (
-          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-            <textarea
-              style={{ flex: 1, fontSize: 14, padding: 8, minHeight: 60 }}
+          <div className="mt-2 flex gap-2">
+            <Textarea
+              className="min-h-16 flex-1 text-sm"
               value={editText}
               onChange={e => setEditText(e.target.value)}
               autoFocus
             />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px' }}
+            <div className="flex flex-col gap-1">
+              <Button size="sm" className="h-7 text-xs"
                 onClick={() => { setShowEdit(false); onEdit(message, editText.trim()) }}>
                 저장+재생성
-              </button>
-              <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }}
-                onClick={() => setShowEdit(false)}>취소</button>
+              </Button>
+              <Button size="sm" variant="secondary" className="h-7 text-xs"
+                onClick={() => setShowEdit(false)}>취소</Button>
             </div>
           </div>
         )}
@@ -73,23 +107,18 @@ export default function ChatMessage({
   // assistant
   return (
     <div
-      className={`msg msg-assistant${isStreaming && isLast ? ' cursor' : ''}`}
+      className={`msg msg-assistant group${isStreaming && isLast ? ' cursor' : ''}`}
       data-exchange={exchange_number}
       onClick={handleImageClick}
     >
+      {showActions && <div className="float-right -mt-1 -mr-1 ml-2">{actionsMenu}</div>}
       <StreamingText text={content} charName={charName} isStreaming={isStreaming && isLast} />
-      {showActions && (
-        <div className="msg-actions">
-          <button className="msg-action-btn" onClick={() => setShowRegen(!showRegen)}>↺ 재생성</button>
-          <button className="msg-action-btn" onClick={() => onFork(exchange_number)}>⑃ 분기</button>
-          <button className="msg-action-btn" onClick={() => onDelete(message)}>✕ 삭제</button>
-        </div>
-      )}
       {showRegen && (
-        <div className="regen-panel">
-          <input
+        <div className="mt-2 flex items-center gap-2">
+          <Input
             ref={regenInputRef}
             type="text"
+            className="h-8 flex-1 text-sm"
             placeholder="재생성 의견 (없으면 단순 재생성)"
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
@@ -99,12 +128,11 @@ export default function ChatMessage({
             }}
             autoFocus
           />
-          <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px', height: 34 }}
+          <Button size="sm" className="h-8 text-xs"
             onClick={() => { setShowRegen(false); onRegen(exchange_number, regenInputRef.current?.value.trim() ?? '') }}>
             재생성
-          </button>
-          <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px', height: 34 }}
-            onClick={() => setShowRegen(false)}>취소</button>
+          </Button>
+          <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => setShowRegen(false)}>취소</Button>
         </div>
       )}
     </div>

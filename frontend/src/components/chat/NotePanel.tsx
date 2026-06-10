@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 interface Props {
   open: boolean
@@ -26,24 +31,25 @@ export default function NotePanel({ open, slug, onClose }: Props) {
     onClose()
   }
 
-  if (!open) return null
-
   return (
-    <div style={{ flexShrink: 0, background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '12px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>유저 노트 (시스템 프롬프트에 최우선 주입)</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-primary" onClick={save} style={{ fontSize: 12, padding: '4px 12px' }}>저장</button>
-          <button className="btn btn-secondary" onClick={onClose} style={{ fontSize: 12, padding: '4px 10px' }}>닫기</button>
-        </div>
-      </div>
-      <textarea
-        rows={5}
-        placeholder="진행 상태, 규칙, 중요 사건 등..."
-        style={{ fontSize: 13 }}
-        value={content}
-        onChange={e => setContent(e.target.value)}
-      />
-    </div>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>유저 노트</DialogTitle>
+          <DialogDescription>시스템 프롬프트에 최우선 주입됩니다</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          rows={8}
+          placeholder="진행 상태, 규칙, 중요 사건 등..."
+          className="text-sm"
+          value={content}
+          onChange={e => setContent(e.target.value)}
+        />
+        <DialogFooter>
+          <Button variant="secondary" onClick={onClose}>닫기</Button>
+          <Button onClick={save}>저장</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
-import { useSSEStream, type TokenInfo, type LoreDebugEntry } from '../hooks/useSSEStream'
+import { useSSEStream, type TokenInfo, type LoreDebugEntry, type GenerationInfo } from '../hooks/useSSEStream'
 import { api, type StoryDetail } from '../lib/api'
 import ChatHeader from '../components/chat/ChatHeader'
 import ChatMessages from '../components/chat/ChatMessages'
@@ -43,8 +43,23 @@ export default function Chat() {
   const [streamingExchange, setStreamingExchange] = useState<number | null>(null)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [matchedLore, setMatchedLore] = useState<LoreDebugEntry[] | null>(null)
+  // SSE v2 표시: 이어쓰기 세그먼트(continue_start) + 생성 결과(finishReason 잘림 경고)
+  const [continueSeg, setContinueSeg] = useState<number | null>(null)
+  const [lastGen, setLastGen] = useState<GenerationInfo | null>(null)
   const streamingRef = useRef(false) // 동기 guard (더블 클릭 방지)
   const partialRef = useRef('')      // 스트림 중 누적 본문(throw 경로 보존용)
+
+  // 턴 시작 시 SSE v2 표시 상태 초기화 + 공통 콜백
+  const beginTurn = useCallback(() => {
+    setMatchedLore(null)
+    setContinueSeg(null)
+    setLastGen(null)
+    setTokenInfo(null) // 이전 턴 수치 잔존 방지 — 턴 단위 누적 표시(Codex P4b-2 minor)
+  }, [])
+  const sseDisplayCallbacks = {
+    onContinue: (segmentIndex: number) => setContinueSeg(segmentIndex),
+    onGenerationComplete: (info: GenerationInfo) => { setLastGen(info); setContinueSeg(null) },
+  }
 
   // 패널 토글
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -101,7 +116,7 @@ export default function Chat() {
     if (streamingRef.current) return
     streamingRef.current = true
     setIsStreaming(true)
-    setMatchedLore(null)
+    beginTurn()
     setStreamingExchange(-1) // placeholder exchange_number와 일치
 
     // 유저 메시지 추가
@@ -128,6 +143,7 @@ export default function Chat() {
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          ...sseDisplayCallbacks,
           onLore: (entries) => setMatchedLore(entries),
           onError: (message, partialText, phase) => {
             session.updateLastAssistant(withPartial(partialText, message, phase))
@@ -141,6 +157,7 @@ export default function Chat() {
       streamingRef.current = false
       setIsStreaming(false)
       setStreamingExchange(null)
+      setContinueSeg(null)
     }
   }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
 
@@ -149,7 +166,7 @@ export default function Chat() {
     if (streamingRef.current) return
     streamingRef.current = true
     setIsStreaming(true)
-    setMatchedLore(null)
+    beginTurn()
     setStreamingExchange(exchangeNumber)
 
     // 기존 어시스턴트 메시지 비우기
@@ -172,6 +189,7 @@ export default function Chat() {
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          ...sseDisplayCallbacks,
           onLore: (entries) => setMatchedLore(entries),
           onError: (message, partialText, phase) => {
             // 실패 시 서버가 직전 본문을 새 row 로 복원 — 화면의 기존 id 는 무효(Codex M1 → id 클리어)
@@ -185,6 +203,7 @@ export default function Chat() {
       streamingRef.current = false
       setIsStreaming(false)
       setStreamingExchange(null)
+      setContinueSeg(null)
     }
   }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
 
@@ -198,7 +217,7 @@ export default function Chat() {
     const exchangeNumber = message.exchange_number
     streamingRef.current = true
     setIsStreaming(true)
-    setMatchedLore(null)
+    beginTurn()
 
     await api(`/api/messages/${message.id}`, {
       method: 'PUT',
@@ -233,6 +252,7 @@ export default function Chat() {
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
+          ...sseDisplayCallbacks,
           onLore: (entries) => setMatchedLore(entries),
           onError: (message, partialText, phase) => session.updateLastAssistant(withPartial(partialText, message, phase)),
           onSessionId: (sid) => session.persistSessionId(sid),
@@ -244,6 +264,7 @@ export default function Chat() {
       streamingRef.current = false
       setIsStreaming(false)
       setStreamingExchange(null)
+      setContinueSeg(null)
     }
   }, [session, slug, stream, settings.model, settings.maxTokens, settings.loreDebug])
 
@@ -378,25 +399,36 @@ export default function Chat() {
         onClose={() => setSlotsOpen(false)}
       />
 
-      {tokenInfo && (
-        <div style={{
-          flexShrink: 0, background: 'var(--surface)', borderTop: '1px solid var(--border)',
-          padding: '4px 16px', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace',
-        }}>
-          토큰: {[
-            tokenInfo.cacheRead && `캐시↩ ${tokenInfo.cacheRead.toLocaleString()}`,
-            tokenInfo.cacheCreated && `캐시↑ ${tokenInfo.cacheCreated.toLocaleString()}`,
-            tokenInfo.input && `입력 ${tokenInfo.input.toLocaleString()}`,
-            tokenInfo.output && `출력 ${tokenInfo.output.toLocaleString()}`,
-          ].filter(Boolean).join(' | ')}
+      {/* 이어쓰기 세그먼트 인디케이터 (SSE v2 continue_start) */}
+      {isStreaming && continueSeg != null && (
+        <div className="shrink-0 border-t border-border bg-card px-4 py-1 font-mono text-[11px] text-primary">
+          ⟳ 분량 이어쓰는 중... (세그먼트 {continueSeg + 1})
+        </div>
+      )}
+
+      {(tokenInfo || (lastGen && lastGen.finishReason === 'length')) && (
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 border-t border-border bg-card px-4 py-1 font-mono text-[11px] text-muted-foreground">
+          {tokenInfo && (
+            <span>
+              토큰: {[
+                tokenInfo.cacheRead && `캐시↩ ${tokenInfo.cacheRead.toLocaleString()}`,
+                tokenInfo.cacheCreated && `캐시↑ ${tokenInfo.cacheCreated.toLocaleString()}`,
+                tokenInfo.input && `입력 ${tokenInfo.input.toLocaleString()}`,
+                tokenInfo.output && `출력 ${tokenInfo.output.toLocaleString()}`,
+              ].filter(Boolean).join(' | ')}
+            </span>
+          )}
+          {lastGen && (
+            <span className={lastGen.finishReason === 'length' ? 'text-destructive' : ''}>
+              {lastGen.continued && `세그먼트 ${lastGen.segmentCount}개 누적`}
+              {lastGen.finishReason === 'length' && ' · ⚠ 분량 한도로 잘림(이어쓰기 한도 도달)'}
+            </span>
+          )}
         </div>
       )}
 
       {settings.loreDebug && matchedLore && matchedLore.length > 0 && (
-        <div style={{
-          flexShrink: 0, background: 'var(--surface)', borderTop: '1px solid var(--border)',
-          padding: '4px 16px', fontSize: 11, color: 'var(--primary)', fontFamily: 'monospace',
-        }}>
+        <div className="shrink-0 border-t border-border bg-card px-4 py-1 font-mono text-[11px] text-primary">
           로어북: {matchedLore.map(e => e.name).join(', ')}
         </div>
       )}

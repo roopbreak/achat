@@ -1,5 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 interface Slot {
   id: number
@@ -16,27 +22,32 @@ interface Props {
 }
 
 export default function SlotPanel({ open, slug, sessionId, onLoadSlot, onClose }: Props) {
-  const [slots, setSlots] = useState<Slot[]>([])
   const [slotName, setSlotName] = useState('')
+  const queryClient = useQueryClient()
 
-  const loadSlots = useCallback(async () => {
-    const list = await api<Slot[]>(`/api/stories/${encodeURIComponent(slug)}/slots`)
-    setSlots(list)
-  }, [slug])
+  // ownership 표(plan §3.2): 슬롯 목록 = Query 소유, 저장 후 invalidate
+  const slotsQuery = useQuery({
+    queryKey: ['slots', slug],
+    queryFn: () => api<Slot[]>(`/api/stories/${encodeURIComponent(slug)}/slots`),
+    enabled: open,
+  })
+  const slots = slotsQuery.data ?? []
 
-  useEffect(() => {
-    if (open) loadSlots()
-  }, [open, loadSlots])
-
-  const saveSlot = async () => {
-    const name = slotName.trim()
-    if (!name) return
-    await api(`/api/stories/${encodeURIComponent(slug)}/slots`, {
+  const saveSlot = useMutation({
+    mutationFn: (name: string) => api(`/api/stories/${encodeURIComponent(slug)}/slots`, {
       method: 'POST',
       body: JSON.stringify({ slot_name: name, session_id: sessionId }),
-    })
-    setSlotName('')
-    loadSlots()
+    }),
+    onSuccess: () => {
+      setSlotName('')
+      queryClient.invalidateQueries({ queryKey: ['slots', slug] })
+    },
+  })
+
+  const handleSave = () => {
+    const name = slotName.trim()
+    if (!name || !sessionId) return
+    saveSlot.mutate(name)
   }
 
   const handleLoad = async (slotId: number, name: string) => {
@@ -48,32 +59,45 @@ export default function SlotPanel({ open, slug, sessionId, onLoadSlot, onClose }
     if (res.ok) onLoadSlot(res.sessionId)
   }
 
-  if (!open) return null
-
   return (
-    <div className="slot-panel">
-      <span style={{ color: 'var(--text-dim)' }}>슬롯:</span>
-      <input
-        placeholder="슬롯 이름"
-        style={{ width: 140, height: 32, fontSize: 13 }}
-        value={slotName}
-        onChange={e => setSlotName(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') saveSlot() }}
-      />
-      <button className="btn btn-secondary" onClick={saveSlot} style={{ fontSize: 12, padding: '5px 10px' }}>저장</button>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {slots.map(s => (
-          <button
-            key={s.id}
-            className="btn btn-secondary"
-            style={{ fontSize: 12, padding: '4px 10px' }}
-            onClick={() => handleLoad(s.id, s.slot_name)}
-          >
-            {s.slot_name} ({s.turn_count}턴)
-          </button>
-        ))}
-      </div>
-      <button className="btn btn-secondary" onClick={onClose} style={{ fontSize: 12, padding: '5px 10px', marginLeft: 'auto' }}>닫기</button>
-    </div>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>저장 슬롯</DialogTitle>
+          <DialogDescription>현재 시점을 이름 붙여 저장하거나 불러옵니다</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex gap-2">
+          <Input
+            placeholder="슬롯 이름"
+            value={slotName}
+            onChange={e => setSlotName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
+          />
+          <Button onClick={handleSave} disabled={!slotName.trim() || saveSlot.isPending}>저장</Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {slotsQuery.isLoading ? (
+            <span className="text-sm text-muted-foreground">불러오는 중...</span>
+          ) : slotsQuery.isError ? (
+            <span className="text-sm text-destructive">
+              슬롯 조회 실패 — <button className="underline" onClick={() => slotsQuery.refetch()}>재시도</button>
+            </span>
+          ) : slots.length === 0 ? (
+            <span className="text-sm text-muted-foreground">저장된 슬롯이 없습니다.</span>
+          ) : slots.map(s => (
+            <Button
+              key={s.id}
+              variant="secondary"
+              size="sm"
+              onClick={() => handleLoad(s.id, s.slot_name)}
+            >
+              {s.slot_name} <span className="text-muted-foreground">({s.turn_count}턴)</span>
+            </Button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

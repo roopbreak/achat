@@ -85,6 +85,21 @@ export default function ChatMessages({
     scrollToBottom()
   }, [messages.length, scrollToBottom])
 
+  // 컨테이너 높이 축소 보정(Codex P4b-2 major 2): 하단 상태 바(토큰/이어쓰기/로어)가
+  // 마운트되면 clientHeight 가 줄어 마지막 줄이 가려진다 — 하단 고정 중이면 따라간다.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      if (isAtBottom.current) {
+        el.scrollTop = el.scrollHeight
+        prevScrollHeight.current = el.scrollHeight
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   // 이미지 로드/에러 처리 (스크롤 보정 + 깨진 이미지 숨김)
   useEffect(() => {
     const el = ref.current

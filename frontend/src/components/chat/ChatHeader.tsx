@@ -1,4 +1,9 @@
 import { Link } from 'react-router-dom'
+import {
+  ArrowLeft, BookOpen, Download, HelpCircle, NotebookPen, RotateCcw, Save, Settings,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Props {
   slug: string
@@ -10,30 +15,44 @@ interface Props {
   onToggleNote: () => void
 }
 
+function IconAction({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label={label} className="size-8 text-muted-foreground hover:text-foreground" onClick={onClick}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export default function ChatHeader({
   slug, onReset, onExport,
   onToggleGuide, onToggleSettings, onToggleSlots, onToggleNote,
 }: Props) {
   return (
-    <header className="chat-header">
-      <Link to="/" style={{ color: 'var(--text-dim)', fontSize: 20, lineHeight: 1 }}>←</Link>
-      <span className="story-title">{slug}</span>
-      <div className="session-actions">
-        <button className="btn btn-secondary" onClick={onToggleGuide} style={{ fontSize: 13, padding: '6px 12px' }} title="가이드 (캐릭터·커맨드)">❓</button>
-        <button className="btn btn-secondary" onClick={onToggleSlots} style={{ fontSize: 13, padding: '6px 12px' }}>
-          <span>💾</span><span>슬롯</span>
-        </button>
-        <button className="btn btn-secondary" onClick={onToggleNote} style={{ fontSize: 13, padding: '6px 12px' }} title="유저 노트">📝</button>
-        <button className="btn btn-secondary" onClick={onToggleSettings} style={{ fontSize: 13, padding: '6px 12px' }} title="설정">⚙️</button>
-        <button className="btn btn-secondary" onClick={onReset} style={{ fontSize: 13, padding: '6px 12px' }}>
-          <span>🔄</span><span>초기화</span>
-        </button>
-        <button className="btn btn-secondary" onClick={onExport} style={{ fontSize: 13, padding: '6px 12px' }} title="내보내기">
-          <span>📥</span><span>내보내기</span>
-        </button>
-        <Link to="/history" className="btn btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }}>
-          <span>📖</span><span>히스토리</span>
-        </Link>
+    <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-2">
+      <Button variant="ghost" size="icon" className="size-8 text-muted-foreground" asChild>
+        <Link to="/"><ArrowLeft /></Link>
+      </Button>
+      <span className="truncate text-sm font-semibold">{slug}</span>
+      <div className="ml-auto flex items-center gap-0.5">
+        <IconAction label="가이드 (캐릭터·커맨드)" onClick={onToggleGuide}><HelpCircle /></IconAction>
+        <IconAction label="저장 슬롯" onClick={onToggleSlots}><Save /></IconAction>
+        <IconAction label="유저 노트" onClick={onToggleNote}><NotebookPen /></IconAction>
+        <IconAction label="설정" onClick={onToggleSettings}><Settings /></IconAction>
+        <IconAction label="대화 초기화" onClick={onReset}><RotateCcw /></IconAction>
+        <IconAction label="내보내기" onClick={onExport}><Download /></IconAction>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="히스토리" className="size-8 text-muted-foreground hover:text-foreground" asChild>
+              <Link to="/history"><BookOpen /></Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>히스토리</TooltipContent>
+        </Tooltip>
       </div>
     </header>
   )
