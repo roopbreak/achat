@@ -1,6 +1,6 @@
 # auto-continue 개편 — 꼬리 절제 + 절단점 인용 이어쓰기
 
-> 작성: 2026-06-10 | 브랜치: v2 | 상태: 구현 완료 (로컬 테스트 통과, 배포 대기)
+> 작성: 2026-06-10 | 브랜치: v2 | 상태: ✅ 배포 완료 (f3514db, 원격 검증 통과)
 > Codex 리뷰 반영: ①prefill 400(critical) → 절단점 인용 user 턴으로 전환
 > ②contracts client.ts 타입 경로(critical) → ChatStreamEvent에 finalText 추가
 > ③커스텀 상태창 미감지(high) → splitTail을 status-like 라인 역방향 스캔으로 일반화
@@ -180,4 +180,9 @@ Chat.tsx (콜백 경로 재사용), DB 스키마.
       tests/auto-continue.test.mjs) + 실서버 1턴(발동 3세그먼트, finalText 전달,
       DB 저장본 상태창 말미 1회 확인) + contracts/frontend 빌드 성공
 - [x] Codex 리뷰 반영 (4건 — 헤더 참조)
-- [ ] 배포 전 Codex 코드 리뷰 → deploy.sh → 원격 검증
+- [x] 배포 전 Codex 코드 리뷰 — critical 1건(splitTail 커스텀 포맷 3종 미감지)
+      수용·보강(브라켓 게이지줄·숫자 선택지·INFO 박스 + 테스트 5건 추가, 12/12)
+- [x] 배포 — v2(f3514db) → master ff-merge → deploy.sh (서버는 master 체크아웃:
+      v2 푸시만으론 미반영, **master 머지 필수**)
+- [x] 원격 검증 — risu.ddsmdy.com 발동 1턴(3세그먼트, finalText 2918자 전달,
+      서버 로그 `[auto-continue] ... tail=reattached`), 테스트 세션·슬롯 정리 완료
