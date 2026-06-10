@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: '/next/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -11,11 +12,11 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../public/dist',
+    outDir: '../public/dist-next',
     emptyOutDir: true,
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': 'http://localhost:3001',
       '/images': 'http://localhost:3001',

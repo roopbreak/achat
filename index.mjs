@@ -39,6 +39,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // React SPA 정적 파일 (public/dist/) — 인증 없이 서빙
 const distDir = path.join(__dirname, 'public', 'dist');
+
+// UI 대개편 비교판(/next) — 같은 API·DB 로 신 UI 병행 서빙(frontend-next 빌드).
+// dist 보다 먼저 마운트(경로 우선). 채택 시 frontend 교체로 승격, 기각 시 이 블록과 frontend-next 만 제거.
+const distNextDir = path.join(__dirname, 'public', 'dist-next');
+if (fs.existsSync(distNextDir)) {
+  app.use('/next', express.static(distNextDir));
+  app.get('/next/{*path}', (_req, res) => {
+    res.sendFile(path.join(distNextDir, 'index.html'));
+  });
+} else {
+  // 미빌드 상태가 전역 SPA fallback 에 흡수되어 "잘못된 앱이 뜨는" 것을 차단(Codex m2)
+  app.get('/next/{*path}', (_req, res) => res.status(503).send('next UI 미빌드 — npm run build -w frontend-next'));
+}
+
 app.use(express.static(distDir));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 

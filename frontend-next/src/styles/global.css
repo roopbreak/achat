@@ -1,0 +1,255 @@
+/**
+ * Legacy 스타일 (P4b 점진 전환 기간).
+ * 토큰 단일 출처는 src/index.css(shadcn 변수 — Tailwind v4) — 아래 legacy 이름은
+ * 별칭이다(P4b-0 토큰 브리지). reset/body 기본도 index.css(preflight + base)가 담당.
+ * v1 --accent/--accent2/--danger 사용처는 --primary/--brand-2/--destructive 로 일괄 개명됨.
+ * 전환 완료된 화면의 데드 클래스는 P4b-3 에서 제거.
+ */
+:root {
+  --bg: var(--background);
+  --surface: var(--card);
+  --surface2: var(--popover);
+  /* --border/--radius 는 shadcn 와 동명·동값 — index.css 정의를 그대로 사용 */
+  --text: var(--foreground);
+  --text-dim: var(--muted-foreground);
+  --font: var(--font-sans);
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* -- 공통 컴포넌트 -- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+  white-space: nowrap; /* preflight 후 좁은 셀에서 CJK 줄꺾임 방지 (P4b-0 시각 회귀) */
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: var(--destructive); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+input, textarea, select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color .15s;
+}
+input:focus, textarea:focus { border-color: var(--primary); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 12px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+/* -- 레이아웃 -- */
+.page { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+/* -- 채팅 레이아웃 -- */
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 44px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  /* NEXT 리더 모드: 책 판형 측정폭 — 서술이 화면 전체로 퍼지지 않게 */
+  align-items: center;
+}
+.chat-messages > * {
+  width: 100%;
+  max-width: 720px;
+}
+
+.msg { max-width: 100%; }
+.msg-body { overflow-wrap: anywhere; word-break: break-all; }
+.msg-body pre, .msg-body pre code { white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; max-width: 100%; }
+.msg-user {
+  /* NEXT: 독자의 메모 — 우측 정렬, 금박 인용 바, 산세리프 소형 */
+  align-self: flex-end;
+  background: transparent;
+  border: 0;
+  border-right: 2px solid var(--primary);
+  border-radius: 0;
+  padding: 2px 14px 2px 0;
+  max-width: 70% !important;
+  margin-left: auto;
+  white-space: pre-wrap;
+  text-align: right;
+  color: var(--muted-foreground);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.msg-assistant {
+  align-self: flex-start;
+  width: 100%;
+  /* NEXT: 서술 본문 = 명조, 본문 사이즈 상향, 책의 행간 */
+  font-family: var(--font-serif);
+  font-size: 16.5px;
+  line-height: 2.0;
+  letter-spacing: -0.003em;
+}
+/* 첫 서술 문단의 들머리 — 금박 표제 장식(드롭캡 대체, 한국어 친화) */
+.msg-assistant > .msg-body > div:first-child > p:first-child::before,
+.msg-assistant > .msg-body > p:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 26px;
+  height: 1px;
+  background: var(--primary);
+  margin-right: 10px;
+  vertical-align: 0.35em;
+  opacity: 0.8;
+}
+
+/* 상태창 — NEXT: 책의 각주/판권면 느낌(산세리프 소형, 좌측 금박 변) */
+.msg-assistant .status-bar {
+  display: block;
+  background: rgba(36, 32, 25, 0.55);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 10px 16px;
+  color: var(--text-dim);
+  line-height: 1.85;
+  margin: 14px 0 6px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+/* 마크다운 이미지 */
+.msg-assistant img {
+  display: block;
+  max-width: min(420px, 100%);
+  border-radius: 2px;
+  margin: 16px auto;
+  border: 1px solid var(--border);
+  box-shadow: 0 14px 36px -18px rgba(0, 0, 0, 0.85);
+}
+.msg-assistant .chat-img { cursor: zoom-in; min-height: 200px; object-fit: contain; }
+.msg-assistant .chat-img[src=""], .msg-assistant .chat-img:not([src]) { display: none; }
+.msg-assistant p { margin-bottom: 0.6em; }
+.msg-assistant p:last-child { margin-bottom: 0; }
+/* Tailwind preflight 가 목록/인용 기본 스타일을 제거 — 마크다운 렌더 복원 (Codex P4b major 1) */
+.msg-assistant ul, .history-msg ul { list-style: disc; padding-inline-start: 1.4em; margin: 0.4em 0; }
+.msg-assistant ol, .history-msg ol { list-style: decimal; padding-inline-start: 1.4em; margin: 0.4em 0; }
+.msg-assistant li, .history-msg li { margin: 0.15em 0; }
+.msg-assistant blockquote, .history-msg blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  margin: 0.4em 0;
+  color: var(--text-dim);
+}
+
+/* 스트리밍 커서 — 금박 잉크촉 */
+.cursor::after {
+  content: '\258C';
+  animation: blink .7s step-end infinite;
+  color: var(--primary);
+  font-size: 1.05em;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* -- 어드민 -- */
+.admin-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.admin-section h2 { font-size: 16px; margin-bottom: 16px; color: var(--primary); }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+
+.story-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.story-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 500px; }
+.story-table th, .story-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.story-table th { color: var(--text-dim); font-weight: 500; }
+
+.history-msg { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.history-msg .role { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; }
+.history-msg img { max-width: min(300px, 100%); border-radius: 8px; margin: 6px 0; }
+
+/* 이미지 라이트박스 */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,.9);
+  justify-content: center;
+  align-items: center;
+  cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* -- 반응형 -- */
+@media (max-width: 600px) {
+  .chat-messages { padding: 16px; gap: 14px; }
+  .msg-user { max-width: 90%; }
+  .msg-assistant img { max-width: 100%; }
+  
+}
+
+.chat-messages.hide-images .msg-assistant img { display: none; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+.chat-wrap, .chat-messages, .msg, .msg-body, .msg-assistant, .page { max-width: 100%; }
+
+/* -- 커맨드 목록 (공용: 상세 페이지 + 가이드 패널) -- */
+.command-list { display: flex; flex-direction: column; gap: 14px; }
+.command-group-label {
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  margin-bottom: 6px; letter-spacing: .03em;
+}
+.command-item {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 4px 0; line-height: 1.5;
+}
+.command-cmd {
+  flex-shrink: 0; font-family: monospace; font-size: 13px;
+  color: var(--brand-2); background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 8px; min-width: 96px;
+}
+.command-desc { font-size: 13px; color: var(--text-dim); }

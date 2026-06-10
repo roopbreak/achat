@@ -22,3 +22,4 @@ docs/rag/tips/
 .mcp.json
 export/
 .playdata/
+public/dist-next/
