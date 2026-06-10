@@ -1,11 +1,25 @@
 # HANDOFF: AChat v2 대개편 (UI + 시스템 전면 재설계)
 
-> 참조 플랜: `docs/plan/achat-v2-upgrade_2026-06-09.md` (마스터) + `docs/plan/achat-v2-p4-contract-ui_2026-06-10.md` (P4 하위)
-> 상태: 활성 | 마지막 업데이트: 2026-06-10
+> 참조 플랜: `docs/plan/achat-v2-upgrade_2026-06-09.md` (마스터) + `docs/plan/achat-v2-p4-contract-ui_2026-06-10.md` (P4) + `docs/plan/achat-v2-p5-preset-observability_2026-06-10.md` (P5)
+> 상태: **완료** | 마지막 업데이트: 2026-06-10
 
 ## 현재 상태
 
-**P0~P4 완결 + P5a 완료·배포**(`master`=616a275, 원격 검증 통과). 다음 = **P5b**(WS-G 관찰성: 구조적 로깅 + LLM 재시도(첫 delta 경계) + generation_jobs 영속화/resume + 요약 불변식 — migration 008) → **v2 대개편 완결**. P5 플랜: `docs/plan/achat-v2-p5-preset-observability_2026-06-10.md`.
+**🏁 v2 대개편 전체 완결(P0~P5)** — `master`=438c869, 배포 ①~⑥ 전부 원격 검증 통과. 마스터 플랜의 워크스트림 13개(WS-A~M) 전부 구현·배포됨. 이틀(2026-06-09~10)간 마이그레이션 008개·Codex 리뷰 14회(설계 4+코드 10)·배포 6회, 라이브 채팅 무중단.
+
+### P5b 완료 (2026-06-10) — WS-G 관찰성·견고성 ✅ 배포 (v2 완결)
+> 플랜 §3 (Codex 설계 C2·C3·M4·M5 반영). 코드 리뷰(bjbievhxr) major 5 전부 반영. master 438c869. 백업 pre-p5b-20260610-134139.
+
+- **구조적 로깅**(`lib/logger.mjs`): JSON Lines — `turn`(토큰/캐시/세그먼트/지연/finish), `gen_job`/`gen_resume`, `summary`, `llm_retry`. LOG_FORMAT=pretty 로컬용.
+- **LLM 재시도**(`lib/providers/retry.mjs`): 경계 = **첫 delta 방출 전** — 초기 fetch 429/500/502/503/529 + **네트워크 예외(abort 제외)** + HTTP 200 후 SSE error 이벤트(**일시 장애 화이트리스트만**: overloaded/rate_limit/api_error — 기존 미파싱이던 이벤트 처리 신설). delta 이후 = partial 보존 경로 불변. claude-stream 은 streamOnce 분리 + withRetry 래핑. 비스트림(callClaude류)도 적용.
+- **job 영속화**(migration 008): 기존 generation_jobs 확장(payload/attempts) + `generation_job_scenes`(scene 단위 상태). queued job DB 기록(in-memory Map 제거), **부팅 resume**: 완료 scene 보존·composition fingerprint 불일치=stale·legacy(payload 없음)=failed·attempts 는 실행 시작 시 소모(재큐 예약만으로 한도 소진 방지). enqueue 실패/운영자 stop 시 DB 정리(ghost queued 방지). db.mjs 의 구 좀비 일괄 정리 제거.
+- **요약 불변식**: MAX_SUMMARY_LENGTH 수렴 루프 recompress(≤3) + 실패 시 markSummarized 안 함(rollback) + 30분 in-memory 쿨다운(비용 반복 방지 — 재시작 시 리셋되는 절충, 기록).
+- **검증**: golden 12 회귀(스트림 수술 무영향) + 단위 7 + 합성 resume(stale/legacy) + stop 라우트. 원격: 008 적용·라이브 채팅 turn 구조 로그(2세그먼트 cacheRead 45747)·테스트 턴 정리.
+
+## v2 잔여·후속 백로그 (완결 후 기록 — 필요 시 신규 작업으로)
+
+- **운영자 액션 대기**: ETL 검토 큐(캐릭터 도메인 v2 전환 — admin 자동승인 51건+검토 28건), 스토리별 배우 cutover(sieun 1개만 전환, 78개 legacy — 스토리군별 스크립트), constant=1 카탈로그 로어 케이스별 비활성.
+- **기술 후속(비긴급)**: admin write 계약 zod, Gallery/StoryEdit/Admin UI 풀 전환, 프론트 v1 SSE 병행 파서 제거, BM25·로컬 임베딩, lore frozen cutover, preset release 동결(현 live 세션핀), summarizer 쿨다운 DB 화, code-split 추가(zod 청크).
 
 ### P5a 완료 (2026-06-10) — WS-C 프롬프트 preset DSL ✅ 배포
 > 플랜 §2 (Codex 설계 리뷰 blwn7dijp 10건 반영 — §6 표). 코드 리뷰(bt12lkire) major 2·minor 1 반영. master 616a275. 백업 pre-p5a-20260610-131554.
@@ -191,7 +205,7 @@
 - [x] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화) ✅배포(8495af7)
 - [x] **P4b-3**: 잔여 페이지 + legacy admin read 계약 + 구 라우트 제거 + 정리 ✅배포(092ef00) — **P4 완결**
 - [x] **P5a**: WS-C 프롬프트 preset DSL(분해+DSL+007 세션 핀+admin) ✅배포(616a275)
-- [ ] **P5b**: WS-G 관찰성 — logger + LLM 재시도(첫 delta 경계+SSE error 파싱) + migration 008(generation_jobs payload/scenes 확장+resume) + 요약 recompress 불변식 → **v2 완결**
+- [x] **P5b**: WS-G 관찰성(logger+재시도+008 job 영속화+요약 불변식) ✅배포(438c869) — **🏁 v2 대개편 완결**
 
 ## 다음 세션 시작 가이드
 
