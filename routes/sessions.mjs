@@ -5,6 +5,14 @@ import {
   getSaveSlots, getSaveSlot, upsertSaveSlot,
   createSession, getDB, getStoryBySlug,
 } from '../lib/db.mjs';
+import {
+  ForkBodySchema, ForkResponseSchema, SlotSaveBodySchema, SlotLoadResponseSchema,
+  MessagesResponseSchema, LatestSessionResponseSchema,
+} from '@achat/contracts';
+import { respond } from '@achat/contracts/server';
+
+/** 메시지 공개 컬럼 — embedding(벡터)은 내부 전용이라 응답에서 차단(WS-M) */
+const MESSAGE_COLUMNS = 'id, session_id, role, content, exchange_number, summarized, created_at';
 
 export const storySessionsRouter = Router();
 
@@ -31,7 +39,7 @@ storySessionsRouter.get('/:slug/sessions/latest', (req, res) => {
   const row = getDB().prepare(
     'SELECT id FROM chat_sessions WHERE story_id = ? ORDER BY updated_at DESC LIMIT 1'
   ).get(story.id);
-  res.json({ sessionId: row?.id ?? null });
+  respond(res, LatestSessionResponseSchema, { sessionId: row?.id ?? null });
 });
 
 // DELETE /api/stories/:slug/sessions — 스토리의 모든 세션+메시지 삭제
@@ -55,8 +63,9 @@ storySessionsRouter.delete('/:slug/sessions', (req, res) => {
 storySessionsRouter.post('/:slug/fork', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  const { sessionId: srcSessionId, exchangeNumber } = req.body;
-  if (!srcSessionId) return res.status(400).json({ error: 'sessionId 필요' });
+  const parsed = ForkBodySchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'sessionId 필요' });
+  const { sessionId: srcSessionId, exchangeNumber } = parsed.data;
 
   const db = getDB();
   const exchNum = exchangeNumber ?? db.prepare(
@@ -78,7 +87,7 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
     for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number);
   })();
 
-  res.json({ ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
+  respond(res, ForkResponseSchema, { ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
 });
 
 // GET /api/stories/:slug/slots
@@ -92,8 +101,9 @@ storySessionsRouter.get('/:slug/slots', (req, res) => {
 storySessionsRouter.post('/:slug/slots', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  const { slot_name, session_id } = req.body;
-  if (!slot_name || !session_id) return res.status(400).json({ error: 'slot_name, session_id 필요' });
+  const parsedSlot = SlotSaveBodySchema.safeParse(req.body);
+  if (!parsedSlot.success) return res.status(400).json({ error: 'slot_name, session_id 필요' });
+  const { slot_name, session_id } = parsedSlot.data;
 
   const session = getSession(session_id);
   if (!session) return res.status(404).json({ error: '세션 없음' });
@@ -134,7 +144,7 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
   });
   txn();
 
-  res.json({ ok: true, sessionId: newSessionId, turnCount: slot.turn_count });
+  respond(res, SlotLoadResponseSchema, { ok: true, sessionId: newSessionId, turnCount: slot.turn_count });
 });
 
 // ── /api/sessions/* 라우터 ───────────────────────────────────
@@ -152,11 +162,11 @@ sessionMessagesRouter.get('/:id/messages', (req, res) => {
   let rows;
   if (before != null) {
     rows = db.prepare(
-      'SELECT * FROM messages WHERE session_id=? AND exchange_number<? ORDER BY exchange_number DESC LIMIT ?'
+      `SELECT ${MESSAGE_COLUMNS} FROM messages WHERE session_id=? AND exchange_number<? ORDER BY exchange_number DESC LIMIT ?`
     ).all(req.params.id, before, limit).reverse();
   } else {
     rows = db.prepare(
-      'SELECT * FROM messages WHERE session_id=? ORDER BY exchange_number DESC LIMIT ?'
+      `SELECT ${MESSAGE_COLUMNS} FROM messages WHERE session_id=? ORDER BY exchange_number DESC LIMIT ?`
     ).all(req.params.id, limit).reverse();
   }
 
@@ -164,5 +174,5 @@ sessionMessagesRouter.get('/:id/messages', (req, res) => {
     ? db.prepare('SELECT 1 FROM messages WHERE session_id=? AND exchange_number<? LIMIT 1').get(req.params.id, rows[0]?.exchange_number ?? 0) != null
     : db.prepare('SELECT COUNT(*) as cnt FROM messages WHERE session_id=?').get(req.params.id).cnt > limit;
 
-  res.json({ messages: rows, hasMore });
+  respond(res, MessagesResponseSchema, { messages: rows, hasMore });
 });

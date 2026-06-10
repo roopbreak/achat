@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { getStories, getStoryBySlug, getDB, parseCommands } from '../lib/db.mjs';
+import { StorySummaryListSchema, RecentStoryListSchema, StoryDetailSchema } from '@achat/contracts';
+import { respond } from '@achat/contracts/server';
 
 const router = Router();
 
@@ -10,7 +12,7 @@ router.get('/', (_req, res) => {
     summary: (s.description ?? '').slice(0, 200),
     commands: parseCommands(s.commands),
   }));
-  res.json(stories);
+  respond(res, StorySummaryListSchema, stories);
 });
 
 // GET /api/stories/recent — 최근 진행한 스토리 목록
@@ -26,7 +28,7 @@ router.get('/recent', (_req, res) => {
     ORDER BY cs.updated_at DESC
     LIMIT 10
   `).all();
-  res.json(rows);
+  respond(res, RecentStoryListSchema, rows);
 });
 
 // GET /api/stories/:slug — 단일 스토리 (상세 페이지·채팅 가이드 패널용)
@@ -34,7 +36,7 @@ router.get('/:slug', (req, res) => {
   const slug = req.params.slug;
   const story = getStoryBySlug(slug);
   if (!story) return res.status(404).json({ error: '스토리를 찾을 수 없습니다.' });
-  res.json({
+  respond(res, StoryDetailSchema, {
     id: story.id,
     slug: story.slug,
     title: story.title,

@@ -1,27 +1,7 @@
-// 스토리 전용 !커맨드 — DB의 stories.commands(JSON 배열) 항목 shape
-export interface Command {
-  cmd: string
-  desc: string
-  group?: string
-}
-
-// 알려진 커맨드 그룹 (UI 표시 순서). 그 외/빈 값은 "기타"로 묶임
-export const COMMAND_GROUPS = ['기능', '모드', '분기'] as const
-
-// GET /api/stories/:slug 응답 — 상세 페이지·채팅 가이드 패널 공용
-export interface StoryDetail {
-  id: number
-  slug: string
-  title: string
-  char_name: string
-  description: string
-  scenario: string
-  personality: string
-  category: string | null
-  tags: string | null
-  first_mes: string
-  commands: Command[]
-}
+// API 타입은 @achat/contracts 가 단일 출처(WS-M P4a) — 수기 interface 제거.
+// 기존 import 경로 호환을 위해 재export.
+export { COMMAND_GROUPS } from '@achat/contracts'
+export type { Command, StoryDetail, StorySummary, RecentStory, MessageDTO } from '@achat/contracts'
 
 function getAuthToken(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]*)/)

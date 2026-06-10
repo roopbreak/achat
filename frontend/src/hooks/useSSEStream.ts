@@ -1,5 +1,10 @@
 import { useRef, useCallback, useEffect } from 'react'
+import { parseChatStreamEvent, parseLegacySameNameEvent } from '@achat/contracts/client'
+import type { LoreDebugEntry, FinishReason } from '@achat/contracts'
 
+export type { LoreDebugEntry }
+
+/** 턴 누적 토큰 표시용(세그먼트별 usage 를 클라에서 합산) */
 export interface TokenInfo {
   cacheRead?: number
   cacheCreated?: number
@@ -7,19 +12,35 @@ export interface TokenInfo {
   output?: number
 }
 
-export interface LoreDebugEntry {
-  name: string
-  keys: string[]
+/** message_persisted payload — v1 done 번역 시 messageId 들은 null */
+export interface PersistedInfo {
+  exchangeNumber: number
+  userMessageId: number | null
+  assistantMessageId: number | null
+}
+
+export interface GenerationInfo {
+  finishReason: FinishReason
+  continued: boolean
+  segmentCount: number
 }
 
 interface SSECallbacks {
   onToken: (text: string, fullText: string) => void
-  onDone: (exchangeNumber: number, fullText: string) => void
+  /** 정상 종결(DB 저장 완료) — SSE v2 message_persisted */
+  onPersisted: (info: PersistedInfo, fullText: string) => void
   onTokenInfo: (info: TokenInfo) => void
-  // partialText = 오류 시점까지 누적된 본문(WS-D 이어쓰기 중간 실패 보존용)
-  onError: (message: string, partialText: string) => void
+  /**
+   * partialText = 오류 시점까지 누적된 본문(WS-D 이어쓰기 중간 실패 보존용).
+   * phase: generation=생성 실패 / persistence=본문 수신·미영속(Codex critical 6)
+   */
+  onError: (message: string, partialText: string, phase: 'generation' | 'persistence') => void
   onSessionId?: (sessionId: string) => void
   onLore?: (entries: LoreDebugEntry[]) => void
+  /** auto-continue 이어쓰기 세그먼트 시작(2번째부터) */
+  onContinue?: (segmentIndex: number) => void
+  /** 생성 종료(저장 전) — finishReason/segmentCount 표시용 */
+  onGenerationComplete?: (info: GenerationInfo) => void
 }
 
 function getAuthToken(): string | null {
@@ -58,6 +79,7 @@ export function useSSEStream() {
 
       if (!res.ok) throw new Error(`서버 오류 ${res.status}`)
 
+      // X-Session-Id 헤더가 1차 세션 채널(message_start 는 보조) — 첫 이벤트 전 abort 보호
       const newSid = res.headers.get('X-Session-Id')
       if (newSid) callbacks.onSessionId?.(newSid)
 
@@ -66,8 +88,7 @@ export function useSSEStream() {
       const decoder = new TextDecoder()
       let buffer = ''
       let fullText = ''
-      // WS-D 이어쓰기 시 token_info가 세그먼트마다 온다 → 턴 전체 누적값을 표시
-      // (마지막 세그먼트값만 보이면 비용·캐시 관측이 틀림. Codex major 수용)
+      // 세그먼트별 usage 가 오므로 턴 전체 누적값을 표시(비용·캐시 관측 정확성)
       const info: Required<TokenInfo> = { cacheRead: 0, cacheCreated: 0, input: 0, output: 0 }
 
       while (true) {
@@ -84,8 +105,8 @@ export function useSSEStream() {
           const dataLine = lines.find(l => l.startsWith('data:'))
           if (!dataLine) continue
 
-          const evt = evtLine ? evtLine.slice(7).trim() : 'token'
-          let data: any
+          const evtName = evtLine ? evtLine.slice(6).trim() : 'token'
+          let data: unknown
           try {
             data = JSON.parse(dataLine.slice(5).trim())
           } catch {
@@ -93,21 +114,48 @@ export function useSSEStream() {
             continue
           }
 
-          if (evt === 'token') {
-            fullText += data.text
-            callbacks.onToken(data.text, fullText)
-          } else if (evt === 'done') {
-            callbacks.onDone(data.exchangeNumber, fullText)
-          } else if (evt === 'token_info') {
-            info.cacheRead += data.cacheRead ?? 0
-            info.cacheCreated += data.cacheCreated ?? 0
-            info.input += data.input ?? 0
-            info.output += data.output ?? 0
-            callbacks.onTokenInfo({ ...info })
-          } else if (evt === 'lore') {
-            callbacks.onLore?.(data)
-          } else if (evt === 'error') {
-            callbacks.onError(data.message, fullText)
+          // 계약 파서: v2 우선 → v1 번역(token/token_info/done) → 동명 구형(lore/error) → 무시
+          const evt = parseChatStreamEvent(evtName, data) ?? parseLegacySameNameEvent(evtName, data)
+          if (!evt) continue
+
+          switch (evt.type) {
+            case 'message_start':
+              callbacks.onSessionId?.(evt.sessionId)
+              break
+            case 'delta':
+              fullText += evt.text
+              callbacks.onToken(evt.text, fullText)
+              break
+            case 'usage':
+              info.cacheRead += evt.cacheRead
+              info.cacheCreated += evt.cacheCreated
+              info.input += evt.input
+              info.output += evt.output
+              callbacks.onTokenInfo({ ...info })
+              break
+            case 'continue_start':
+              callbacks.onContinue?.(evt.segmentIndex)
+              break
+            case 'lore':
+              callbacks.onLore?.(evt.entries)
+              break
+            case 'generation_complete':
+              callbacks.onGenerationComplete?.({
+                finishReason: evt.finishReason,
+                continued: evt.continued,
+                segmentCount: evt.segmentCount,
+              })
+              break
+            case 'message_persisted':
+              callbacks.onPersisted({
+                exchangeNumber: evt.exchangeNumber,
+                userMessageId: evt.userMessageId,
+                assistantMessageId: evt.assistantMessageId,
+              }, fullText)
+              break
+            case 'error':
+              callbacks.onError(evt.message, fullText, evt.phase)
+              break
           }
         }
       }

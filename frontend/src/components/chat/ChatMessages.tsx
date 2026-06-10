@@ -12,9 +12,10 @@ interface Props {
   imagesEnabled: boolean
   onLoadMore: () => void
   onRegen: (exchangeNumber: number, feedback: string) => void
-  onEdit: (exchangeNumber: number, newContent: string) => void
+  // 수정/삭제는 messageId 좌표(WS-M P4a)
+  onEdit: (message: Message, newContent: string) => void
   onFork: (exchangeNumber: number) => void
-  onDelete: (exchangeNumber: number) => void
+  onDelete: (message: Message) => void
   onImageClick: (src: string) => void
 }
 

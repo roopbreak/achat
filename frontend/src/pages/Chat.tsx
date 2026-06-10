@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { useSession } from '../hooks/useSession'
+import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry } from '../hooks/useSSEStream'
 import { api, type StoryDetail } from '../lib/api'
@@ -21,7 +21,11 @@ interface Persona {
 
 // WS-D: 이어쓰기 중간 실패 시 누적 본문을 버리지 않고 보존한다.
 // partial이 있으면 본문 뒤에 중단 안내만 덧붙이고, 없으면 오류 메시지로 대체.
-function withPartial(partial: string, message: string): string {
+// phase=persistence(SSE v2): 본문은 완성됐으나 DB 미저장 — 새로고침 시 사라짐을 안내.
+function withPartial(partial: string, message: string, phase: 'generation' | 'persistence' = 'generation'): string {
+  if (phase === 'persistence') {
+    return `${partial}\n\n_[⚠️ 저장 실패(본문은 수신됨 — 새로고침 시 유실): ${message}]_`
+  }
   return partial.trim()
     ? `${partial}\n\n_[⚠️ 생성 중단됨: ${message}]_`
     : `[오류: ${message}]`
@@ -115,24 +119,18 @@ export default function Chat() {
             partialRef.current = fullText
             session.updateLastAssistant(fullText)
           },
-          onDone: (exchangeNumber, fullText) => {
-            session.updateLastAssistant(fullText, exchangeNumber)
+          onPersisted: (info, fullText) => {
+            // 본문 + exchange + messageId 스탬프(이후 수정/삭제는 id 좌표)
+            session.updateLastAssistant(fullText, info.exchangeNumber, info.assistantMessageId ?? undefined)
+            session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
-            // user 메시지에도 exchange_number 세팅
-            session.setMessages(prev => {
-              const next = [...prev]
-              // user 메시지 (뒤에서 두 번째)
-              const userIdx = next.length - 2
-              if (userIdx >= 0 && next[userIdx].role === 'user' && next[userIdx].exchange_number === -1) {
-                next[userIdx] = { ...next[userIdx], exchange_number: exchangeNumber }
-              }
-              return next
-            })
+            // v1 done 번역(롤백 조합)이면 id 가 없다 — 재fetch 로 보강(Codex M2)
+            if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message, partialText) => {
-            session.updateLastAssistant(withPartial(partialText, message))
+          onError: (message, partialText, phase) => {
+            session.updateLastAssistant(withPartial(partialText, message, phase))
           },
           onSessionId: (sid) => session.persistSessionId(sid),
         },
@@ -167,19 +165,22 @@ export default function Chat() {
             partialRef.current = fullText
             session.replaceAssistantByExchange(exchangeNumber, fullText)
           },
-          onDone: (_exNum, fullText) => {
-            session.replaceAssistantByExchange(exchangeNumber, fullText)
+          onPersisted: (info, fullText) => {
+            // regen 은 assistant 가 새 row 로 재생성 — 새 messageId 스탬프(Codex critical 4)
+            session.replaceAssistantByExchange(exchangeNumber, fullText, info.assistantMessageId ?? undefined)
             setStreamingExchange(null)
+            if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message, partialText) => {
-            session.replaceAssistantByExchange(exchangeNumber, withPartial(partialText, message))
+          onError: (message, partialText, phase) => {
+            // 실패 시 서버가 직전 본문을 새 row 로 복원 — 화면의 기존 id 는 무효(Codex M1 → id 클리어)
+            session.replaceAssistantByExchange(exchangeNumber, withPartial(partialText, message, phase), null)
           },
         },
       )
     } catch (err) {
-      session.replaceAssistantByExchange(exchangeNumber, withPartial(partialRef.current, (err as Error).message))
+      session.replaceAssistantByExchange(exchangeNumber, withPartial(partialRef.current, (err as Error).message), null)
     } finally {
       streamingRef.current = false
       setIsStreaming(false)
@@ -187,16 +188,21 @@ export default function Chat() {
     }
   }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
 
-  // ── 수정 ──
-  const handleEdit = useCallback(async (exchangeNumber: number, newContent: string) => {
+  // ── 수정 (messageId 좌표 — WS-M P4a) ──
+  const handleEdit = useCallback(async (message: Message, newContent: string) => {
     if (!newContent || streamingRef.current) return
+    if (message.id == null) {
+      alert('아직 저장되지 않은 메시지입니다. 잠시 후 다시 시도하세요.')
+      return
+    }
+    const exchangeNumber = message.exchange_number
     streamingRef.current = true
     setIsStreaming(true)
     setMatchedLore(null)
 
-    await api(`/api/stories/${encodeURIComponent(slug)}/messages/${exchangeNumber}`, {
+    await api(`/api/messages/${message.id}`, {
       method: 'PUT',
-      body: JSON.stringify({ sessionId: session.sessionId, content: newContent }),
+      body: JSON.stringify({ content: newContent, sessionId: session.sessionId }),
     })
     // exchange 이후 메시지 제거 + 해당 assistant 제거
     session.removeAfterExchange(exchangeNumber)
@@ -220,13 +226,15 @@ export default function Chat() {
             partialRef.current = fullText
             session.updateLastAssistant(fullText)
           },
-          onDone: (exNum, fullText) => {
-            session.updateLastAssistant(fullText, exNum)
+          onPersisted: (info, fullText) => {
+            session.updateLastAssistant(fullText, info.exchangeNumber, info.assistantMessageId ?? undefined)
+            session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
+            if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
           onTokenInfo: (info) => setTokenInfo(info),
           onLore: (entries) => setMatchedLore(entries),
-          onError: (message, partialText) => session.updateLastAssistant(withPartial(partialText, message)),
+          onError: (message, partialText, phase) => session.updateLastAssistant(withPartial(partialText, message, phase)),
           onSessionId: (sid) => session.persistSessionId(sid),
         },
       )
@@ -251,15 +259,19 @@ export default function Chat() {
     await session.loadMessages(res.sessionId)
   }, [session, slug])
 
-  // ── 삭제 ──
-  const handleDelete = useCallback(async (exchangeNumber: number) => {
+  // ── 삭제 (messageId 좌표 — WS-M P4a) ──
+  const handleDelete = useCallback(async (message: Message) => {
+    if (message.id == null) {
+      alert('아직 저장되지 않은 메시지입니다. 잠시 후 다시 시도하세요.')
+      return
+    }
     if (!confirm('이 턴부터 이후 메시지를 모두 삭제할까요?')) return
-    await api(`/api/stories/${encodeURIComponent(slug)}/messages/${exchangeNumber}`, {
+    await api(`/api/messages/${message.id}`, {
       method: 'DELETE',
       body: JSON.stringify({ sessionId: session.sessionId }),
     })
-    session.removeFromExchange(exchangeNumber)
-  }, [session, slug])
+    session.removeFromExchange(message.exchange_number)
+  }, [session])
 
   // ── 초기화 ──
   const handleReset = useCallback(async () => {

@@ -6,6 +6,13 @@ echo "🔄 achat 재시작..."
 # .env에서 PORT 읽기 (기본값 3001)
 PORT=$(grep -oP '^PORT=\K.*' .env 2>/dev/null || echo "3001")
 
+# P4a: @achat/contracts dist 가드 — dist 미존재/스테일이면 서버가 import 에서 즉사하므로 선빌드
+# (deploy.sh 를 거치지 않는 수동 git pull && ./restart.sh 경로 보호 — Codex M3)
+if [ ! -f packages/contracts/dist/index.js ] || [ -n "$(find packages/contracts/src -name '*.ts' -newer packages/contracts/dist/index.js 2>/dev/null)" ]; then
+  echo "📦 contracts dist 미존재/스테일 — 빌드 실행"
+  npm run contracts:build || { echo "❌ contracts 빌드 실패 — 서버 시작 중단"; exit 1; }
+fi
+
 # 기존 프로세스 종료
 PIDS=$(lsof -ti :$PORT)
 if [ -n "$PIDS" ]; then

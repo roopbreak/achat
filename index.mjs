@@ -9,6 +9,7 @@ import storiesRouter    from './routes/stories.mjs';
 import imagesRouter     from './routes/images.mjs';
 import releasesRouter   from './routes/releases.mjs';
 import chatRouter       from './routes/chat.mjs';
+import messagesRouter   from './routes/messages.mjs';
 import { storySessionsRouter, sessionMessagesRouter } from './routes/sessions.mjs';
 import { authMiddleware } from './lib/auth.mjs';
 import rateLimit from 'express-rate-limit';
@@ -53,6 +54,7 @@ app.use('/releases',           releasesRouter);        // P3b-2 release-scoped �
 app.use('/api/stories',        chatRouter);
 app.use('/api/stories',        storySessionsRouter);  // /:name/sessions, /:name/slots
 app.use('/api/sessions',       sessionMessagesRouter); // /:id/messages
+app.use('/api/messages',       messagesRouter);        // P4a messageId 좌표 write API
 
 // SPA fallback → index.html
 app.get('/{*path}', (_req, res) => {

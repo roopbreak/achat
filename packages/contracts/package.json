@@ -1,0 +1,24 @@
+{
+  "name": "@achat/contracts",
+  "version": "0.1.0",
+  "description": "AChat 프론트-백 공용 API 계약 (WS-M) — zod 단일 출처",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./server": "./dist/server.js",
+    "./client": "./dist/client.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}

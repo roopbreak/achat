@@ -8,9 +8,10 @@ interface Props {
   isStreaming: boolean
   isLast: boolean
   onRegen: (exchangeNumber: number, feedback: string) => void
-  onEdit: (exchangeNumber: number, newContent: string) => void
+  // 수정/삭제는 messageId 좌표(WS-M P4a) — message 객체로 전달
+  onEdit: (message: Message, newContent: string) => void
   onFork: (exchangeNumber: number) => void
-  onDelete: (exchangeNumber: number) => void
+  onDelete: (message: Message) => void
   onImageClick: (src: string) => void
 }
 
@@ -44,7 +45,7 @@ export default function ChatMessage({
               setEditText(content)
             }}>✏ 수정</button>
             <button className="msg-action-btn" onClick={() => onFork(exchange_number)}>⑃ 분기</button>
-            <button className="msg-action-btn" onClick={() => onDelete(exchange_number)}>✕ 삭제</button>
+            <button className="msg-action-btn" onClick={() => onDelete(message)}>✕ 삭제</button>
           </div>
         )}
         {showEdit && (
@@ -57,7 +58,7 @@ export default function ChatMessage({
             />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px' }}
-                onClick={() => { setShowEdit(false); onEdit(exchange_number, editText.trim()) }}>
+                onClick={() => { setShowEdit(false); onEdit(message, editText.trim()) }}>
                 저장+재생성
               </button>
               <button className="btn btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }}
@@ -81,7 +82,7 @@ export default function ChatMessage({
         <div className="msg-actions">
           <button className="msg-action-btn" onClick={() => setShowRegen(!showRegen)}>↺ 재생성</button>
           <button className="msg-action-btn" onClick={() => onFork(exchange_number)}>⑃ 분기</button>
-          <button className="msg-action-btn" onClick={() => onDelete(exchange_number)}>✕ 삭제</button>
+          <button className="msg-action-btn" onClick={() => onDelete(message)}>✕ 삭제</button>
         </div>
       )}
       {showRegen && (

@@ -2,12 +2,18 @@
   "name": "achat",
   "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "frontend",
+    "packages/*"
+  ],
   "scripts": {
     "start": "node index.mjs",
-    "dev": "node --watch index.mjs",
+    "dev": "NODE_ENV=development node --watch index.mjs",
+    "contracts:build": "npm run build -w @achat/contracts",
     "build:frontend": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
+    "@achat/contracts": "*",
     "adm-zip": "^0.5.17",
     "better-sqlite3": "^12.9.0",
     "express": "^5.2.1",
