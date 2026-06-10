@@ -23,6 +23,10 @@ import {
   getStoryCharacters, getBindingsForStoryCharacter, insertStoryActorBinding, deleteStoryActorBinding,
   getResolvedScenes, getResolvedRanges, hasStaleResolved,
   getStoryRelease, listStoryReleases, setStoryCurrentRelease,
+  createLorePack, listLorePacks, getLorePack, updateLorePack, deleteLorePack,
+  insertLorePackEntry, listLorePackEntries, deleteLorePackEntries,
+  updateLorePackEntryEmbedding, getUnembeddedLorePackEntries,
+  setStoryLoreLinks, listStoryLoreLinks,
 } from '../lib/db.mjs';
 import { materializeStoryCharacter } from '../lib/actors/materialize.mjs';
 import { publishActorRelease, buildImageDomainData } from '../lib/actors/publish.mjs';
@@ -950,6 +954,120 @@ router.post('/stories/:slug/casting/rollback', (req, res) => {
   if (!prev) return res.status(409).json({ error: '직전 release 없음 — 첫 release 는 롤백 불가(legacy 복귀는 수동)' });
   setStoryCurrentRelease(story.id, prev.id);
   res.json({ ok: true, from: cur.id, to: prev.id, toVersion: prev.version });
+});
+
+// ───────────────────────── WS-F 전역 로어팩 (P3c 린 UI) ─────────────────────────
+// 팩/엔트리는 JSON round-trip 관리(P3b-4 패턴). 팩 편집 = 엔트리 전체 교체 —
+// 새 행은 embedding NULL 이므로 content 수정 시 stale vector 가 남지 않는다(Codex F2 계약).
+// 편집 후 [임베딩] 호출로 재임베딩. 링크는 스토리별 전체 교체.
+
+router.get('/lore-packs', (_req, res) => {
+  res.json(listLorePacks());
+});
+
+// 팩 상세(JSON 편집용 round-trip — embedding 은 의도적으로 제외: 편집 저장 시 항상 NULL 재시작)
+router.get('/lore-packs/:id', (req, res) => {
+  const pack = getLorePack(Number(req.params.id));
+  if (!pack) return res.status(404).json({ error: '팩 없음' });
+  res.json({
+    id: pack.id, name: pack.name, description: pack.description,
+    entries: listLorePackEntries(pack.id).map((e) => ({
+      name: e.name, keys: JSON.parse(e.keys || '[]'), content: e.content,
+      constant: !!e.constant, insertion_order: e.insertion_order, priority: e.priority,
+      enabled: !!e.enabled, scan_depth: e.scan_depth,
+    })),
+  });
+});
+
+// 팩 등록/수정(JSON 일괄 — id 있으면 update + 엔트리 전체 교체)
+router.post('/lore-packs', (req, res) => {
+  const { id, name, description, entries = [] } = req.body ?? {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: 'name 필수' });
+  if (!Array.isArray(entries)) return res.status(400).json({ error: 'entries 는 배열' });
+  for (const [i, e] of entries.entries()) {
+    if (!e || typeof e !== 'object' || !e.content || !String(e.content).trim()) {
+      return res.status(400).json({ error: `entries[${i}] content 필수` });
+    }
+  }
+  try {
+    let packId;
+    getDB().transaction(() => {
+      if (id) {
+        if (!getLorePack(id)) throw new Error(`팩 ${id} 없음`);
+        packId = id;
+        updateLorePack(packId, { name, description });
+        deleteLorePackEntries(packId);
+      } else {
+        packId = createLorePack({ name, description });
+      }
+      for (const e of entries) insertLorePackEntry(packId, e);
+    })();
+    res.json({ ok: true, packId });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/lore-packs/:id', (req, res) => {
+  const pack = getLorePack(Number(req.params.id));
+  if (!pack) return res.status(404).json({ error: '팩 없음' });
+  deleteLorePack(pack.id); // entries/links cascade — 링크된 스토리는 즉시 팩 로어 제외
+  res.json({ ok: true });
+});
+
+// 팩 엔트리 임베딩(미임베딩분만 — embedLoreForStory 와 동일 RPM 가드)
+router.post('/lore-packs/:id/embed', async (req, res) => {
+  const pack = getLorePack(Number(req.params.id));
+  if (!pack) return res.status(404).json({ error: '팩 없음' });
+  try {
+    const entries = getUnembeddedLorePackEntries(pack.id);
+    let embedded = 0;
+    let rpmCount = 0;
+    for (const entry of entries) {
+      if (!entry.content?.trim()) continue;
+      if (rpmCount >= 3) {
+        await new Promise(r => setTimeout(r, 20000));
+        rpmCount = 0;
+      }
+      const vec = await embed(entry.content.slice(0, 2000));
+      rpmCount++;
+      if (vec) {
+        updateLorePackEntryEmbedding(entry.id, vec, entry.content);
+        embedded++;
+      }
+    }
+    res.json({ ok: true, total: entries.length, embedded });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 스토리 ↔ 팩 링크 현황
+router.get('/stories/:slug/lore-links', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  res.json({
+    storyId: story.id, slug: story.slug,
+    links: listStoryLoreLinks(story.id).map((l) => ({
+      pack_id: l.pack_id, pack_name: l.pack_name, enabled: !!l.enabled,
+      insertion_order: l.insertion_order, entry_count: l.entry_count,
+    })),
+  });
+});
+
+// 링크 전체 교체: { links: [{pack_id, enabled?, insertion_order?}] }
+router.put('/stories/:slug/lore-links', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const links = req.body?.links;
+  if (!Array.isArray(links)) return res.status(400).json({ error: 'links 배열 필수' });
+  for (const l of links) {
+    if (!getLorePack(l.pack_id)) return res.status(400).json({ error: `팩 ${l.pack_id} 없음` });
+  }
+  const ids = links.map((l) => l.pack_id);
+  if (new Set(ids).size !== ids.length) return res.status(400).json({ error: 'pack_id 중복' });
+  setStoryLoreLinks(story.id, links);
+  res.json({ ok: true, count: links.length });
 });
 
 export default router;

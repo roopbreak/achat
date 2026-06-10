@@ -54,6 +54,20 @@ interface EtlDetail {
   autoApprovable: boolean
 }
 
+interface LorePackRow {
+  id: number
+  name: string
+  description: string
+  entry_count: number
+  link_count: number
+}
+
+interface LoreLinksInfo {
+  storyId: number
+  slug: string
+  links: { pack_id: number; pack_name: string; enabled: boolean; insertion_order: number; entry_count: number }[]
+}
+
 interface ActorRow {
   id: number
   name: string
@@ -312,6 +326,79 @@ export default function Admin() {
     finally { setCastBusy(false) }
   }
 
+  // ── 전역 로어팩 (WS-F P3c 린 UI) ──
+  const [lorePacks, setLorePacks] = useState<LorePackRow[]>([])
+  const [packJson, setPackJson] = useState('')
+  const [loreLinkStory, setLoreLinkStory] = useState('')
+  const [loreLinks, setLoreLinks] = useState<LoreLinksInfo | null>(null)
+  const [loreLinksJson, setLoreLinksJson] = useState('')
+  const [packMsg, setPackMsg] = useState('')
+  const [packBusy, setPackBusy] = useState(false)
+
+  const loadLorePacks = useCallback(async () => {
+    setLorePacks(await api<LorePackRow[]>('/api/admin/lore-packs'))
+  }, [])
+
+  const editLorePack = async (id: number) => {
+    const d = await api<Record<string, unknown>>(`/api/admin/lore-packs/${id}`)
+    setPackJson(JSON.stringify(d, null, 2))
+  }
+
+  const newPackTemplate = () => {
+    setPackJson(JSON.stringify({
+      name: '', description: '',
+      entries: [{ name: '항목 이름', keys: ['키워드', '/정규식패턴/i'], content: '내용', constant: false, insertion_order: 100, priority: 5, enabled: true, scan_depth: 4 }],
+    }, null, 2))
+  }
+
+  const saveLorePack = async () => {
+    let body: unknown
+    try { body = JSON.parse(packJson) } catch { setPackMsg('팩 JSON 파싱 오류'); return }
+    setPackBusy(true)
+    try {
+      const r = await api<{ ok?: boolean; packId?: number }>('/api/admin/lore-packs', { method: 'POST', body: JSON.stringify(body) })
+      setPackMsg(`팩 저장 완료 (id ${r.packId}) — content 는 미임베딩 상태, 필요 시 [임베딩]`)
+      await loadLorePacks()
+      if (loreLinks) await loadLoreLinks(loreLinks.slug)
+    } catch (e: any) { setPackMsg(`저장 실패: ${e.message || e}`) }
+    finally { setPackBusy(false) }
+  }
+
+  const deleteLorePackUI = async (id: number, name: string) => {
+    if (!confirm(`로어팩 '${name}' 삭제? 링크된 모든 스토리에서 즉시 제외됩니다.`)) return
+    setPackBusy(true)
+    try { await api(`/api/admin/lore-packs/${id}`, { method: 'DELETE' }); await loadLorePacks() }
+    finally { setPackBusy(false) }
+  }
+
+  const embedLorePack = async (id: number) => {
+    setPackBusy(true)
+    try {
+      const r = await api<{ total: number; embedded: number }>(`/api/admin/lore-packs/${id}/embed`, { method: 'POST' })
+      setPackMsg(`임베딩 완료: ${r.embedded}/${r.total}`)
+    } catch (e: any) { setPackMsg(`임베딩 실패: ${e.message || e}`) }
+    finally { setPackBusy(false) }
+  }
+
+  const loadLoreLinks = useCallback(async (slug: string) => {
+    const d = await api<LoreLinksInfo>(`/api/admin/stories/${encodeURIComponent(slug)}/lore-links`)
+    setLoreLinks(d)
+    setLoreLinksJson(JSON.stringify({ links: d.links.map(l => ({ pack_id: l.pack_id, enabled: l.enabled, insertion_order: l.insertion_order })) }, null, 2))
+  }, [])
+
+  const saveLoreLinks = async () => {
+    if (!loreLinks) return
+    let body: unknown
+    try { body = JSON.parse(loreLinksJson) } catch { setPackMsg('링크 JSON 파싱 오류'); return }
+    setPackBusy(true)
+    try {
+      const r = await api<{ count?: number }>(`/api/admin/stories/${encodeURIComponent(loreLinks.slug)}/lore-links`, { method: 'PUT', body: JSON.stringify(body) })
+      setPackMsg(`링크 저장 (${r.count}건) — 다음 턴부터 즉시 적용(legacy-live)`)
+      await loadLoreLinks(loreLinks.slug)
+    } catch (e: any) { setPackMsg(`링크 실패: ${e.message || e}`) }
+    finally { setPackBusy(false) }
+  }
+
   const loadStories = useCallback(async () => {
     const list = await api<StoryInfo[]>('/api/admin/stories')
     setStories(list)
@@ -322,7 +409,7 @@ export default function Admin() {
     setPersonas(list)
   }, [])
 
-  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors() }, [loadStories, loadPersonas, loadEtlQueue, loadActors])
+  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors(); loadLorePacks() }, [loadStories, loadPersonas, loadEtlQueue, loadActors, loadLorePacks])
 
   // ── 페르소나 ──
   const savePersona = async () => {
@@ -716,6 +803,62 @@ export default function Admin() {
               {castPreview && (
                 <pre style={{ marginTop: 8, padding: 10, background: 'var(--bg-elev, #1a1a1a)', borderRadius: 6, fontSize: 11, whiteSpace: 'pre-wrap', maxHeight: 360, overflow: 'auto' }}>{castPreview}</pre>
               )}
+            </>
+          )}
+        </div>
+
+        {/* 전역 로어팩 (WS-F) */}
+        <div className="admin-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10, flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>전역 로어팩 (WS-F)</h2>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={newPackTemplate} disabled={packBusy}>+ 팩 템플릿</button>
+              <button className="btn" style={{ fontSize: 12 }} onClick={saveLorePack} disabled={packBusy || !packJson.trim()}>팩 저장(JSON)</button>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
+            여러 스토리가 공유하는 로어팩. 키는 평문(AND +/NOT -) 외에 정규식(/패턴/i)도 지원. 링크 저장 즉시 적용(legacy-live). 팩 편집 시 엔트리 전체 교체 — content 수정분은 [임베딩]으로 재임베딩.
+          </div>
+          {packMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--accent, #6cf)' }}>{packMsg}</div>}
+
+          {lorePacks.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 8 }}>등록된 로어팩이 없습니다. [+ 팩 템플릿]으로 시작하세요.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+              {lorePacks.map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border, #333)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}>
+                  <span>{p.name}</span>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>#{p.id} 항목 {p.entry_count} · 링크 {p.link_count}</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => editLorePack(p.id)} disabled={packBusy}>편집</button>
+                  <button className="btn btn-secondary" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => embedLorePack(p.id)} disabled={packBusy}>임베딩</button>
+                  <button className="btn btn-danger" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => deleteLorePackUI(p.id, p.name)} disabled={packBusy}>삭제</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {packJson && (
+            <textarea value={packJson} onChange={e => setPackJson(e.target.value)}
+              style={{ width: '100%', minHeight: 180, fontFamily: 'monospace', fontSize: 11, marginBottom: 10 }} />
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <select value={loreLinkStory} onChange={e => { setLoreLinkStory(e.target.value); if (e.target.value) loadLoreLinks(e.target.value); else setLoreLinks(null) }} style={{ fontSize: 13 }}>
+              <option value="">스토리 선택(팩 연결)...</option>
+              {stories.map(s => <option key={s.slug} value={s.slug}>{s.title} ({s.slug})</option>)}
+            </select>
+            {loreLinks && (
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                연결: {loreLinks.links.length === 0 ? '없음' : loreLinks.links.map(l => `${l.pack_name}(${l.entry_count})${l.enabled ? '' : '·off'}`).join(', ')}
+              </span>
+            )}
+          </div>
+          {loreLinks && (
+            <>
+              <textarea value={loreLinksJson} onChange={e => setLoreLinksJson(e.target.value)}
+                style={{ width: '100%', minHeight: 70, fontFamily: 'monospace', fontSize: 11 }} />
+              <div style={{ marginTop: 6 }}>
+                <button className="btn" style={{ fontSize: 11 }} onClick={saveLoreLinks} disabled={packBusy}>링크 저장(전체 교체)</button>
+              </div>
             </>
           )}
         </div>

@@ -103,3 +103,25 @@
 
 ## 7. Codex 검수 이력
 - (예정) P3 설계 적대적 리뷰 — 단계화·cutover·ETL idempotency·resolver 격리·검토 큐 정합성.
+
+---
+
+## P3c 구현 설계 (2026-06-10) — WS-F 로어 강화
+
+> 결정(§7-2) 준수: lore_entries 유지(story 전속) + lore_packs 는 신규 공유용만. ETL 로어 무변경.
+> release manifest lore 도메인 = **legacy-live 유지**(로어는 QA·보강으로 자주 수정 — 최신 반영이 운영상 우선. frozen 전환은 비범위, 필요 시 후속 판단).
+
+### C1. 정규식 키 (keywordMatch 확장)
+- 키 문법: `/pattern/` 또는 `/pattern/flags`(i·u 만 허용, g 는 strip — test() lastIndex 상태 오염 방지). 그 외는 기존 평문 키(AND `+`/NOT `-`/ANY) 그대로.
+- NOT 결합: `-/pattern/` = 정규식 NOT(매칭되면 불매칭). 정규식 키는 `+` AND 분리 비적용(패턴 내 `+` 충돌 — lookahead 로 표현 가능).
+- 안전: 컴파일 실패 키는 무시(try-catch). **컴파일 캐시**(Map, 패턴 문자열 키) — 매 턴 전 로어 재파싱 비용 제거. 패턴 길이 ≤200 가드(운영자 신뢰 입력이라 기본 가드만).
+- 적용 지점: `context-builder.keywordMatch` 단일 함수 — 전속/팩 엔트리 공통 혜택.
+
+### C2. 전역 로어팩 활성화 (002 스키마: lore_packs/lore_pack_entries/story_lore_links)
+- **db CRUD**: 팩(create/list/get/update/delete — owner_id 'default'), 팩 엔트리(lore_entries 동형, insert/update/delete/list), 링크(link/unlink/listForStory, enabled 토글).
+- **병합 로딩**(읽기 표면): `getEffectiveLore*(storyId)` — 전속 lore_entries + 링크(enabled=1) 팩의 enabled 엔트리. **id 네임스페이스 충돌 해소**: 병합 뷰에서 팩 엔트리 `id = 'pack-{id}'` 문자열化(+`_pack_id` 추적) — matchLoreHybrid 의 `keywordIds` Set/dedupe 가 id 고유성 전제. 쓰기 경로(updateLoreEmbedding 등)는 전속/팩 분리 함수라 변형 안전.
+- **정렬/우선순위**: 병합 후 insertion_order ASC, 동순위는 전속 먼저(마스터플랜 "스토리 전속 우선" 정신). constant 팩 엔트리는 Block3(STATIC_CACHE) constLore 에 병합 — 텍스트 변경 시 캐시 자연 무효화.
+- **임베딩**: `updateLorePackEntryEmbedding` + admin `POST /lore-packs/:id/embed`(embedder 재사용). 병합 임베디드 로어에 팩 엔트리 포함.
+- **buildContext 변경**: `getConstantLore/getAllLore/getEmbeddedLore` 호출부를 병합 함수로 교체(매칭 로직 무변경 — 데이터 로딩 계층에서 해소).
+- **admin API+UI(린, P3b-4 패턴)**: `GET/POST/DELETE /lore-packs`, `GET /lore-packs/:id`(JSON round-trip), `PUT /stories/:slug/lore-links`(전체 교체), Admin.tsx "로어팩 (WS-F)" 섹션 — 팩 칩+JSON 편집, 스토리 연결.
+- 비범위(기록만): BM25·로컬 임베딩(마스터플랜 "(선택)"), lore 도메인 frozen cutover.
