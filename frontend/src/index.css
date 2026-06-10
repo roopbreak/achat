@@ -1,0 +1,74 @@
+/**
+ * AChat v2 디자인 토큰 (WS-A P4b-0 토큰 브리지)
+ *
+ * - Tailwind v4 + shadcn 변수 체계가 단일 출처. 다크 전용 앱이라 :root 에 다크 값 직접 정의.
+ * - 기존 global.css 의 legacy 토큰(--bg/--surface/--text…)은 global.css 에서
+ *   이 변수들의 별칭으로 선언된다 — 점진 전환 기간 동안 두 이름이 같은 값을 가리킴.
+ * - 색상 원본: v1 global.css 팔레트(#0d0d0f 계열 다크 + 보라 #a07dff 브랜드) 그대로 이관.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand-2: var(--brand-2);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: 'Pretendard', 'Noto Sans KR', sans-serif;
+}
+
+:root {
+  --radius: 0.75rem; /* 12px — v1 --radius 계승 */
+  --background: #0d0d0f;            /* v1 --bg */
+  --foreground: #e8e8f0;            /* v1 --text */
+  --card: #18181c;                  /* v1 --surface */
+  --card-foreground: #e8e8f0;
+  --popover: #222228;               /* v1 --surface2 */
+  --popover-foreground: #e8e8f0;
+  --primary: #a07dff;               /* v1 --accent (브랜드 보라) */
+  --primary-foreground: #ffffff;
+  --secondary: #222228;
+  --secondary-foreground: #e8e8f0;
+  --muted: #222228;
+  --muted-foreground: #8888a0;      /* v1 --text-dim */
+  --accent: #222228;                /* shadcn accent = 호버 표면 — 브랜드색 아님(이름 충돌 해소) */
+  --accent-foreground: #e8e8f0;
+  --destructive: #ff5577;           /* v1 --danger */
+  --border: #2e2e38;
+  --input: #2e2e38;
+  --ring: #a07dff;
+  --brand-2: #ff7dba;               /* v1 --accent2 (보조 핑크) */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100dvh;
+  }
+}

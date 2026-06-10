@@ -395,7 +395,7 @@ export default function Chat() {
       {settings.loreDebug && matchedLore && matchedLore.length > 0 && (
         <div style={{
           flexShrink: 0, background: 'var(--surface)', borderTop: '1px solid var(--border)',
-          padding: '4px 16px', fontSize: 11, color: 'var(--accent)', fontFamily: 'monospace',
+          padding: '4px 16px', fontSize: 11, color: 'var(--primary)', fontFamily: 'monospace',
         }}>
           로어북: {matchedLore.map(e => e.name).join(', ')}
         </div>

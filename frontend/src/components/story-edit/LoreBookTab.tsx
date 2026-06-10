@@ -34,7 +34,7 @@ export default function LoreBookTab({ lore, visible, updateLore, addLore, remove
       <div style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
         <button
           onClick={handleAdd}
-          style={{ padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600, textAlign: 'left' }}
+          style={{ padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, textAlign: 'left' }}
         >
           + 항목 추가
         </button>
@@ -49,7 +49,7 @@ export default function LoreBookTab({ lore, visible, updateLore, addLore, remove
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   width: '100%', padding: '10px 14px', border: 'none', cursor: 'pointer',
-                  borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+                  borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent',
                   background: isActive ? 'var(--surface2)' : 'transparent',
                   color: isActive ? 'var(--text)' : 'var(--text-dim)',
                   fontSize: 12, textAlign: 'left',
@@ -58,8 +58,8 @@ export default function LoreBookTab({ lore, visible, updateLore, addLore, remove
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {e.name || '(이름 없음)'}
                 </span>
-                {!!e.constant && <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700 }}>C</span>}
-                {!e.enabled && <span style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 700 }}>OFF</span>}
+                {!!e.constant && <span style={{ fontSize: 10, color: 'var(--primary)', fontWeight: 700 }}>C</span>}
+                {!e.enabled && <span style={{ fontSize: 10, color: 'var(--destructive)', fontWeight: 700 }}>OFF</span>}
               </button>
             )
           })}
@@ -99,11 +99,11 @@ function LoreEditor({ entry, entryId, updateLore, removeLore }: {
         <span style={{ fontSize: 15, fontWeight: 600 }}>{entry.name || '(이름 없음)'}</span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            style={{ background: 'none', border: `1px solid ${entry.constant ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 6, color: entry.constant ? 'var(--accent)' : 'var(--text-dim)', fontSize: 11, padding: '3px 8px', cursor: 'pointer' }}
+            style={{ background: 'none', border: `1px solid ${entry.constant ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 6, color: entry.constant ? 'var(--primary)' : 'var(--text-dim)', fontSize: 11, padding: '3px 8px', cursor: 'pointer' }}
             onClick={() => updateLore(entryId, 'constant', entry.constant ? 0 : 1)}
           >Const</button>
           <button
-            style={{ background: 'none', border: `1px solid ${entry.enabled ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 6, color: entry.enabled ? 'var(--accent)' : 'var(--text-dim)', fontSize: 11, padding: '3px 8px', cursor: 'pointer' }}
+            style={{ background: 'none', border: `1px solid ${entry.enabled ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 6, color: entry.enabled ? 'var(--primary)' : 'var(--text-dim)', fontSize: 11, padding: '3px 8px', cursor: 'pointer' }}
             onClick={() => updateLore(entryId, 'enabled', entry.enabled ? 0 : 1)}
           >On</button>
         </div>

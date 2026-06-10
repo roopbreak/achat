@@ -128,7 +128,21 @@ event: error                data: { message, phase: 'generation'|'persistence', 
 ### 3.2 단계 분할 (Codex major 3·4 반영)
 
 - **P4b-0 토큰 브리지**(신설): `global.css` 변수를 shadcn 변수 체계(`--background`/`--foreground`/`--primary`…)로 먼저 수렴 + 기존 클래스가 신변수를 참조하도록 매핑. Tailwind preflight 도입 시 영향 화면 전수 확인(reset 이 전역 적용되므로 "일부 페이지만 전환" 환상 금지 — 도입 시점에 전 화면 시각 회귀 점검).
-- **P4b-1 셋업**: Tailwind v4 + shadcn init + TanStack Query Provider + **서버 상태 ownership 표 고정**(messages/sessions/slots/story-detail/settings — Query 소유 vs transient local, mutation→invalidate 규칙 명문화) + 공통 셸(Nav) + Login/Home 전환.
+- **P4b-1 셋업**: Tailwind v4 + shadcn init + TanStack Query Provider + **서버 상태 ownership 표 고정**(아래) + 공통 셸(Nav) + Login/Home 전환.
+
+  **서버 상태 ownership 표 (확정 — Codex major 10)**
+
+  | 자원 | 소유 | queryKey | invalidate 트리거 |
+  |---|---|---|---|
+  | 스토리 목록/최근 | **Query** | `['stories']` / `['stories-recent']` | 세션 일괄삭제 → recent invalidate. 스토리 CRUD(admin)는 P4b-3 에서 |
+  | 스토리 상세 | **Query** | `['story', slug]` | 어드민 수정 후(P4b-3) |
+  | 페르소나 체크/목록 | **Query** | `['personas-check']` / `['personas']` | 페르소나 CRUD 후 |
+  | 세션 메시지 | **transient local**(useSession) | — | 채팅 스트림이 낙관 추가 + message_persisted 스탬프로 직접 소유. Query 와 이중 소유 금지(P4b-2 에서도 유지) |
+  | 활성 sessionId | **transient local**(sessionStorage + useSession) | — | — |
+  | 슬롯 목록 | **Query**(P4b-2 전환) | `['slots', slug]` | 슬롯 저장/로드/삭제 후 invalidate |
+  | 설정(폰트/모델 등) | **로컬**(useSettings/localStorage) | — | 서버 상태 아님 |
+
+  원칙: 채팅 메시지는 스트리밍 낙관 업데이트가 본질이라 Query 캐시에 넣지 않는다(이중 소유 = 중복 fetch·invalidate 누락의 근원). Query 는 "fetch 후 표시" 성격의 자원만.
 - **P4b-2 채팅 전면 개편**: Chat.tsx + components/chat 재구성 — 세그먼트 인디케이터(`continue_start`), usage 누적 뱃지, finishReason 경고, phase 분리 오류 UI(미영속 복구), 패널 4종 Sheet/Dialog 화, 메시지 액션(id 좌표) DropdownMenu.
 - **P4b-3 잔여**: Story/StoryDetail/History/StoryEdit(+legacy admin DTO 계약화)/Gallery 보수 전환, 구 exchange 라우트 제거, global.css 데드 클래스 정리.
 

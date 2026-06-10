@@ -40,6 +40,7 @@ export const StorySummarySchema = z.looseObject({
   category: z.string().nullable(),
   tags: z.string().nullable(),
   summary: z.string(),
+  imported_at: z.number(),
   commands: z.array(CommandSchema),
 })
 export type StorySummary = z.infer<typeof StorySummarySchema>

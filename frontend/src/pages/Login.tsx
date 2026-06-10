@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setAuthToken } from '../lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function Login() {
   const [code, setCode] = useState('')
@@ -26,21 +29,26 @@ export default function Login() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 400, marginTop: '20vh' }}>
-      <h1 style={{ marginBottom: 24, color: 'var(--accent)' }}>achat-v2</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="password"
-          placeholder="접속 코드 입력"
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          autoFocus
-        />
-        {error && <p style={{ color: 'var(--danger)', marginTop: 8, fontSize: 13 }}>{error}</p>}
-        <button className="btn btn-primary" type="submit" style={{ width: '100%', marginTop: 12 }}>
-          입장
-        </button>
-      </form>
+    <div className="mx-auto mt-[20vh] w-full max-w-sm px-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl text-primary">achat-v2</CardTitle>
+          <CardDescription>접속 코드를 입력하세요</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <Input
+              type="password"
+              placeholder="접속 코드 입력"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              autoFocus
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full">입장</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

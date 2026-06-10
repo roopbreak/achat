@@ -1,26 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { X } from 'lucide-react'
 import Nav from '../components/common/Nav'
-import { api } from '../lib/api'
-
-interface Story {
-  id: number
-  slug: string
-  title: string
-  char_name?: string
-  summary?: string
-  imported_at: number
-  category?: string
-  tags?: string
-}
-
-interface RecentStory extends Story {
-  updated_at: number
-}
+import { api, type StorySummary, type RecentStory } from '../lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 const CATEGORIES = ['전체', '현대 로맨스', '사극/무협', '판타지']
 
-function parseTags(tags?: string): string[] {
+function parseTags(tags?: string | null): string[] {
   if (!tags) return []
   try {
     const parsed = JSON.parse(tags)
@@ -38,27 +31,42 @@ function timeAgo(unixSec: number): string {
 
 export default function Home() {
   const navigate = useNavigate()
-  const [stories, setStories] = useState<Story[]>([])
-  const [recent, setRecent] = useState<RecentStory[]>([])
+  const queryClient = useQueryClient()
   const [sort, setSort] = useState('date-desc')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('전체')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
-  const [noPersona, setNoPersona] = useState(false)
 
-  useEffect(() => {
-    (async () => {
-      const pCheck = await api<{ exists: boolean }>('/api/admin/personas/check')
-      if (!pCheck.exists) { setNoPersona(true); return }
+  // 서버 상태 ownership 표(plan §3.2): stories/recent/personas-check = Query 소유
+  const personaCheck = useQuery({
+    queryKey: ['personas-check'],
+    queryFn: () => api<{ exists: boolean }>('/api/admin/personas/check'),
+    // Admin(비전환 화면)의 페르소나 CRUD 가 invalidate 를 못 쏘므로 마운트마다 재확인 —
+    // 기존(매 마운트 fetch) 동작과 동등 유지 (Codex P4b major 2)
+    staleTime: 0,
+  })
+  const noPersona = personaCheck.data ? !personaCheck.data.exists : false
 
-      const [list, rec] = await Promise.all([
-        api<Story[]>('/api/stories'),
-        api<RecentStory[]>('/api/stories/recent'),
-      ])
-      setStories(list)
-      setRecent(rec)
-    })()
-  }, [])
+  const storiesQuery = useQuery({
+    queryKey: ['stories'],
+    queryFn: () => api<StorySummary[]>('/api/stories'),
+    enabled: personaCheck.data?.exists === true,
+  })
+  const recentQuery = useQuery({
+    queryKey: ['stories-recent'],
+    queryFn: () => api<RecentStory[]>('/api/stories/recent'),
+    enabled: personaCheck.data?.exists === true,
+  })
+  const stories = useMemo(() => storiesQuery.data ?? [], [storiesQuery.data])
+  const recent = recentQuery.data ?? []
+
+  const clearRecent = useMutation({
+    mutationFn: async ({ slug }: { slug: string; title: string }) => {
+      await api(`/api/stories/${slug}/sessions`, { method: 'DELETE' })
+      sessionStorage.removeItem(`session_${slug}`)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stories-recent'] }),
+  })
 
   const availableTags = useMemo(() => {
     const filtered = category === '전체' ? stories : stories.filter(s => s.category === category)
@@ -90,20 +98,13 @@ export default function Home() {
     return list
   }, [stories, sort, search, category, selectedTag])
 
-  const clearRecent = async (slug: string, title: string) => {
-    if (!confirm(`"${title}" 의 모든 채팅 기록을 삭제할까요?`)) return
-    await api(`/api/stories/${slug}/sessions`, { method: 'DELETE' })
-    sessionStorage.removeItem(`session_${slug}`)
-    setRecent(prev => prev.filter(s => s.slug !== slug))
-  }
-
   if (noPersona) {
     return (
       <>
         <Nav />
-        <div className="page" style={{ textAlign: 'center', paddingTop: 40 }}>
-          <p style={{ color: 'var(--accent)', fontSize: 16, marginBottom: 12 }}>페르소나를 먼저 등록해주세요</p>
-          <button className="btn btn-primary" onClick={() => navigate('/admin')}>어드민 페이지로 이동</button>
+        <div className="mx-auto max-w-5xl px-4 pt-10 text-center">
+          <p className="mb-3 text-primary">페르소나를 먼저 등록해주세요</p>
+          <Button onClick={() => navigate('/admin')}>어드민 페이지로 이동</Button>
         </div>
       </>
     )
@@ -112,112 +113,132 @@ export default function Home() {
   return (
     <>
       <Nav />
-      <div className="page">
+      <div className="mx-auto max-w-5xl px-4 py-6">
         {recent.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
-            <h2 style={{ marginBottom: 12, fontSize: 16, color: 'var(--text-dim)' }}>최근 진행</h2>
-            <div className="story-grid">
+          <section className="mb-8">
+            <h2 className="mb-3 text-base text-muted-foreground">최근 진행</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {recent.map(s => (
-                <div key={s.slug} className="story-card" style={{ position: 'relative' }}>
-                  <div onClick={() => navigate(`/story/${s.slug}`)}>
-                    <h3>{s.title}</h3>
-                    <div className="char" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Card key={s.slug} className="relative cursor-pointer gap-0 py-4 transition-colors hover:border-primary/50">
+                  <CardContent className="px-4" onClick={() => navigate(`/story/${s.slug}`)}>
+                    <h3 className="mb-1 font-semibold">{s.title}</h3>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{s.char_name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{timeAgo(s.updated_at)}</span>
+                      <span className="text-xs">{timeAgo(s.updated_at)}</span>
                     </div>
-                  </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); clearRecent(s.slug, s.title) }}
-                    style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 16, padding: 4 }}
+                  </CardContent>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1 size-7 text-muted-foreground"
                     title="세션 삭제"
-                  >✕</button>
-                </div>
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (confirm(`"${s.title}" 의 모든 채팅 기록을 삭제할까요?`)) {
+                        clearRecent.mutate({ slug: s.slug, title: s.title })
+                      }
+                    }}
+                  >
+                    <X />
+                  </Button>
+                </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* 카테고리 탭 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div className="mb-3 flex flex-wrap gap-2">
           {CATEGORIES.map(cat => (
-            <button
+            <Button
               key={cat}
-              className={`btn ${category === cat ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: 13, padding: '5px 14px' }}
+              size="sm"
+              variant={category === cat ? 'default' : 'secondary'}
               onClick={() => { setCategory(cat); setSelectedTag(null) }}
-            >{cat}</button>
+            >{cat}</Button>
           ))}
         </div>
 
         {/* 태그 필터 */}
         {availableTags.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div className="mb-3 flex flex-wrap gap-1.5">
             {availableTags.map(([tag, count]) => (
-              <button
+              <Badge
                 key={tag}
-                className="tag"
-                style={{
-                  cursor: 'pointer',
-                  borderColor: selectedTag === tag ? 'var(--accent)' : undefined,
-                  color: selectedTag === tag ? 'var(--accent)' : undefined,
-                }}
+                variant="outline"
+                className={cn(
+                  'cursor-pointer text-muted-foreground',
+                  selectedTag === tag && 'border-primary text-primary',
+                )}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
               >
                 {tag} ({count})
-              </button>
+              </Badge>
             ))}
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-          <h2 style={{ fontSize: 16, color: 'var(--text-dim)', margin: 0 }}>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="m-0 text-base text-muted-foreground">
             {category === '전체' ? '전체 스토리' : category}
             {selectedTag && ` · ${selectedTag}`}
-            <span style={{ fontSize: 13, marginLeft: 8, color: 'var(--text-dim)' }}>({sorted.length})</span>
+            <span className="ml-2 text-sm">({sorted.length})</span>
           </h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
-            <input
+          <div className="ml-auto flex items-center gap-2">
+            <Input
               type="text"
               placeholder="검색..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ width: 140, fontSize: 12, padding: '4px 8px', borderRadius: 6 }}
+              className="h-8 w-36 text-sm"
             />
+            <select
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+              className="h-8 rounded-md border border-input bg-popover px-2 text-xs text-foreground"
+            >
+              <option value="date-desc">최신순</option>
+              <option value="date-asc">오래된순</option>
+              <option value="name-asc">이름 ↑</option>
+              <option value="name-desc">이름 ↓</option>
+            </select>
           </div>
-          <select
-            value={sort}
-            onChange={e => setSort(e.target.value)}
-            style={{ background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}
-          >
-            <option value="date-desc">최신순</option>
-            <option value="date-asc">오래된순</option>
-            <option value="name-asc">이름 ↑</option>
-            <option value="name-desc">이름 ↓</option>
-          </select>
         </div>
 
-        <div className="story-grid">
-          {sorted.length === 0 ? (
-            <div style={{ color: 'var(--text-dim)', fontSize: 14, padding: '20px 0' }}>
-              {(search || category !== '전체' || selectedTag) ? '조건에 맞는 스토리가 없습니다.' : '스토리가 없습니다.'}
-            </div>
-          ) : sorted.map(s => {
-            const storyTags = parseTags(s.tags)
-            return (
-              <div key={s.slug} className="story-card" onClick={() => navigate(`/story/${s.slug}`)}>
-                <h3>{s.title}</h3>
-                {storyTags.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
-                    {storyTags.map(t => (
-                      <span key={t} className="tag" style={{ fontSize: 11, padding: '1px 6px' }}>{t}</span>
-                    ))}
-                  </div>
-                )}
-                <div className="desc">{s.summary ?? ''}</div>
+        {storiesQuery.isLoading ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sorted.length === 0 ? (
+              <div className="py-5 text-sm text-muted-foreground">
+                {(search || category !== '전체' || selectedTag) ? '조건에 맞는 스토리가 없습니다.' : '스토리가 없습니다.'}
               </div>
-            )
-          })}
-        </div>
+            ) : sorted.map(s => {
+              const storyTags = parseTags(s.tags)
+              return (
+                <Card
+                  key={s.slug}
+                  className="cursor-pointer gap-0 py-4 transition-colors hover:border-primary/50"
+                  onClick={() => navigate(`/story/${s.slug}`)}
+                >
+                  <CardContent className="px-4">
+                    <h3 className="font-semibold">{s.title}</h3>
+                    {storyTags.length > 0 && (
+                      <div className="my-1 flex flex-wrap gap-1">
+                        {storyTags.map(t => (
+                          <Badge key={t} variant="outline" className="px-1.5 py-0 text-[11px] text-muted-foreground">{t}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="line-clamp-2 text-sm text-muted-foreground">{s.summary ?? ''}</div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
     </>
   )

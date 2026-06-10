@@ -42,8 +42,8 @@ export default function StoryEdit() {
               onClick={() => setMainTab(t.key)}
               style={{
                 padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: mainTab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-                color: mainTab === t.key ? 'var(--accent)' : 'var(--text-dim)',
+                borderBottom: mainTab === t.key ? '2px solid var(--primary)' : '2px solid transparent',
+                color: mainTab === t.key ? 'var(--primary)' : 'var(--text-dim)',
                 fontSize: 14, fontWeight: mainTab === t.key ? 600 : 400,
               }}
             >

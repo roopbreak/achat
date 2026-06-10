@@ -68,7 +68,7 @@ export default function PromptTab(props: Props) {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 width: '100%', padding: '12px 14px', border: 'none', cursor: 'pointer',
-                borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+                borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent',
                 background: isActive ? 'var(--surface2)' : 'transparent',
                 color: isActive ? 'var(--text)' : 'var(--text-dim)',
                 fontSize: 13, fontWeight: isActive ? 600 : 400,

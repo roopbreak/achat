@@ -85,7 +85,7 @@ export default function SettingsPanel({
           type="checkbox"
           checked={imagesEnabled}
           onChange={onToggleImages}
-          style={{ accentColor: 'var(--accent)' }}
+          style={{ accentColor: 'var(--primary)' }}
         />이미지
       </label>
 
@@ -94,7 +94,7 @@ export default function SettingsPanel({
           type="checkbox"
           checked={loreDebug}
           onChange={onToggleLoreDebug}
-          style={{ accentColor: 'var(--accent)' }}
+          style={{ accentColor: 'var(--primary)' }}
         />로어북 디버그
       </label>
 

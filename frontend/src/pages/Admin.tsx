@@ -645,7 +645,7 @@ export default function Admin() {
             구 flat 스토리 → 신 모델(characters) 전환. 단일 캐릭터+무결은 일괄 자동승인, 다중/미해결은 교정 후 개별 승인. 승인 시 v2 release 생성(기존 세션은 legacy 유지).
           </div>
           {etlSummary && <div style={{ fontSize: 12, marginBottom: 6 }}>{etlSummary}</div>}
-          {etlMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--accent, #6cf)' }}>{etlMsg}</div>}
+          {etlMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--primary)' }}>{etlMsg}</div>}
           {etlQueue.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>큐가 비어있습니다. [스캔/갱신]을 누르세요.</div>
           ) : (
@@ -734,7 +734,7 @@ export default function Admin() {
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
             배우(이미지 모음)를 등록하고 스토리 배역에 캐스팅 → materialize → 미리보기 → 발행(v2-actors). 신규 세션만 적용, 기존 세션 핀 불변, 롤백 가능.
           </div>
-          {castMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--accent, #6cf)' }}>{castMsg}</div>}
+          {castMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--primary)' }}>{castMsg}</div>}
 
           {/* 배우 목록 */}
           {actors.length === 0 ? (
@@ -819,7 +819,7 @@ export default function Admin() {
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
             여러 스토리가 공유하는 로어팩. 키는 평문(AND +/NOT -) 외에 정규식(/패턴/i)도 지원. 링크 저장 즉시 적용(legacy-live). 팩 편집 시 엔트리 전체 교체 — content 수정분은 [임베딩]으로 재임베딩.
           </div>
-          {packMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--accent, #6cf)' }}>{packMsg}</div>}
+          {packMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--primary)' }}>{packMsg}</div>}
 
           {lorePacks.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 8 }}>등록된 로어팩이 없습니다. [+ 팩 템플릿]으로 시작하세요.</div>
@@ -876,7 +876,7 @@ export default function Admin() {
             {personas.map(p => (
               <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <strong style={{ fontSize: 14 }}>{p.name} {p.is_default && <span style={{ color: 'var(--accent)', fontSize: 11 }}>(기본)</span>}</strong>
+                  <strong style={{ fontSize: 14 }}>{p.name} {p.is_default && <span style={{ color: 'var(--primary)', fontSize: 11 }}>(기본)</span>}</strong>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {!p.is_default && <button className="btn btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }} onClick={async () => { await api(`/api/admin/personas/${p.id}/default`, { method: 'POST' }); loadPersonas() }}>기본 설정</button>}
                     <button className="btn btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => editPersona(p.id)}>수정</button>
@@ -970,7 +970,7 @@ export default function Admin() {
                         <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>생성 중...</span>
                       ) : comp === 'exists' ? (
                         <span style={{ fontSize: 12 }}>
-                          <span style={{ color: 'var(--accent)' }}>있음</span>
+                          <span style={{ color: 'var(--primary)' }}>있음</span>
                           {' '}<button className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => triggerComposition(s.slug)} disabled={isBusy}>재생성</button>
                         </span>
                       ) : (
@@ -987,7 +987,7 @@ export default function Admin() {
                           ) : (
                             <>
                               <div style={{ background: 'var(--border)', borderRadius: 4, height: 8, marginBottom: 4 }}>
-                                <div style={{ background: 'var(--accent)', borderRadius: 4, height: 8, width: `${((job?.completed || 0) / (job?.total || 100)) * 100}%`, transition: 'width 0.3s' }} />
+                                <div style={{ background: 'var(--primary)', borderRadius: 4, height: 8, width: `${((job?.completed || 0) / (job?.total || 100)) * 100}%`, transition: 'width 0.3s' }} />
                               </div>
                               <span style={{ color: 'var(--text-dim)' }}>{job?.completed || 0}/{job?.total || '?'}</span>
                             </>
@@ -995,7 +995,7 @@ export default function Admin() {
                         </div>
                       ) : job?.status === 'completed' ? (
                         <span style={{ fontSize: 12 }}>
-                          <span style={{ color: 'var(--accent)' }}>{job.completed}/{job.total} 완료</span>
+                          <span style={{ color: 'var(--primary)' }}>{job.completed}/{job.total} 완료</span>
                           {hasMissing && (
                             <>{' '}<button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => triggerGenerate(s.slug, { retryFailed: true })} disabled={isBusy}>미생성 재시도</button></>
                           )}

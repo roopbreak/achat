@@ -339,7 +339,7 @@ export default function Gallery() {
                     onClick={() => selectMode ? toggleSelect(img) : setModal(img)}
                     style={{
                       background: 'var(--surface)',
-                      border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                      border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
                       borderRadius: 10,
                       overflow: 'hidden',
                       cursor: 'pointer',
@@ -348,7 +348,7 @@ export default function Gallery() {
                     }}
                     onMouseEnter={e => {
                       if (!selectMode) {
-                        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent)'
+                        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--primary)'
                         ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
                       }
                     }}
@@ -360,7 +360,7 @@ export default function Gallery() {
                     }}
                   >
                     {selectMode && (
-                      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, width: 22, height: 22, borderRadius: 4, background: isSelected ? 'var(--accent)' : 'rgba(0,0,0,.5)', border: '2px solid rgba(255,255,255,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff' }}>
+                      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, width: 22, height: 22, borderRadius: 4, background: isSelected ? 'var(--primary)' : 'rgba(0,0,0,.5)', border: '2px solid rgba(255,255,255,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff' }}>
                         {isSelected ? '✓' : ''}
                       </div>
                     )}

@@ -59,7 +59,7 @@ export default function History() {
               <div key={s.slug}>
                 <div
                   className="session-item"
-                  style={{ borderColor: selectedSlug === s.slug ? 'var(--accent)' : undefined }}
+                  style={{ borderColor: selectedSlug === s.slug ? 'var(--primary)' : undefined }}
                   onClick={() => selectStory(s.slug)}
                 >
                   <div className="title">{s.title}</div>
