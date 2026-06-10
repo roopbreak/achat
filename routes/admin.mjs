@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import multer from 'multer';
+import {
+  AdminStoryListSchema, AdminStoryDetailSchema, LoreEntryListSchema, PersonaListSchema,
+} from '@achat/contracts';
+import { respond } from '@achat/contracts/server';
 import path from 'node:path';
 import fs from 'node:fs';
 import { parseAndImportCard } from '../lib/card-parser.mjs';
@@ -126,7 +130,7 @@ router.get('/stories', (_req, res) => {
     const hasExternalImages = EXTERNAL_DOMAINS.some(d => desc.includes(d));
     return { ...s, imageCount: getStoryImageCount(s.id), hasExternalImages };
   });
-  res.json(stories);
+  respond(res, AdminStoryListSchema, stories);
 });
 
 // POST /api/admin/stories — 신규 스토리 수동 생성 (slug 필수)
@@ -377,7 +381,7 @@ router.post('/generate/stop', (req, res) => {
 router.get('/stories/:slug', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  res.json({ ...story, commands: parseCommands(story.commands) });
+  respond(res, AdminStoryDetailSchema, { ...story, commands: parseCommands(story.commands) });
 });
 
 // PUT /api/admin/stories/:slug
@@ -395,7 +399,7 @@ router.put('/stories/:slug', (req, res) => {
 router.get('/stories/:slug/lore', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  res.json(getAllLoreIncludeDisabled(story.id));
+  respond(res, LoreEntryListSchema, getAllLoreIncludeDisabled(story.id));
 });
 
 router.post('/stories/:slug/embed-lore', async (req, res) => {
@@ -599,7 +603,7 @@ router.post('/stories/:slug/note', (req, res) => {
 
 // ── Personas ──
 
-router.get('/personas', (_req, res) => res.json(getPersonas()));
+router.get('/personas', (_req, res) => respond(res, PersonaListSchema, getPersonas()));
 
 router.post('/personas', (req, res) => {
   const { name, content } = req.body;

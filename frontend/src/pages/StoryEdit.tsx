@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import Nav from '../components/common/Nav'
 import BasicInfoTab from '../components/story-edit/BasicInfoTab'
 import PromptTab, { type PromptSubTab } from '../components/story-edit/PromptTab'
 import LoreBookTab from '../components/story-edit/LoreBookTab'
@@ -26,7 +25,6 @@ export default function StoryEdit() {
 
   return (
     <>
-      <Nav />
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 56px)' }}>
         {/* 헤더 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 0 12px' }}>

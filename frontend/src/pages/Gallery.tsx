@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Nav from '../components/common/Nav'
 import { api } from '../lib/api'
 
 // scene_key 앞부분 카테고리 (expression_, daily_ 등)
@@ -236,7 +235,6 @@ export default function Gallery() {
 
   return (
     <>
-      <Nav />
       <div className="page">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>이미지 갤러리</h2>

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import Nav from '../components/common/Nav'
 import { api, type StorySummary, type RecentStory } from '../lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -101,7 +100,6 @@ export default function Home() {
   if (noPersona) {
     return (
       <>
-        <Nav />
         <div className="mx-auto max-w-5xl px-4 pt-10 text-center">
           <p className="mb-3 text-primary">페르소나를 먼저 등록해주세요</p>
           <Button onClick={() => navigate('/admin')}>어드민 페이지로 이동</Button>
@@ -112,7 +110,6 @@ export default function Home() {
 
   return (
     <>
-      <Nav />
       <div className="mx-auto max-w-5xl px-4 py-6">
         {recent.length > 0 && (
           <section className="mb-8">

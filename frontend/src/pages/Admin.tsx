@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Nav from '../components/common/Nav'
 import { api } from '../lib/api'
 
 interface GenerationJob {
@@ -562,7 +561,6 @@ export default function Admin() {
 
   return (
     <>
-      <Nav />
       <div className="page">
         <h2 style={{ marginBottom: 20, fontSize: 18 }}>설정</h2>
 

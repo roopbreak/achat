@@ -160,62 +160,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   });
 });
 
-// PUT /api/stories/:slug/messages/:exchangeNum
-// ⚠️ DEPRECATED(P4a): messageId 좌표 PUT /api/messages/:id 로 대체.
-// 배포 윈도·구 탭 보호용 1릴리스 유예 — P4b-3 에서 제거.
-router.put('/:slug/messages/:exchangeNum', (req, res) => {
-  const story = resolveStory(req, res);
-  if (!story) return;
-  const { sessionId, content } = req.body;
-  if (!sessionId || !content) return res.status(400).json({ error: 'sessionId, content 필요' });
-
-  const session = getSession(sessionId);
-  if (!session) return res.status(404).json({ error: '세션 없음' });
-  if (session.story_id !== story.id) {
-    return res.status(403).json({ error: 'Session does not belong to this story' });
-  }
-
-  const exchNum = parseInt(req.params.exchangeNum, 10);
-  const db = getDB();
-
-  const editTurn = db.transaction(() => {
-    db.prepare('UPDATE messages SET content=? WHERE session_id=? AND exchange_number=? AND role=?')
-      .run(content, sessionId, exchNum, 'user');
-    db.prepare('DELETE FROM messages WHERE session_id=? AND exchange_number>=? AND NOT (exchange_number=? AND role=?)')
-      .run(sessionId, exchNum, exchNum, 'user');
-    db.prepare('UPDATE messages SET summarized = 0 WHERE session_id = ? AND exchange_number >= ? AND summarized = 1')
-      .run(sessionId, exchNum);
-    db.prepare('UPDATE chat_sessions SET summary = NULL WHERE id = ?').run(sessionId);
-  });
-  editTurn();
-
-  res.json({ ok: true });
-});
-
-// DELETE /api/stories/:slug/messages/:exchangeNumber
-// ⚠️ DEPRECATED(P4a): messageId 좌표 DELETE /api/messages/:id 로 대체(유예 P4b-3 제거).
-router.delete('/:slug/messages/:exchangeNum', (req, res) => {
-  const story = resolveStory(req, res);
-  if (!story) return;
-  const { sessionId } = req.body;
-  const exchNum = parseInt(req.params.exchangeNum, 10);
-  if (!sessionId) return res.status(400).json({ error: 'sessionId 필요' });
-
-  const session = getSession(sessionId);
-  if (!session) return res.status(404).json({ error: '세션 없음' });
-  if (session.story_id !== story.id) {
-    return res.status(403).json({ error: 'Session does not belong to this story' });
-  }
-
-  const db = getDB();
-  const deleteTurn = db.transaction(() => {
-    db.prepare('DELETE FROM messages WHERE session_id = ? AND exchange_number >= ?').run(sessionId, exchNum);
-    db.prepare('UPDATE chat_sessions SET summary = NULL WHERE id = ?').run(sessionId);
-  });
-  deleteTurn();
-
-  res.json({ ok: true });
-});
+// (구 exchange 좌표 PUT/DELETE 라우트는 P4b-3 에서 제거 — messageId 좌표 /api/messages/:id 사용)
 
 // POST /api/stories/:slug/regen
 router.post('/:slug/regen', chatLimiter, async (req, res) => {

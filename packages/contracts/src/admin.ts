@@ -11,6 +11,57 @@ import { z } from 'zod'
  * legacy admin(스토리 CRUD·페르소나·이미지) DTO 는 P4b-3 에서 화면 전환과 함께.
  */
 
+// ── legacy admin 핵심 read 표면 (P4b-3 — 봉투만 엄격, raw row 전개는 통과) ──
+
+import { CommandSchema } from './stories.js'
+
+export const AdminStoryListItemSchema = z.looseObject({
+  id: z.number().int(),
+  slug: z.string(),
+  title: z.string(),
+  char_name: z.string().nullable(),
+  imageCount: z.number().int(),
+  hasExternalImages: z.boolean(),
+})
+export type AdminStoryListItem = z.infer<typeof AdminStoryListItemSchema>
+export const AdminStoryListSchema = z.array(AdminStoryListItemSchema)
+
+/** GET /api/admin/stories/:slug — 에디터 round-trip(stories row 전개 + commands 파싱) */
+export const AdminStoryDetailSchema = z.looseObject({
+  id: z.number().int(),
+  slug: z.string(),
+  title: z.string(),
+  char_name: z.string().nullable(),
+  description: z.string().nullable(),
+  personality: z.string().nullable(),
+  scenario: z.string().nullable(),
+  first_mes: z.string().nullable(),
+  commands: z.array(CommandSchema),
+})
+export type AdminStoryDetail = z.infer<typeof AdminStoryDetailSchema>
+
+/** lore_entries raw row — keys 는 JSON 문자열(파싱은 클라) */
+export const LoreEntryRowSchema = z.looseObject({
+  id: z.number().int(),
+  story_id: z.number().int(),
+  name: z.string().nullable(),
+  keys: z.string().nullable(),
+  content: z.string(),
+  constant: z.number().int(),
+  enabled: z.number().int(),
+})
+export type LoreEntryRow = z.infer<typeof LoreEntryRowSchema>
+export const LoreEntryListSchema = z.array(LoreEntryRowSchema)
+
+/** personas row */
+export const PersonaDTOSchema = z.looseObject({
+  id: z.number().int(),
+  name: z.string(),
+  is_default: z.number().int(),
+})
+export type PersonaDTO = z.infer<typeof PersonaDTOSchema>
+export const PersonaListSchema = z.array(PersonaDTOSchema)
+
 // ── WS-K ETL ─────────────────────────────────────────────
 
 export const EtlConfidenceSchema = z.enum(['high', 'low'])
