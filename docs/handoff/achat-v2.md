@@ -5,7 +5,17 @@
 
 ## 현재 상태
 
-**P0~P3 + P4a + P4b-0/1/2 완료·배포**(`master`=8495af7, 원격 검증 통과). 다음 = **P4b-3**(잔여 페이지 전환: Story/StoryDetail/History/StoryEdit/Gallery 보수 + legacy admin DTO + 구 exchange 라우트 제거 + global.css 데드 클래스 정리 + 번들 code-split 검토) → P5(WS-C preset DSL + WS-G 관찰성). P4 플랜 §3 참조.
+**🎉 P4 전체 완결** — P0~P4(a, b-0/1/2/3) 완료·배포(`master`=092ef00, 원격 검증 통과). 다음 = **P5**(WS-C 프롬프트 preset DSL + WS-G 관찰성 — 마스터 플랜 마지막 단계).
+
+### P4b-3 완료 (2026-06-10) — 잔여 페이지 + 구 라우트 제거 + 정리 (P4 완결) ✅ 배포
+> Codex 리뷰(bm40tp1m1) critical 0·major 2·minor 1 전부 반영. master 092ef00. 백업 pre-p4b3-20260610-122712.
+
+- **페이지 전환**: Story(임포트 폼 Card + ['admin-stories'] Query + 삭제 mutation→invalidate), StoryDetail(['story',slug] Query + 고정 하단 CTA), History(사이드바 + **스토리 전환 시 세션 즉시 초기화 + reqId 늦은 응답 가드** — Codex major). **Gallery/StoryEdit/Admin 은 의도적 보수 유지**(legacy 클래스가 신 토큰 참조 — 시각 일관 확보, 풀 전환은 가치 대비 비용으로 보류).
+- **Nav 레이아웃 라우트 승격**(ShellLayout + Outlet Suspense): lazy 전환 시 본문만 fallback — 셸 깜빡임 해소(Codex major). Chat/Login 은 풀스크린 라우트.
+- **legacy admin read 계약**: AdminStoryList/Detail·LoreEntryRow·PersonaDTO(봉투 looseObject) + admin.mjs read 4곳 respond 배선. write 계약(POST/PUT admin)은 잔여 — 필요 시 P5+.
+- **구 exchange 좌표 라우트 제거**(chat.mjs PUT/DELETE /:slug/messages/:exchangeNum — P4a 유예 만료, 코드베이스 잔존 참조 0 확인).
+- **정리**: 데드 CSS 48규칙(global.css 11.8→6.4KB) + **route-level code-split**(Home/Chat eager, 7페이지 lazy — 메인 번들 685→459kB, api 청크 151kB=zod 포함 contracts).
+- **검증**: 빌드(분할 청크) + dev 검증 활성 admin read 200(drift 0) + 브라우저(3페이지·셸 유지·Chat 풀스크린). 원격: 청크 서빙·구 라우트 404·admin 4종 200·라이브 채팅 SSE v2 풀 시퀀스(3세그) + 테스트 턴 정리.
 
 ### P4b-2 완료 (2026-06-10) — 채팅 화면 전면 개편 ✅ 배포
 > 사용자 결정: 현 다크+보라 톤 유지, 구조만 현대화. Codex 리뷰(b17ejripo) critical 0·major 3·minor 3 전부 반영. master 8495af7. 백업 pre-p4b2-20260610-115615.
@@ -168,7 +178,7 @@
 - [x] **P4a**: WS-M API 계약 패키지(workspace + SSE v2 + messageId 좌표 + admin 계약) ✅배포(74e37a5)
 - [x] **P4b-0/1**: WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 + 셸/Login/Home ✅배포(c90d31f)
 - [x] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화) ✅배포(8495af7)
-- [ ] **P4b-3**: 잔여 페이지(Story/StoryDetail/History/StoryEdit/Gallery) + legacy admin DTO + 구 exchange 라우트 제거 + 데드 클래스·code-split 정리
+- [x] **P4b-3**: 잔여 페이지 + legacy admin read 계약 + 구 라우트 제거 + 정리 ✅배포(092ef00) — **P4 완결**
 - [ ] **P5**: WS-C preset DSL + WS-G 관찰성
 
 ## 다음 세션 시작 가이드

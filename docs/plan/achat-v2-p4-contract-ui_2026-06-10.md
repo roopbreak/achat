@@ -192,8 +192,10 @@ event: error                data: { message, phase: 'generation'|'persistence', 
 - [x] 프론트 수용: useSSEStream v2(+v1 병행) + api.ts 계약 import + Chat.tsx id 좌표 전환 (+ regen 실패 id 클리어 M1, v1 done 시 재fetch M2)
 - [x] 검증(§2.6) → Codex 코드 리뷰(critical 2·major 3 반영) → 배포 ① → 원격 검증 통과
 
-### P4b — WS-A UI
-- [ ] P4b-0: 토큰 브리지(global.css→shadcn 변수 수렴)
-- [ ] P4b-1: Tailwind v4 + shadcn + Query(ownership 표) + 셸/Login/Home → 배포 ②
-- [ ] P4b-2: 채팅 전면 개편 → 배포 ③
-- [ ] P4b-3: 잔여 페이지 + legacy admin DTO + 구 라우트 제거 + 정리 → 배포 ④
+### P4b — WS-A UI ✅ 전체 완료·배포(2026-06-10)
+- [x] P4b-0: 토큰 브리지(global.css→shadcn 변수 수렴) — --accent 충돌 34곳 개명, preflight 회귀 보정
+- [x] P4b-1: Tailwind v4 + shadcn + Query(ownership 표) + 셸/Login/Home → 배포 ②(c90d31f)
+- [x] P4b-2: 채팅 전면 개편(현 톤 유지 — 사용자 결정) → 배포 ③(8495af7)
+- [x] P4b-3: 잔여 페이지 + legacy admin read 계약 + 구 라우트 제거 + 데드 CSS·code-split → 배포 ④(092ef00)
+
+**P4 완결.** 기록: Gallery/StoryEdit/Admin 풀 전환 보류(legacy 클래스 = 신 토큰 별칭으로 시각 일관 확보), admin write 계약 잔여, 프론트 v1 SSE 병행 파서 제거 시점은 P5 이후 판단.
