@@ -5,7 +5,18 @@
 
 ## 현재 상태
 
-**🎉 P4 전체 완결** — P0~P4(a, b-0/1/2/3) 완료·배포(`master`=092ef00, 원격 검증 통과). 다음 = **P5**(WS-C 프롬프트 preset DSL + WS-G 관찰성 — 마스터 플랜 마지막 단계).
+**P0~P4 완결 + P5a 완료·배포**(`master`=616a275, 원격 검증 통과). 다음 = **P5b**(WS-G 관찰성: 구조적 로깅 + LLM 재시도(첫 delta 경계) + generation_jobs 영속화/resume + 요약 불변식 — migration 008) → **v2 대개편 완결**. P5 플랜: `docs/plan/achat-v2-p5-preset-observability_2026-06-10.md`.
+
+### P5a 완료 (2026-06-10) — WS-C 프롬프트 preset DSL ✅ 배포
+> 플랜 §2 (Codex 설계 리뷰 blwn7dijp 10건 반영 — §6 표). 코드 리뷰(bt12lkire) major 2·minor 1 반영. master 616a275. 백업 pre-p5a-20260610-131554.
+
+- **분해**: `lib/prompt/builtins.mjs`(NARRATION_RULES/LASCIVIOUS/OUTPUT_TARGETS 스크립트 추출 이동 — 내용 불변) + `lib/prompt/assemble.mjs`(순수 조립기: kind 11종 빌더, **cacheSegment 명시 캐시 모델**(seg≤3 발행 검증·MIN_CACHE_TOKENS 미달 fallback 병합·인접성은 블록 기준), validatePresetBody, estimateTokens 이동). context-builder 는 재료 준비(materials)+assemble 호출+토큰 가드만. **치환 정책 보존**: dynamic/mode 블록은 {{user}} 비치환(구 동작).
+- **golden 전략(2단)**: 분해 전 실DB 12축 캡처(`tmp/p5a-golden.mjs` — 임베딩 키 미로드로 결정화 + 합성 세션 고정) → 분해 후 **byte 동일 12/12**. 운영 증명: 분해 배포 직후 라이브 채팅이 **기존 프롬프트 캐시 적중**(cacheRead 25177).
+- **migration 007**: `stories.prompt_preset_id` + `chat_sessions.preset_version_id` — **발행/롤백/연결은 신규 세션부터**(생성/리셋=current 핀, fork/슬롯=소스 상속). 깨진 핀 = 경고+default 폴백(preset 오류가 채팅을 못 죽임).
+- **admin**: presets CRUD/발행(**zod 형태→validatePresetBody 의미 2단 검증**)/롤백/연결(미발행 409)/삭제(**핀 세션 존재 시 409** — FK·재현성 보호) + Admin.tsx "프롬프트 프리셋 (WS-C)" 린 섹션.
+- **Codex 코드 리뷰 반영**: M1 zod 스키마 미배선(형태 우회로 `[object Object]` 주입 가능) → 3 라우트 배선, M2 **fork/슬롯 소스 세션 소속 미검증**(타 스토리 fork 로 핀 오염 — 기존 구멍이 preset 으로 확대) → 403 차단(슬롯 save/load 포함).
+- **검증**: golden 12 + assemble 합성 단위 12(비인접 seg 검증 버그 1건 테스트가 검출·수정) + e2e(발행→연결→새 세션 MARKER 적용/legacy 불변/폴백/검증 거부/fork 403) + 빌드. 원격: 007 적용·presets API·라이브 채팅 캐시 적중·테스트 턴 정리.
+- 기록: context-builder.mjs 는 P3c 부터 NUL 구분자(정규식 캐시 키) 2바이트로 git binary 취급 — 의도된 코드, 무관.
 
 ### P4b-3 완료 (2026-06-10) — 잔여 페이지 + 구 라우트 제거 + 정리 (P4 완결) ✅ 배포
 > Codex 리뷰(bm40tp1m1) critical 0·major 2·minor 1 전부 반영. master 092ef00. 백업 pre-p4b3-20260610-122712.
@@ -179,7 +190,8 @@
 - [x] **P4b-0/1**: WS-A 토큰 브리지 + Tailwind v4/shadcn/Query 셋업 + 셸/Login/Home ✅배포(c90d31f)
 - [x] **P4b-2**: 채팅 화면 전면 개편(현 톤 유지·구조 현대화) ✅배포(8495af7)
 - [x] **P4b-3**: 잔여 페이지 + legacy admin read 계약 + 구 라우트 제거 + 정리 ✅배포(092ef00) — **P4 완결**
-- [ ] **P5**: WS-C preset DSL + WS-G 관찰성
+- [x] **P5a**: WS-C 프롬프트 preset DSL(분해+DSL+007 세션 핀+admin) ✅배포(616a275)
+- [ ] **P5b**: WS-G 관찰성 — logger + LLM 재시도(첫 delta 경계+SSE error 파싱) + migration 008(generation_jobs payload/scenes 확장+resume) + 요약 recompress 불변식 → **v2 완결**
 
 ## 다음 세션 시작 가이드
 
