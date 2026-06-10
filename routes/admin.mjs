@@ -3,6 +3,8 @@ import multer from 'multer';
 import {
   AdminStoryListSchema, AdminStoryDetailSchema, LoreEntryListSchema, PersonaListSchema,
 } from '@achat/contracts';
+import { validatePresetBody } from '../lib/prompt/assemble.mjs';
+import { PresetUpsertBodySchema, PresetPublishBodySchema, StoryPresetLinkBodySchema } from '@achat/contracts';
 import { respond } from '@achat/contracts/server';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -31,6 +33,8 @@ import {
   insertLorePackEntry, listLorePackEntries, deleteLorePackEntries,
   updateLorePackEntryEmbedding, getUnembeddedLorePackEntries,
   setStoryLoreLinks, listStoryLoreLinks,
+  listPresets, getPreset, getPresetVersionBody, createPreset, updatePresetMeta,
+  publishPresetVersion, rollbackPresetVersion, deletePreset, setStoryPreset,
 } from '../lib/db.mjs';
 import { materializeStoryCharacter } from '../lib/actors/materialize.mjs';
 import { publishActorRelease, buildImageDomainData } from '../lib/actors/publish.mjs';
@@ -1072,6 +1076,95 @@ router.put('/stories/:slug/lore-links', (req, res) => {
   if (new Set(ids).size !== ids.length) return res.status(400).json({ error: 'pack_id 중복' });
   setStoryLoreLinks(story.id, links);
   res.json({ ok: true, count: links.length });
+});
+
+
+// ───────────────────────── WS-C 프롬프트 프리셋 (P5a 린 UI) ─────────────────────────
+// preset body(JSON DSL)는 textarea round-trip 관리(P3b-4 패턴).
+// 발행 = 새 preset_versions 행 + current 갱신. 적용은 **신규 세션부터**(세션 핀 — Codex C1).
+
+router.get('/presets', (_req, res) => {
+  res.json(listPresets());
+});
+
+router.get('/presets/:id', (req, res) => {
+  const preset = getPreset(Number(req.params.id));
+  if (!preset) return res.status(404).json({ error: '프리셋 없음' });
+  const body = preset.current_version_id ? getPresetVersionBody(preset.current_version_id) : null;
+  const cur = preset.current_version_id
+    ? getDB().prepare('SELECT version FROM preset_versions WHERE id = ?').get(preset.current_version_id)
+    : null;
+  res.json({
+    id: preset.id, name: preset.name, description: preset.description,
+    currentVersion: cur?.version ?? null, body,
+  });
+});
+
+// 등록/메타 수정 (id 있으면 update)
+router.post('/presets', (req, res) => {
+  const parsed = PresetUpsertBodySchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: '잘못된 요청', reason: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') });
+  const { id, name, description } = parsed.data;
+  try {
+    if (id) {
+      if (!getPreset(id)) return res.status(404).json({ error: `프리셋 ${id} 없음` });
+      updatePresetMeta(id, { name: String(name).trim(), description });
+      return res.json({ ok: true, presetId: id });
+    }
+    const presetId = createPreset({ name: String(name).trim(), description: description ?? '' });
+    res.json({ ok: true, presetId });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 발행 — body(DSL) 검증 후 새 버전 + current 갱신
+router.post('/presets/:id/publish', (req, res) => {
+  const preset = getPreset(Number(req.params.id));
+  if (!preset) return res.status(404).json({ error: '프리셋 없음' });
+  const parsed = PresetPublishBodySchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'DSL 형태 오류', reason: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') });
+  const errors = validatePresetBody(parsed.data.body);
+  if (errors.length) return res.status(400).json({ error: 'DSL 검증 실패', reason: errors.join('; ') });
+  const result = publishPresetVersion(preset.id, parsed.data.body);
+  res.json({ ok: true, ...result });
+});
+
+// 롤백 — current 를 직전 버전으로(신규 세션만 영향)
+router.post('/presets/:id/rollback', (req, res) => {
+  const preset = getPreset(Number(req.params.id));
+  if (!preset) return res.status(404).json({ error: '프리셋 없음' });
+  const result = rollbackPresetVersion(preset.id);
+  if (!result) return res.status(409).json({ error: '직전 버전 없음' });
+  res.json({ ok: true, ...result });
+});
+
+router.delete('/presets/:id', (req, res) => {
+  const preset = getPreset(Number(req.params.id));
+  if (!preset) return res.status(404).json({ error: '프리셋 없음' });
+  try {
+    deletePreset(preset.id); // 연결된 스토리는 prompt_preset_id NULL(=default)로
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === 'PRESET_PINNED') return res.status(409).json({ error: err.message });
+    throw err;
+  }
+});
+
+// 스토리 ↔ 프리셋 연결 (null = 해제). 신규 세션부터 적용.
+router.put('/stories/:slug/preset', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const parsedLink = StoryPresetLinkBodySchema.safeParse(req.body);
+  if (!parsedLink.success) return res.status(400).json({ error: '잘못된 요청', reason: 'presetId: number|null' });
+  const presetId = parsedLink.data.presetId;
+  if (presetId !== null) {
+    const preset = getPreset(presetId);
+    if (!preset) return res.status(400).json({ error: `프리셋 ${presetId} 없음` });
+    if (!preset.current_version_id) return res.status(409).json({ error: '발행된 버전이 없는 프리셋 — 먼저 발행 필요' });
+  }
+  setStoryPreset(story.id, presetId);
+  res.json({ ok: true });
 });
 
 export default router;

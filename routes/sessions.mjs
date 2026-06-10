@@ -67,6 +67,11 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: 'sessionId 필요' });
   const { sessionId: srcSessionId, exchangeNumber } = parsed.data;
 
+  // 소스 세션 소속 검증(Codex P5a M2): 타 스토리 세션 fork = release/preset 핀 오염
+  const srcSession = getSession(srcSessionId);
+  if (!srcSession) return res.status(404).json({ error: '세션 없음' });
+  if (srcSession.story_id !== story.id) return res.status(403).json({ error: 'Session does not belong to this story' });
+
   const db = getDB();
   const exchNum = exchangeNumber ?? db.prepare(
     'SELECT MAX(exchange_number) as mx FROM messages WHERE session_id=?'
@@ -78,7 +83,8 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
 
   const newSessionId = randomUUID();
   // 포크는 소스 세션의 release 를 상속(재현성: legacy 포크=legacy, v2 포크=그 release)
-  createSession(newSessionId, story.id, getSession(srcSessionId)?.release_id ?? null);
+  // 포크는 소스 세션의 release/preset 핀을 상속(재현성)
+  createSession(newSessionId, story.id, srcSession.release_id ?? null, srcSession.preset_version_id ?? null);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
@@ -107,6 +113,7 @@ storySessionsRouter.post('/:slug/slots', (req, res) => {
 
   const session = getSession(session_id);
   if (!session) return res.status(404).json({ error: '세션 없음' });
+  if (session.story_id !== story.id) return res.status(403).json({ error: 'Session does not belong to this story' });
 
   const db = getDB();
   const maxExchange = db.prepare(
@@ -126,6 +133,9 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
   if (!story) return;
   const slot = getSaveSlot(req.params.slotId);
   if (!slot) return res.status(404).json({ error: '슬롯 없음' });
+  if (slot.story_id !== story.id) return res.status(403).json({ error: 'Slot does not belong to this story' });
+  const slotSrc = getSession(slot.session_id);
+  if (slotSrc && slotSrc.story_id !== story.id) return res.status(403).json({ error: 'Slot source session mismatch' });
 
   const db = getDB();
   const srcMessages = db.prepare(
@@ -134,7 +144,8 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
 
   const newSessionId = randomUUID();
   // 슬롯 로드도 소스 세션의 release 상속
-  createSession(newSessionId, story.id, getSession(slot.session_id)?.release_id ?? null);
+  // 슬롯 로드도 소스 세션의 release/preset 핀 상속
+  createSession(newSessionId, story.id, slotSrc?.release_id ?? null, slotSrc?.preset_version_id ?? null);
 
   const stmt = db.prepare(
     'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'

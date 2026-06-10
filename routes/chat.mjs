@@ -4,7 +4,7 @@ import {
   getStoryBySlug, createSession, getSession,
   insertMessage, getNextExchangeNumber,
   updateEmbedding, touchSession, upsertSaveSlot, getDB,
-  getPersona, getDefaultPersona,
+  getPersona, getDefaultPersona, getStoryCurrentPresetVersionId,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
 import { resolveStoryView } from '../lib/story-resolver.mjs';
@@ -63,7 +63,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
 
   if (!session) {
     sessionId = randomUUID();
-    createSession(sessionId, story.id, story.current_release_id ?? null);
+    createSession(sessionId, story.id, story.current_release_id ?? null, getStoryCurrentPresetVersionId(story));
     session = getSession(sessionId);
 
     // 0턴 first_mes 시드도 핀한 release 뷰에서 — buildContext 의 frozen first_mes 와 일치(Codex F1).
@@ -284,7 +284,7 @@ router.delete('/:slug/chat', (req, res) => {
 
   const newSessionId = randomUUID();
   // 세션 리셋도 현재 release 핀 + 동결 뷰 시드 — 메인 생성 경로(L53/58)와 동일(Codex F1: 세션핀 오염 방지).
-  createSession(newSessionId, story.id, story.current_release_id ?? null);
+  createSession(newSessionId, story.id, story.current_release_id ?? null, getStoryCurrentPresetVersionId(story));
   const seedView = resolveStoryView(story, story.current_release_id ?? null);
 
   if (seedView.first_mes) {

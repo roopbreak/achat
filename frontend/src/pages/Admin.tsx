@@ -408,7 +408,108 @@ export default function Admin() {
     setPersonas(list)
   }, [])
 
-  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors(); loadLorePacks() }, [loadStories, loadPersonas, loadEtlQueue, loadActors, loadLorePacks])
+
+  // ── 프롬프트 프리셋 (WS-C P5a 린 UI) ──
+  interface PresetRow { id: number; name: string; description: string; current_version: number | null; version_count: number; story_count: number }
+  const [presets, setPresets] = useState<PresetRow[]>([])
+  const [presetJson, setPresetJson] = useState('')
+  const [presetMeta, setPresetMeta] = useState<{ id: number | null; name: string }>({ id: null, name: '' })
+  const [presetLinkStory, setPresetLinkStory] = useState('')
+  const [presetLinkId, setPresetLinkId] = useState('')
+  const [presetMsg, setPresetMsg] = useState('')
+  const [presetBusy, setPresetBusy] = useState(false)
+
+  const loadPresets = useCallback(async () => {
+    setPresets(await api<PresetRow[]>('/api/admin/presets'))
+  }, [])
+
+  const newPresetTemplate = async () => {
+    // 서버 default 와 동일 구조의 시작점(편집해서 발행)
+    setPresetMeta({ id: null, name: '' })
+    setPresetJson(JSON.stringify({
+      version: 1,
+      blocks: [
+        { id: 'narration', kind: 'builtin_text', ref: 'narration_rules', cacheSegment: 'seg1' },
+        { id: 'character', kind: 'character', cacheSegment: 'seg2' },
+        { id: 'persona', kind: 'persona', cacheSegment: 'seg2' },
+        { id: 'style', kind: 'story_field', ref: 'narration_style', title: '서술 스타일', cacheSegment: 'seg3' },
+        { id: 'constant-lore', kind: 'constant_lore', cacheSegment: 'seg3' },
+        { id: 'catalog', kind: 'image_catalog', cacheSegment: 'seg3' },
+        { id: 'note', kind: 'user_note' },
+        { id: 'dynamic', kind: 'dynamic_context' },
+        { id: 'mode', kind: 'mode_overrides' },
+        { id: 'post-history', kind: 'story_field', ref: 'post_history_instructions', wrap: 'Post-History Instructions' },
+      ],
+    }, null, 2))
+  }
+
+  const editPreset = async (id: number) => {
+    const d = await api<{ id: number; name: string; currentVersion: number | null; body: unknown }>(`/api/admin/presets/${id}`)
+    setPresetMeta({ id: d.id, name: d.name })
+    setPresetJson(d.body ? JSON.stringify(d.body, null, 2) : '')
+    if (!d.body) setPresetMsg('발행된 버전이 없는 프리셋 — [+ 템플릿] 구조로 body 작성 후 발행')
+  }
+
+  const savePresetMeta = async () => {
+    const name = prompt('프리셋 이름', presetMeta.name || '')
+    if (!name?.trim()) return
+    setPresetBusy(true)
+    try {
+      const r = await api<{ presetId: number }>('/api/admin/presets', {
+        method: 'POST',
+        body: JSON.stringify({ id: presetMeta.id ?? undefined, name: name.trim() }),
+      })
+      setPresetMeta(m => ({ ...m, id: r.presetId, name: name.trim() }))
+      setPresetMsg(`프리셋 메타 저장 (id ${r.presetId}) — body 는 [발행]으로 버전 생성`)
+      await loadPresets()
+    } catch (e: any) { setPresetMsg(`저장 실패: ${e.message || e}`) }
+    finally { setPresetBusy(false) }
+  }
+
+  const publishPreset = async () => {
+    if (presetMeta.id == null) { setPresetMsg('먼저 [메타 저장]으로 프리셋을 만들거나 [편집]으로 선택하세요.'); return }
+    let body: unknown
+    try { body = JSON.parse(presetJson) } catch { setPresetMsg('DSL JSON 파싱 오류'); return }
+    setPresetBusy(true)
+    try {
+      const r = await api<{ version: number }>(`/api/admin/presets/${presetMeta.id}/publish`, { method: 'POST', body: JSON.stringify({ body }) })
+      setPresetMsg(`발행 완료 v${r.version} — 신규 세션부터 적용(기존 세션은 핀 유지)`)
+      await loadPresets()
+    } catch (e: any) { setPresetMsg(`발행 실패: ${e.message || e}`) }
+    finally { setPresetBusy(false) }
+  }
+
+  const rollbackPreset = async (id: number) => {
+    setPresetBusy(true)
+    try {
+      const r = await api<{ version: number }>(`/api/admin/presets/${id}/rollback`, { method: 'POST' })
+      setPresetMsg(`롤백 완료 → v${r.version} (신규 세션부터)`)
+      await loadPresets()
+    } catch (e: any) { setPresetMsg(`롤백 실패: ${e.message || e}`) }
+    finally { setPresetBusy(false) }
+  }
+
+  const deletePresetUI = async (id: number, name: string) => {
+    if (!confirm(`프리셋 '${name}' 삭제? 연결 스토리는 default 로 복귀. 핀된 세션이 있으면 삭제가 거부됩니다(재현성 보호).`)) return
+    setPresetBusy(true)
+    try { await api(`/api/admin/presets/${id}`, { method: 'DELETE' }); await loadPresets() }
+    finally { setPresetBusy(false) }
+  }
+
+  const linkStoryPreset = async () => {
+    if (!presetLinkStory) return
+    setPresetBusy(true)
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(presetLinkStory)}/preset`, {
+        method: 'PUT',
+        body: JSON.stringify({ presetId: presetLinkId ? Number(presetLinkId) : null }),
+      })
+      setPresetMsg(`연결 저장 — ${presetLinkStory} → ${presetLinkId || 'default(해제)'} (신규 세션부터)`)
+    } catch (e: any) { setPresetMsg(`연결 실패: ${e.message || e}`) }
+    finally { setPresetBusy(false) }
+  }
+
+  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors(); loadLorePacks(); loadPresets() }, [loadStories, loadPersonas, loadEtlQueue, loadActors, loadLorePacks, loadPresets])
 
   // ── 페르소나 ──
   const savePersona = async () => {
@@ -859,6 +960,59 @@ export default function Admin() {
               </div>
             </>
           )}
+        </div>
+
+        {/* 프롬프트 프리셋 (WS-C) */}
+        <div className="admin-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10, flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>프롬프트 프리셋 (WS-C)</h2>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={newPresetTemplate} disabled={presetBusy}>+ 템플릿</button>
+              <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={savePresetMeta} disabled={presetBusy}>메타 저장</button>
+              <button className="btn" style={{ fontSize: 12 }} onClick={publishPreset} disabled={presetBusy || !presetJson.trim()}>발행(JSON)</button>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
+            프롬프트 조립(블록 그래프 DSL)을 데이터로 관리. 발행/롤백/연결은 <b>신규 세션부터</b> 적용(기존 세션은 생성 시점 버전 핀). 미연결 스토리 = 기본 조립.
+          </div>
+          {presetMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--primary)' }}>{presetMsg}</div>}
+
+          {presets.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 8 }}>등록된 프리셋이 없습니다. [+ 템플릿] → [메타 저장] → [발행] 순서로 시작하세요.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+              {presets.map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border, #333)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}>
+                  <span>{p.name}</span>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>#{p.id} v{p.current_version ?? '-'} ({p.version_count}판) · 스토리 {p.story_count}</span>
+                  <button className="btn btn-secondary" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => editPreset(p.id)} disabled={presetBusy}>편집</button>
+                  <button className="btn btn-secondary" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => rollbackPreset(p.id)} disabled={presetBusy}>롤백</button>
+                  <button className="btn btn-danger" style={{ fontSize: 10, padding: '1px 6px' }} onClick={() => deletePresetUI(p.id, p.name)} disabled={presetBusy}>삭제</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {(presetJson || presetMeta.id != null) && (
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>
+              편집 중: {presetMeta.id != null ? `#${presetMeta.id} ${presetMeta.name}` : '(신규 — 메타 저장 필요)'}
+            </div>
+          )}
+          {presetJson && (
+            <textarea value={presetJson} onChange={e => setPresetJson(e.target.value)}
+              style={{ width: '100%', minHeight: 180, fontFamily: 'monospace', fontSize: 11, marginBottom: 10 }} />
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select value={presetLinkStory} onChange={e => setPresetLinkStory(e.target.value)} style={{ fontSize: 13 }}>
+              <option value="">스토리 선택(프리셋 연결)...</option>
+              {stories.map(s => <option key={s.slug} value={s.slug}>{s.title} ({s.slug})</option>)}
+            </select>
+            <select value={presetLinkId} onChange={e => setPresetLinkId(e.target.value)} style={{ fontSize: 13 }}>
+              <option value="">default(해제)</option>
+              {presets.map(p => <option key={p.id} value={p.id}>{p.name} (v{p.current_version ?? '-'})</option>)}
+            </select>
+            <button className="btn" style={{ fontSize: 11 }} onClick={linkStoryPreset} disabled={presetBusy || !presetLinkStory}>연결 저장</button>
+          </div>
         </div>
 
         {/* 페르소나 관리 */}
