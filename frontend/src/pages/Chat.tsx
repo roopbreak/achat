@@ -4,11 +4,12 @@ import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry, type GenerationInfo } from '../hooks/useSSEStream'
 import { api, type StoryDetail } from '../lib/api'
-import { splitBodyStatus } from '../lib/status'
+import { splitBodyStatus, splitChoices } from '../lib/status'
 import ChatHeader from '../components/chat/ChatHeader'
 import StatusHUD from '../components/chat/StatusHUD'
 import ChatMessages from '../components/chat/ChatMessages'
-import ChatInput from '../components/chat/ChatInput'
+import ChatInput, { type ChatInputHandle } from '../components/chat/ChatInput'
+import ChoiceButtons from '../components/chat/ChoiceButtons'
 import SettingsPanel from '../components/chat/SettingsPanel'
 import SlotPanel from '../components/chat/SlotPanel'
 import NotePanel from '../components/chat/NotePanel'
@@ -54,6 +55,7 @@ export default function Chat() {
   const [hudStatus, setHudStatus] = useState<string | null>(null)
   const streamingRef = useRef(false) // 동기 guard (더블 클릭 방지)
   const partialRef = useRef('')      // 스트림 중 누적 본문(throw 경로 보존용)
+  const inputRef = useRef<ChatInputHandle>(null) // 자유 입력 선택지 → 입력창 포커스
 
   // 턴 시작 시 SSE v2 표시 상태 초기화 + 공통 콜백
   const beginTurn = useCallback(() => {
@@ -370,6 +372,9 @@ export default function Chat() {
     )
   }
 
+  // 상태창에서 맨 아래 선택지 suffix 분리 — HUD엔 statusBody만, 버튼은 choices로
+  const { statusBody, choices } = splitChoices(hudStatus)
+
   return (
     <div className="chat-wrap">
       <ChatHeader
@@ -465,9 +470,19 @@ export default function Chat() {
         </div>
       )}
 
-      <StatusHUD status={hudStatus} />
+      <StatusHUD status={statusBody} fontSize={settings.fontSize} />
 
-      <ChatInput disabled={isStreaming} onSend={sendMessage} />
+      {choices.length > 0 && (
+        <ChoiceButtons
+          choices={choices}
+          disabled={isStreaming}
+          fontSize={settings.fontSize}
+          onChoose={(text) => sendMessage(text)}
+          onFreeInput={() => inputRef.current?.focus()}
+        />
+      )}
+
+      <ChatInput ref={inputRef} disabled={isStreaming} onSend={sendMessage} />
       <Lightbox />
     </div>
   )

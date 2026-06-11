@@ -108,7 +108,9 @@ export default function Admin() {
   const [spStory, setSpStory] = useState('')
   const [spPersona, setSpPersona] = useState('')
   const [spOverride, setSpOverride] = useState('')
+  const [spAge, setSpAge] = useState('')
   const [spResult, setSpResult] = useState('')
+  const [spAgeResult, setSpAgeResult] = useState('')
 
   // 유저 노트
   const [noteStory, setNoteStory] = useState('')
@@ -532,8 +534,9 @@ export default function Admin() {
   // ── 스토리별 페르소나 ──
   const loadStoryPersona = async (name: string) => {
     if (!name) return
-    const data = await api<{ persona_id?: number; persona_override?: string }>(`/api/admin/stories/${name}/persona`)
+    const data = await api<{ persona_id?: number; persona_override?: string; persona_age_override?: number | null }>(`/api/admin/stories/${name}/persona`)
     setSpPersona(String(data.persona_id ?? '')); setSpOverride(data.persona_override ?? '')
+    setSpAge(data.persona_age_override == null ? '' : String(data.persona_age_override))
   }
 
   const saveStoryPersona = async () => {
@@ -542,6 +545,16 @@ export default function Admin() {
       method: 'POST', body: JSON.stringify({ persona_id: spPersona || null, persona_override: spOverride || null }),
     })
     setSpResult(res.ok ? '저장 완료' : (res.error ?? '오류'))
+  }
+
+  const saveStoryPersonaAge = async () => {
+    if (!spStory) return
+    try {
+      const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${spStory}/persona-age`, {
+        method: 'POST', body: JSON.stringify({ age: spAge === '' ? null : Number(spAge) }),
+      })
+      setSpAgeResult(res.ok ? (spAge === '' ? '나이 오버라이드 해제됨' : '나이 저장 완료') : (res.error ?? '오류'))
+    } catch (e: any) { setSpAgeResult(`저장 실패: ${e.message || e}`) }
   }
 
   // ── 유저 노트 ──
@@ -1056,6 +1069,13 @@ export default function Admin() {
           <div className="form-row"><label>오버라이드</label><textarea value={spOverride} onChange={e => setSpOverride(e.target.value)} rows={3} placeholder="이 스토리에서만 적용할 수정사항" /></div>
           <button className="btn btn-primary" onClick={saveStoryPersona}>저장</button>
           {spResult && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-dim)' }}>{spResult}</div>}
+
+          <div className="form-row" style={{ marginTop: 16 }}>
+            <label>나이 (이 스토리 전용, 비우면 페르소나 기본값)</label>
+            <input type="number" min={0} max={200} value={spAge} onChange={e => setSpAge(e.target.value)} placeholder="비우면 오버라이드 해제" />
+          </div>
+          <button className="btn btn-primary" onClick={saveStoryPersonaAge}>나이 저장</button>
+          {spAgeResult && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-dim)' }}>{spAgeResult}</div>}
         </div>
 
         {/* 유저 노트 */}

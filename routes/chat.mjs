@@ -9,7 +9,7 @@ import {
 import { buildContext } from '../lib/context-builder.mjs';
 import { resolveStoryView } from '../lib/story-resolver.mjs';
 import { streamWithContinuation } from '../lib/providers/auto-continue.mjs';
-import { joinWithSentinel } from '../lib/prompt/status-sentinel.mjs';
+import { joinWithSentinel, splitStatus } from '../lib/prompt/status-sentinel.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
 import rateLimit from 'express-rate-limit';
@@ -76,10 +76,14 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
         ? getPersona(story.persona_id)
         : getDefaultPersona();
       const userName = persona?.name || '유저';
+      // first_mes 도 상태창 분리: content 는 원본 유지(표시 안전), status 만 추출해
+      // 인트로부터 HUD·선택지 버튼이 작동하게 한다(센티넬 없으면 splitTail 폴백, Codex high 1).
+      const seedText = seedView.first_mes.replaceAll('{{user}}', userName);
       insertMessage({
         session_id:      sessionId,
         role:            'assistant',
-        content:         seedView.first_mes.replaceAll('{{user}}', userName),
+        content:         seedText,
+        status:          splitStatus(seedText).status,
         exchange_number: 0,
       });
     }

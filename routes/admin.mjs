@@ -16,7 +16,7 @@ import {
   updateUrlMappings, getUrlMappings,
   getStoryNote, upsertStoryNote,
   getPersonas, getPersona, createPersona, updatePersona, deletePersona,
-  setStoryPersona, getDB, getDefaultPersona, setDefaultPersona,
+  setStoryPersona, setStoryPersonaAge, getDB, getDefaultPersona, setDefaultPersona,
   getAllLoreIncludeDisabled, insertSingleLoreEntry, updateLoreEntry, deleteLoreEntry,
   updateLoreEmbedding, getUnembeddedLore,
   getLatestJob,
@@ -654,11 +654,33 @@ router.post('/stories/:slug/persona', (req, res) => {
   res.json({ ok: true });
 });
 
+// 나이 오버라이드 전용 — persona_id/override 와 독립(소실 방지, Codex critical).
+// age=null 또는 미전달이면 오버라이드 해제. 정수 외 입력은 400.
+router.post('/stories/:slug/persona-age', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const raw = req.body?.age;
+  let age = null;
+  if (raw != null && raw !== '') {
+    age = Number(raw);
+    if (!Number.isInteger(age) || age < 0 || age > 200) {
+      return res.status(400).json({ error: '나이는 0~200 정수여야 합니다' });
+    }
+  }
+  setStoryPersonaAge(story.id, age);
+  res.json({ ok: true, persona_age_override: age });
+});
+
 router.get('/stories/:slug/persona', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
   const persona = story.persona_id ? getPersona(story.persona_id) : null;
-  res.json({ persona_id: story.persona_id, persona_override: story.persona_override, persona });
+  res.json({
+    persona_id: story.persona_id,
+    persona_override: story.persona_override,
+    persona_age_override: story.persona_age_override ?? null,
+    persona,
+  });
 });
 
 // POST /api/admin/stories/:slug/rename — title 변경 (slug는 불변)

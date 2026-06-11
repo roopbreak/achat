@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { SendHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -7,11 +7,19 @@ interface Props {
   onSend: (text: string) => void
 }
 
-export default function ChatInput({ disabled, onSend }: Props) {
+export interface ChatInputHandle {
+  focus: () => void
+}
+
+const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({ disabled, onSend }, ref) {
   const [value, setValue] = useState('')
   const composing = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cursorPos = useRef<number | null>(null)
+
+  useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+  }), [])
 
   // 커서 위치 복원 (setValue 후 DOM 반영 시점에 실행)
   useEffect(() => {
@@ -84,4 +92,6 @@ export default function ChatInput({ disabled, onSend }: Props) {
       </Button>
     </div>
   )
-}
+})
+
+export default ChatInput
