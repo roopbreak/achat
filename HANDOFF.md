@@ -1,7 +1,8 @@
 | 작업 | 상태 | 핸드오프 | 마지막 업데이트 |
 |------|------|---------|----------------|
 | 캐릭터 작성 파이프라인 가벼운 웹소설 디폴트 전환 | 활성 | docs/handoff/persona-vulgar-default.md | 2026-06-11 |
-| 상태창 본문 분리 (센티넬+HUD, P1~P5) | 활성 | docs/handoff/status-block-separation.md | 2026-06-11 |
+| 서술부/info부/선택지부 3분할 개편 | 활성 | docs/handoff/three-part-separation.md | 2026-06-11 |
+| 상태창 본문 분리 (센티넬+HUD, P1~P4 배포·P5 보류) | 활성 | docs/handoff/status-block-separation.md | 2026-06-11 |
 | 배포 방식 전환 (Docker → git pull) | 완료 | docs/handoff/deploy-git-pull.md | 2026-05-08 |
 | React 프론트엔드 전환 | 활성 | docs/handoff/react-migration.md | 2026-05-09 |
 | NAI 이미지 생성 시스템 | 활성 | docs/handoff/nai-image-generation.md | 2026-05-10 |
