@@ -23,6 +23,8 @@ export interface GenerationInfo {
   finishReason: FinishReason
   continued: boolean
   segmentCount: number
+  /** 분리된 상태창(HUD 확정용) — 없으면 null */
+  status?: string | null
 }
 
 interface SSECallbacks {
@@ -150,6 +152,7 @@ export function useSSEStream() {
                 finishReason: evt.finishReason,
                 continued: evt.continued,
                 segmentCount: evt.segmentCount,
+                status: evt.status,
               })
               break
             case 'message_persisted':

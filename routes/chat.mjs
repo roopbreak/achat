@@ -9,6 +9,7 @@ import {
 import { buildContext } from '../lib/context-builder.mjs';
 import { resolveStoryView } from '../lib/story-resolver.mjs';
 import { streamWithContinuation } from '../lib/providers/auto-continue.mjs';
+import { joinWithSentinel } from '../lib/prompt/status-sentinel.mjs';
 import { embed } from '../lib/embedder.mjs';
 import { maybeRunSummary } from '../lib/summarizer.mjs';
 import rateLimit from 'express-rate-limit';
@@ -118,12 +119,14 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   }
 
   // 생성 종료(저장 전) — 저장 실패와 분리(Codex critical 6)
-  // 이어쓰기 발동 턴은 서버 재조립본(finalText)을 실어 클라 말풍선 교체 유도
+  // finalText 는 센티넬 포함본(프론트 splitBodyStatus 일관 분리) + status(HUD). 항상 전송.
+  // DB 저장본(assistantText)은 joinContent(센티넬 없음) 유지.
   writeSSE(res, 'generation_complete', {
     finishReason: genResult.finishReason,
     continued: genResult.providerMeta?.continued ?? false,
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
-    ...(genResult.providerMeta?.continued ? { finalText: genResult.finalText } : {}),
+    finalText: joinWithSentinel(genResult.body, genResult.status),
+    status: genResult.status ?? null,
   });
 
   let exchNum, userMessageId, assistantRowId;
@@ -132,7 +135,8 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
     const saveTurn = db.transaction(() => {
       const exch = getNextExchangeNumber(sessionId);
       const userResult = insertMessage({ session_id: sessionId, role: 'user', content: message.trim(), exchange_number: exch });
-      const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: exch });
+      // dual-write: content = 호환 합본(본문+상태창), status = 상태창만(분리)
+      const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: exch, status: genResult.status ?? null });
       touchSession(sessionId);
 
       const turnCount = db.prepare(
@@ -235,7 +239,8 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
     assistantText = genResult.finalText;
   } catch (err) {
     if (prevAssistant) {
-      insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch });
+      // 무결성: 복원 시 status 도 함께(분리 저장본 보존 — Codex critical 2)
+      insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch, status: prevAssistant.status ?? null });
     }
     if (!res.writableEnded) {
       writeSSE(res, 'error', { message: err.message, phase: 'generation' });
@@ -244,18 +249,19 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
     return;
   }
 
-  // regen 경로도 동일하게 finalText 전달(Codex high 4 수용)
+  // regen 경로도 동일하게 finalText(센티넬 포함)·status 전달(Codex high 4 수용)
   writeSSE(res, 'generation_complete', {
     finishReason: genResult.finishReason,
     continued: genResult.providerMeta?.continued ?? false,
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
-    ...(genResult.providerMeta?.continued ? { finalText: genResult.finalText } : {}),
+    finalText: joinWithSentinel(genResult.body, genResult.status),
+    status: genResult.status ?? null,
   });
 
   let assistantRowId;
   try {
     const saveRegen = db.transaction(() => {
-      const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: lastExch });
+      const assistantResult = insertMessage({ session_id: sessionId, role: 'assistant', content: assistantText, exchange_number: lastExch, status: genResult.status ?? null });
       touchSession(sessionId);
 
       const turnCount = db.prepare(
@@ -267,9 +273,9 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
     });
     assistantRowId = saveRegen();
   } catch (err) {
-    // 직전 본문은 이미 삭제됨 — 복원 시도 후 미영속 통지
+    // 직전 본문은 이미 삭제됨 — 복원 시도 후 미영속 통지 (status 포함 복원)
     try {
-      if (prevAssistant) insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch });
+      if (prevAssistant) insertMessage({ session_id: sessionId, role: 'assistant', content: prevAssistant.content, exchange_number: lastExch, status: prevAssistant.status ?? null });
     } catch { /* 복원 실패 시 통지만 */ }
     if (!res.writableEnded) {
       writeSSE(res, 'error', { message: err.message, phase: 'persistence' });

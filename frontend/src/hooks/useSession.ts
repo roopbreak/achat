@@ -10,6 +10,8 @@ export interface Message {
   _id: number // 안정적인 React key용
   /** 서버 row id(messageId 좌표 — WS-M P4a). 낙관 추가 직후엔 없고 message_persisted 로 스탬프 */
   id?: number
+  /** 분리된 상태창(HUD 표시용). 본문(content)에는 합본이 들어있어 stripStatus 로 제거 */
+  status?: string | null
 }
 
 interface MessagesResponse {
@@ -75,7 +77,7 @@ export function useSession(slug: string) {
     setMessages(prev => [...prev, { ...msg, _id: ++_msgId }])
   }, [])
 
-  const updateLastAssistant = useCallback((content: string, exchangeNumber?: number, id?: number) => {
+  const updateLastAssistant = useCallback((content: string, exchangeNumber?: number, id?: number, status?: string | null) => {
     setMessages(prev => {
       const next = [...prev]
       for (let i = next.length - 1; i >= 0; i--) {
@@ -83,6 +85,7 @@ export function useSession(slug: string) {
           next[i] = { ...next[i], content }
           if (exchangeNumber != null) next[i].exchange_number = exchangeNumber
           if (id != null) next[i].id = id
+          if (status !== undefined) next[i].status = status
           break
         }
       }
@@ -92,12 +95,13 @@ export function useSession(slug: string) {
 
   // id: number=새 id 스탬프 / null=id 제거(regen 실패 — 서버 row 가 재생성돼 기존 id 무효,
   // Codex M1: 죽은 id 로 수정/삭제 404 방지. 새로고침 시 재fetch 로 복구) / undefined=유지
-  const replaceAssistantByExchange = useCallback((exchangeNumber: number, content: string, id?: number | null) => {
+  const replaceAssistantByExchange = useCallback((exchangeNumber: number, content: string, id?: number | null, status?: string | null) => {
     setMessages(prev => prev.map(m => {
       if (m.role !== 'assistant' || m.exchange_number !== exchangeNumber) return m
       const next = { ...m, content }
       if (id === null) delete next.id
       else if (id != null) next.id = id
+      if (status !== undefined) next.status = status
       return next
     }))
   }, [])

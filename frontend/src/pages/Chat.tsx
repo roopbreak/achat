@@ -4,7 +4,9 @@ import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry, type GenerationInfo } from '../hooks/useSSEStream'
 import { api, type StoryDetail } from '../lib/api'
+import { splitBodyStatus } from '../lib/status'
 import ChatHeader from '../components/chat/ChatHeader'
+import StatusHUD from '../components/chat/StatusHUD'
 import ChatMessages from '../components/chat/ChatMessages'
 import ChatInput from '../components/chat/ChatInput'
 import SettingsPanel from '../components/chat/SettingsPanel'
@@ -23,11 +25,13 @@ interface Persona {
 // partial이 있으면 본문 뒤에 중단 안내만 덧붙이고, 없으면 오류 메시지로 대체.
 // phase=persistence(SSE v2): 본문은 완성됐으나 DB 미저장 — 새로고침 시 사라짐을 안내.
 function withPartial(partial: string, message: string, phase: 'generation' | 'persistence' = 'generation'): string {
+  // 중간 실패 partial 에도 센티넬이 섞일 수 있으므로 본문만 추려 말풍선에 노출
+  const body = splitBodyStatus(partial).body
   if (phase === 'persistence') {
-    return `${partial}\n\n_[⚠️ 저장 실패(본문은 수신됨 — 새로고침 시 유실): ${message}]_`
+    return `${body}\n\n_[⚠️ 저장 실패(본문은 수신됨 — 새로고침 시 유실): ${message}]_`
   }
-  return partial.trim()
-    ? `${partial}\n\n_[⚠️ 생성 중단됨: ${message}]_`
+  return body.trim()
+    ? `${body}\n\n_[⚠️ 생성 중단됨: ${message}]_`
     : `[오류: ${message}]`
 }
 
@@ -46,6 +50,8 @@ export default function Chat() {
   // SSE v2 표시: 이어쓰기 세그먼트(continue_start) + 생성 결과(finishReason 잘림 경고)
   const [continueSeg, setContinueSeg] = useState<number | null>(null)
   const [lastGen, setLastGen] = useState<GenerationInfo | null>(null)
+  // 화면 고정 HUD — 항상 최신 상태창만 표시(본문 말풍선에는 안 보임)
+  const [hudStatus, setHudStatus] = useState<string | null>(null)
   const streamingRef = useRef(false) // 동기 guard (더블 클릭 방지)
   const partialRef = useRef('')      // 스트림 중 누적 본문(throw 경로 보존용)
 
@@ -58,7 +64,12 @@ export default function Chat() {
   }, [])
   const sseDisplayCallbacks = {
     onContinue: (segmentIndex: number) => setContinueSeg(segmentIndex),
-    onGenerationComplete: (info: GenerationInfo) => { setLastGen(info); setContinueSeg(null) },
+    onGenerationComplete: (info: GenerationInfo) => {
+      setLastGen(info)
+      setContinueSeg(null)
+      // 서버가 분리해 준 최종 상태창으로 HUD 확정(없으면 null)
+      if (info.status !== undefined) setHudStatus(info.status ?? null)
+    },
   }
 
   // 패널 토글
@@ -97,6 +108,17 @@ export default function Chat() {
     })
   }, [slug])
 
+  // HUD 초기화/동기화 — 스트리밍 중이 아닐 때 마지막 assistant 메시지의 상태창으로 HUD 갱신.
+  // (세션 로드, 슬롯 전환, 분기, 삭제 등 메시지 변동 시 최신 상태 반영)
+  useEffect(() => {
+    if (isStreaming) return
+    let last: Message | null = null
+    for (let i = session.messages.length - 1; i >= 0; i--) {
+      if (session.messages[i].role === 'assistant') { last = session.messages[i]; break }
+    }
+    setHudStatus(last?.status ?? null)
+  }, [session.messages, isStreaming])
+
   // 타이틀
   useEffect(() => {
     document.title = `${slug} — achat-v2`
@@ -132,11 +154,15 @@ export default function Chat() {
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            session.updateLastAssistant(fullText)
+            // 센티넬로 본문/상태창 분리 — 말풍선엔 body만, HUD는 status 실시간 갱신
+            const { body, status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(body)
+            setHudStatus(status)
           },
           onPersisted: (info, fullText) => {
             // 본문 + exchange + messageId 스탬프(이후 수정/삭제는 id 좌표)
-            session.updateLastAssistant(fullText, info.exchangeNumber, info.assistantMessageId ?? undefined)
+            const { body, status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(body, info.exchangeNumber, info.assistantMessageId ?? undefined, status)
             session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
             // v1 done 번역(롤백 조합)이면 id 가 없다 — 재fetch 로 보강(Codex M2)
@@ -180,11 +206,14 @@ export default function Chat() {
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            session.replaceAssistantByExchange(exchangeNumber, fullText)
+            const { body, status } = splitBodyStatus(fullText)
+            session.replaceAssistantByExchange(exchangeNumber, body)
+            setHudStatus(status)
           },
           onPersisted: (info, fullText) => {
             // regen 은 assistant 가 새 row 로 재생성 — 새 messageId 스탬프(Codex critical 4)
-            session.replaceAssistantByExchange(exchangeNumber, fullText, info.assistantMessageId ?? undefined)
+            const { body, status } = splitBodyStatus(fullText)
+            session.replaceAssistantByExchange(exchangeNumber, body, info.assistantMessageId ?? undefined, status)
             setStreamingExchange(null)
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
@@ -243,10 +272,13 @@ export default function Chat() {
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            session.updateLastAssistant(fullText)
+            const { body, status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(body)
+            setHudStatus(status)
           },
           onPersisted: (info, fullText) => {
-            session.updateLastAssistant(fullText, info.exchangeNumber, info.assistantMessageId ?? undefined)
+            const { body, status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(body, info.exchangeNumber, info.assistantMessageId ?? undefined, status)
             session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
@@ -432,6 +464,8 @@ export default function Chat() {
           로어북: {matchedLore.map(e => e.name).join(', ')}
         </div>
       )}
+
+      <StatusHUD status={hudStatus} />
 
       <ChatInput disabled={isStreaming} onSend={sendMessage} />
       <Lightbox />

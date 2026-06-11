@@ -11,6 +11,8 @@ export const MessageDTOSchema = z.object({
   content: z.string(),
   exchange_number: z.number().int().nonnegative(),
   summarized: z.number().int(),
+  /** 상태창 분리 저장본(없으면 null — 기존 row/유저 메시지). content 는 호환 합본 유지. */
+  status: z.string().nullable().optional(),
   created_at: z.number(),
 })
 export type MessageDTO = z.infer<typeof MessageDTOSchema>

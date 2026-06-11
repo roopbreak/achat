@@ -12,7 +12,7 @@ import {
 import { respond } from '@achat/contracts/server';
 
 /** 메시지 공개 컬럼 — embedding(벡터)은 내부 전용이라 응답에서 차단(WS-M) */
-const MESSAGE_COLUMNS = 'id, session_id, role, content, exchange_number, summarized, created_at';
+const MESSAGE_COLUMNS = 'id, session_id, role, content, exchange_number, summarized, status, created_at';
 
 export const storySessionsRouter = Router();
 
@@ -87,10 +87,10 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
   createSession(newSessionId, story.id, srcSession.release_id ?? null, srcSession.preset_version_id ?? null);
 
   const stmt = db.prepare(
-    'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
+    'INSERT INTO messages (session_id, role, content, exchange_number, status) VALUES (?, ?, ?, ?, ?)'
   );
   db.transaction(() => {
-    for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number);
+    for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number, m.status ?? null);
   })();
 
   respond(res, ForkResponseSchema, { ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
@@ -148,10 +148,10 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
   createSession(newSessionId, story.id, slotSrc?.release_id ?? null, slotSrc?.preset_version_id ?? null);
 
   const stmt = db.prepare(
-    'INSERT INTO messages (session_id, role, content, exchange_number) VALUES (?, ?, ?, ?)'
+    'INSERT INTO messages (session_id, role, content, exchange_number, status) VALUES (?, ?, ?, ?, ?)'
   );
   const txn = db.transaction(() => {
-    for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number);
+    for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number, m.status ?? null);
   });
   txn();
 

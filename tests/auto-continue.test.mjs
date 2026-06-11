@@ -70,13 +70,16 @@ test('발동: 짧은 완결 응답 → 꼬리 절제 컨텍스트 + 재조립', 
   assert.equal(res.usage.inputTokens, 200);
 });
 
-test('발동 + 이어쓰기 무꼬리 종료 → 직전 꼬리 재부착 폴백', async () => {
+test('발동 + 이어쓰기 무꼬리 종료 → status=null(stale 방지), 본문만', async () => {
+  // 마지막 세그먼트가 상태창 없이 끝나면 그 턴 status 는 null — 이전 세그먼트 것을
+  // 재사용하지 않는다(stale status 가 다음 턴 컨텍스트를 오염시키는 것 차단, Codex critical).
   const { res } = await run([
     makeResult('그가 고개를 들었다. ' + '가'.repeat(300) + '\n\n' + TAIL1),
     makeResult('시선이 마주쳤다. ' + '나'.repeat(1500)),
   ]);
-  assert.ok(res.finalText.includes('침착하자'), '기존 꼬리 재부착');
-  assert.ok(res.finalText.trimEnd().endsWith('③ 자유 입력'));
+  assert.equal(res.status, null, '마지막 세그먼트 무꼬리 → status null');
+  assert.ok(!res.finalText.includes('침착하자'), '이전 상태창 재부착 안 함');
+  assert.ok(res.finalText.includes('시선이 마주쳤다'), '본문은 누적');
 });
 
 test('잘림(length) → 문장 직결 이어쓰기', async () => {
@@ -148,8 +151,32 @@ test('주인공 침범 금지 지시가 이어쓰기 프롬프트에 포함', as
   assert.ok(user.content.includes('주인공의 행동·대사·선택은 절대 생성하지'), '주인공 침범 금지 명시');
 });
 
-// ── splitTail 단위: 레포 실존 커스텀 포맷 (Codex 배포리뷰 critical) ──
-const { splitTail } = await import('../lib/providers/auto-continue.mjs');
+// ── splitTail/splitStatus 단위: 센티넬 + 레포 실존 커스텀 포맷 ──
+const { splitTail, splitStatus, STATUS_SENTINEL } = await import('../lib/prompt/status-sentinel.mjs');
+
+test('splitStatus: 센티넬 우선 분리', () => {
+  const r = splitStatus('본문이 흐른다.\n\n"대사."\n⟦STATUS⟧\n📍 카페\n[민지] 👗 니트');
+  assert.equal(r.body, '본문이 흐른다.\n\n"대사."');
+  assert.ok(r.status.startsWith('📍'));
+});
+
+test('splitStatus: 센티넬 없으면 splitTail 폴백', () => {
+  const r = splitStatus('본문이 흐른다.\n\n"대사."\n\n' + TAIL1);
+  assert.ok(r.body.endsWith('"대사."'));
+  assert.ok(r.status && r.status.startsWith('━'));
+});
+
+test('splitStatus: 센티넬·상태창 없으면 통째 body', () => {
+  const r = splitStatus('그냥 본문만 있고 끝.');
+  assert.equal(r.body, '그냥 본문만 있고 끝.');
+  assert.equal(r.status, null);
+});
+
+test('splitStatus: 중복 센티넬 — 마지막 기준 + 잔여 제거', () => {
+  const r = splitStatus('본문1 ⟦STATUS⟧ 인라인\n본문2\n⟦STATUS⟧\n📍 장소');
+  assert.ok(!r.body.includes('⟦STATUS⟧'), '본문에 센티넬 잔존 없음');
+  assert.ok(r.status.startsWith('📍'));
+});
 
 test('splitTail: 기본형 (━ + 📍)', () => {
   const r = splitTail('본문 서술이 충분히 이어진다.\n\n"대사도 있다."\n\n' + TAIL1);

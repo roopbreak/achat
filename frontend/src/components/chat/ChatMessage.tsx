@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import { GitBranch, MoreHorizontal, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import StreamingText from './StreamingText'
 import type { Message } from '../../hooks/useSession'
+import { stripStatus } from '../../lib/status'
+import { renderMarkdown } from '../../lib/markdown'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,11 +30,15 @@ export default function ChatMessage({
 }: Props) {
   const [showRegen, setShowRegen] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [showStatus, setShowStatus] = useState(false)
   const [editText, setEditText] = useState(message.content)
   const regenInputRef = useRef<HTMLInputElement>(null)
 
   const { role, content, exchange_number } = message
   const showActions = !isStreaming && exchange_number != null && exchange_number >= 0
+  // 본문만 말풍선에 렌더 — status 가 분리 저장된 메시지는 합본 content 에서 상태창 제거.
+  // 과거 메시지(status 없음)는 회귀 방지를 위해 content 통째.
+  const bodyContent = message.status ? stripStatus(content, message.status) : content
 
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
@@ -112,7 +118,24 @@ export default function ChatMessage({
       onClick={handleImageClick}
     >
       {showActions && <div className="float-right -mt-1 -mr-1 ml-2">{actionsMenu}</div>}
-      <StreamingText text={content} charName={charName} isStreaming={isStreaming && isLast} />
+      <StreamingText text={bodyContent} charName={charName} isStreaming={isStreaming && isLast} />
+      {message.status && !isStreaming && (
+        <div className="mt-1">
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={() => setShowStatus(v => !v)}
+          >
+            {showStatus ? '상태 접기' : '상태 보기'}
+          </button>
+          {showStatus && (
+            <div
+              className="status-hud mt-1 rounded-md border border-border bg-card px-3 py-2 text-[13px] leading-relaxed text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(message.status) }}
+            />
+          )}
+        </div>
+      )}
       {showRegen && (
         <div className="mt-2 flex items-center gap-2">
           <Input
