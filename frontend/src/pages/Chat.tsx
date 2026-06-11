@@ -156,49 +156,6 @@ export default function Chat() {
     return () => { cancelled = true }
   }, [session.sessionId])
 
-  // ── `!`-시스템 명령어 실행 (kind 분기 — §3-2) ──
-  const runCommand = useCallback(async (cmd: SystemCommand) => {
-    try {
-      if (cmd.kind === 'client_toggle') {
-        if (cmd.action === 'debugPanel') {
-          settings.toggleLoreDebug()
-          notice(`디버그 패널 ${settings.loreDebug ? 'OFF' : 'ON'}`)
-        } else {
-          notice(`알 수 없는 토글: ${cmd.action}`)
-        }
-        return
-      }
-      // 첫 메시지 전이면 세션 부트스트랩 — 첫 턴부터 모드가 적용되도록(P2 Codex critical 1)
-      let sid = session.sessionId
-      if (!sid) {
-        const boot = await api<{ sessionId: string }>(
-          `/api/stories/${encodeURIComponent(slug)}/session`, { method: 'POST' })
-        sid = boot.sessionId
-        session.persistSessionId(sid)
-        await session.loadMessages(sid)
-      }
-      if (cmd.kind === 'mode_toggle') {
-        const on = !modeFlags[cmd.action]
-        const r = await api<{ modeFlags: Record<string, boolean> }>(
-          `/api/sessions/${sid}/modes`,
-          { method: 'POST', body: JSON.stringify({ action: cmd.action, on }) },
-        )
-        setModeFlags(r.modeFlags ?? {})
-        notice(`${cmd.label} ${on ? 'ON' : 'OFF'} — 다음 턴부터 적용`)
-        return
-      }
-      if (cmd.kind === 'server_action') {
-        const r = await api<{ ran: boolean; detail?: string }>(
-          `/api/sessions/${sid}/actions/${encodeURIComponent(cmd.action)}`,
-          { method: 'POST' },
-        )
-        notice(r.detail ?? (r.ran ? `${cmd.label} 완료` : `${cmd.label} 실행 안 됨`))
-      }
-    } catch (e) {
-      notice(`${cmd.label} 실패: ${e instanceof Error ? e.message : String(e)}`)
-    }
-  }, [session, slug, modeFlags, settings, notice])
-
   // ── 전송 ──
   const sendMessage = useCallback(async (text: string) => {
     if (streamingRef.current) return
@@ -253,13 +210,63 @@ export default function Chat() {
     }
   }, [session, stream, slug, settings.model, settings.outputTarget, settings.loreDebug])
 
+  // ── `!`-시스템 명령어 실행 (kind 분기 — §3-2) ──
+  const runCommand = useCallback(async (cmd: SystemCommand) => {
+    try {
+      if (cmd.kind === 'prompt_command') {
+        // 카드 정의 LLM 커맨드 — 인터셉트가 아니라 trigger 텍스트를 그대로 전송
+        void sendMessage(cmd.trigger)
+        return
+      }
+      if (cmd.kind === 'client_toggle') {
+        if (cmd.action === 'debugPanel') {
+          settings.toggleLoreDebug()
+          notice(`디버그 패널 ${settings.loreDebug ? 'OFF' : 'ON'}`)
+        } else {
+          notice(`알 수 없는 토글: ${cmd.action}`)
+        }
+        return
+      }
+      // 첫 메시지 전이면 세션 부트스트랩 — 첫 턴부터 모드가 적용되도록(P2 Codex critical 1)
+      let sid = session.sessionId
+      if (!sid) {
+        const boot = await api<{ sessionId: string }>(
+          `/api/stories/${encodeURIComponent(slug)}/session`, { method: 'POST' })
+        sid = boot.sessionId
+        session.persistSessionId(sid)
+        await session.loadMessages(sid)
+      }
+      if (cmd.kind === 'mode_toggle') {
+        const on = !modeFlags[cmd.action]
+        const r = await api<{ modeFlags: Record<string, boolean> }>(
+          `/api/sessions/${sid}/modes`,
+          { method: 'POST', body: JSON.stringify({ action: cmd.action, on }) },
+        )
+        setModeFlags(r.modeFlags ?? {})
+        notice(`${cmd.label} ${on ? 'ON' : 'OFF'} — 다음 턴부터 적용`)
+        return
+      }
+      if (cmd.kind === 'server_action') {
+        const r = await api<{ ran: boolean; detail?: string }>(
+          `/api/sessions/${sid}/actions/${encodeURIComponent(cmd.action)}`,
+          { method: 'POST' },
+        )
+        notice(r.detail ?? (r.ran ? `${cmd.label} 완료` : `${cmd.label} 실행 안 됨`))
+      }
+    } catch (e) {
+      notice(`${cmd.label} 실패: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [session, slug, modeFlags, settings, notice, sendMessage])
+
   // 입력 인터셉트: 등록된 `!`-trigger 정확 일치만 명령어로 실행, 그 외(미등록 !포함)는
-  // 일반 입력으로 LLM 에 그대로 전송(부분/접두 매칭 금지 — §3-2)
+  // 일반 입력으로 LLM 에 그대로 전송(부분/접두 매칭 금지 — §3-2).
+  // prompt_command 는 인터셉트 비대상 — 어차피 LLM 행 텍스트라 일반 전송과 동일.
   const handleSendOrCommand = useCallback((text: string) => {
     const trimmed = text.trim()
     if (trimmed.startsWith('!')) {
       const cmd = storyDetail?.systemCommands?.find(c =>
-        c.trigger === trimmed || (c.requiresArg && trimmed.startsWith(c.trigger + ' ')))
+        c.kind !== 'prompt_command' &&
+        (c.trigger === trimmed || (c.requiresArg && trimmed.startsWith(c.trigger + ' '))))
       if (cmd) { void runCommand(cmd); return }
     }
     void sendMessage(text)

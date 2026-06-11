@@ -15,6 +15,7 @@ const KINDS = [
   ['mode_toggle', '모드 토글'],
   ['client_toggle', '클라 토글'],
   ['server_action', '서버 액션'],
+  ['prompt_command', 'LLM 전송'],
 ] as const
 
 interface Props {

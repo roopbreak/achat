@@ -18,7 +18,7 @@ export const COMMAND_GROUPS = ['기능', '모드', '분기'] as const
 export const SystemCommandSchema = z.object({
   trigger: z.string(),
   label: z.string(),
-  kind: z.enum(['client_toggle', 'server_action', 'mode_toggle']),
+  kind: z.enum(['client_toggle', 'server_action', 'mode_toggle', 'prompt_command']),
   action: z.string(),
   desc: z.string().optional(),
   requiresArg: z.boolean().optional(),
