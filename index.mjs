@@ -53,7 +53,17 @@ if (fs.existsSync(distNextDir)) {
   app.get('/next/{*path}', (_req, res) => res.status(503).send('next UI 미빌드 — npm run build -w frontend-next'));
 }
 
-app.use(express.static(distDir));
+// 해시 자산(/assets/*)은 영구 캐시(immutable), index.html 은 항상 재검증(no-cache)
+// → 배포 후 구 index.html 사용을 막아 "구 청크 요청 → 빈 화면" 재발 차단.
+app.use(express.static(distDir, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 app.use('/favicon.ico', (_req, res) => res.status(204).end());
 
 // 스토리별 외부 호스팅 이미지 자체 호스팅 (DATA_DIR/eh → /eh)
@@ -76,7 +86,14 @@ app.use('/api/sessions',       sessionMessagesRouter); // /:id/messages
 app.use('/api/messages',       messagesRouter);        // P4a messageId 좌표 write API
 
 // SPA fallback → index.html
-app.get('/{*path}', (_req, res) => {
+app.get('/{*path}', (req, res) => {
+  // 정적 자산(존재했어야 할 .js/.css/이미지 등)·/assets/ 경로는 fallback 흡수 금지.
+  // 구 청크 요청에 index.html(HTML)을 돌려주면 JS 파싱 실패로 빈 화면이 된다 —
+  // 404 로 명확히 실패시켜 클라가 새로고침(새 index.html→새 청크)하도록 한다.
+  if (req.path.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(req.path)) {
+    return res.status(404).end();
+  }
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(distDir, 'index.html'));
 });
 
