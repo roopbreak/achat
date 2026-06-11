@@ -22,6 +22,7 @@ import {
   getLatestJob,
   getExistingSceneKeys, deleteStoryImageBySceneKey,
   parseCommands,
+  parseSystemCommands,
   listEtlReviewsWithStory, getEtlReview, updateEtlReviewProposal, setEtlReviewStatus,
   listActors, getActor, insertActor, updateActor, deleteActor,
   getActorAssets, insertActorAsset, deleteActorAssetsByActor,
@@ -140,6 +141,12 @@ router.post('/stories', (req, res) => {
     }
     if (getStoryBySlug(slug.trim())) return res.status(409).json({ error: '이미 존재하는 slug' });
     createStoryManual({ slug: slug.trim(), title: title.trim(), char_name: char_name.trim(), description, personality, scenario, first_mes, post_history_instructions, category, tags, narration_style, narration_style_source, commands });
+    // 응답 구성(011) 필드는 updateStory 의 검증 경로 재사용 — 신규 생성에서도 첫 저장에 반영(Codex medium 3)
+    const created = getStoryBySlug(slug.trim());
+    const { status_mode, choices_mode, output_target, system_commands } = req.body;
+    if (created && (status_mode != null || choices_mode != null || output_target !== undefined || system_commands != null)) {
+      updateStory(created.id, { status_mode, choices_mode, output_target, system_commands });
+    }
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -379,7 +386,12 @@ router.post('/generate/stop', (req, res) => {
 router.get('/stories/:slug', (req, res) => {
   const story = resolveStory(req, res);
   if (!story) return;
-  respond(res, AdminStoryDetailSchema, { ...story, commands: parseCommands(story.commands) });
+  respond(res, AdminStoryDetailSchema, {
+    ...story,
+    commands: parseCommands(story.commands),
+    // 어드민 편집용 — 스토리 정의분만(병합 전). 명령어 탭이 배열로 소비·저장.
+    system_commands: parseSystemCommands(story.system_commands),
+  });
 });
 
 // PUT /api/admin/stories/:slug

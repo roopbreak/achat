@@ -77,3 +77,28 @@ export const SlotLoadResponseSchema = z.object({
   turnCount: z.number().int(),
 })
 export type SlotLoadResponse = z.infer<typeof SlotLoadResponseSchema>
+
+/**
+ * POST /api/sessions/:id/modes — `!`-시스템 명령어 mode_toggle (three-part-separation §3-3).
+ * action = mode_flags 키(예 nsfwOverride). 스토리에서 enabled:false 면 403.
+ */
+export const SessionModeBodySchema = z.object({
+  action: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,39}$/),
+  on: z.boolean(),
+})
+export type SessionModeBody = z.infer<typeof SessionModeBodySchema>
+
+export const SessionModeResponseSchema = z.object({
+  ok: z.literal(true),
+  modeFlags: z.record(z.string(), z.boolean()),
+})
+export type SessionModeResponse = z.infer<typeof SessionModeResponseSchema>
+
+/** POST /api/sessions/:id/actions/:action — server_action(예 summarize) 실행 결과 */
+export const SessionActionResponseSchema = z.object({
+  ok: z.literal(true),
+  action: z.string(),
+  ran: z.boolean(),
+  detail: z.string().optional(),
+})
+export type SessionActionResponse = z.infer<typeof SessionActionResponseSchema>

@@ -25,6 +25,13 @@ export interface GenerationInfo {
   segmentCount: number
   /** 분리된 상태창(HUD 확정용) — 없으면 null */
   status?: string | null
+  /** 분량 디버그(D7) — !디버그 패널 표시용 */
+  outputDebug?: {
+    band: string | null
+    floor: number | null
+    bodyChars: number | null
+    outputTokens: number | null
+  }
 }
 
 interface SSECallbacks {
@@ -153,6 +160,7 @@ export function useSSEStream() {
                 continued: evt.continued,
                 segmentCount: evt.segmentCount,
                 status: evt.status,
+                outputDebug: evt.outputDebug,
               })
               break
             case 'message_persisted':

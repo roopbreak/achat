@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { getStories, getStoryBySlug, getDB, parseCommands } from '../lib/db.mjs';
+import { getStories, getStoryBySlug, getDB, parseCommands, parseSystemCommands } from '../lib/db.mjs';
+import { resolveSystemCommands } from '../lib/commands/builtins.mjs';
 import { StorySummaryListSchema, RecentStoryListSchema, StoryDetailSchema } from '@achat/contracts';
 import { respond } from '@achat/contracts/server';
 
@@ -48,6 +49,11 @@ router.get('/:slug', (req, res) => {
     tags: story.tags ?? null,
     first_mes: story.first_mes ?? '',
     commands: parseCommands(story.commands),
+    // 응답 구성(011) + `!`-시스템 명령어(builtin+스토리 병합) — 채팅 인터셉트·팔레트 소비
+    status_mode: story.status_mode ?? 'bottom',
+    choices_mode: story.choices_mode ?? 'on',
+    output_target: story.output_target ?? null,
+    systemCommands: resolveSystemCommands(parseSystemCommands(story.system_commands)),
   });
 });
 

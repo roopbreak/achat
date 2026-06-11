@@ -6,10 +6,32 @@ function read(key: string, fallback: string): string {
   return localStorage.getItem(key) ?? fallback
 }
 
+/** 분량 목표 밴드(D5) — 'story' = 스토리 기본(서버가 stories.output_target → 기본 밴드 해석) */
+export type OutputBand = 'story' | 'short' | 'light' | 'medium' | 'full' | 'epic'
+
+const OUTPUT_BANDS: OutputBand[] = ['story', 'short', 'light', 'medium', 'full', 'epic']
+
+// 구 maxTokens 다이얼(localStorage chat_max_tokens) → 밴드 1회 마이그레이션
+const LEGACY_TOKENS_BAND: Record<string, OutputBand> = {
+  '1024': 'short', '2048': 'light', '3072': 'medium', '4096': 'full', '8192': 'epic',
+}
+
+function readOutputTarget(): OutputBand {
+  const stored = localStorage.getItem('chat_output_target')
+  if (stored && OUTPUT_BANDS.includes(stored as OutputBand)) return stored as OutputBand
+  const legacy = localStorage.getItem('chat_max_tokens')
+  if (legacy && LEGACY_TOKENS_BAND[legacy]) {
+    const band = LEGACY_TOKENS_BAND[legacy]
+    localStorage.setItem('chat_output_target', band)
+    return band
+  }
+  return 'story'
+}
+
 export interface Settings {
   fontSize: number
   model: string
-  maxTokens: number
+  outputTarget: OutputBand
   imagesEnabled: boolean
   loreDebug: boolean
 }
@@ -17,7 +39,7 @@ export interface Settings {
 export function useSettings() {
   const [fontSize, setFontSize] = useState(() => parseInt(read('chat_font_size', String(FONT_DEFAULT)), 10))
   const [model, setModel] = useState(() => read('chat_model', 'claude-sonnet-4-6'))
-  const [maxTokens, setMaxTokens] = useState(() => parseInt(read('chat_max_tokens', '3072'), 10))
+  const [outputTarget, setOutputTarget] = useState<OutputBand>(readOutputTarget)
   const [imagesEnabled, setImagesEnabled] = useState(() => read('chat_images', 'on') !== 'off')
   const [loreDebug, setLoreDebug] = useState(() => read('chat_lore_debug', 'off') === 'on')
 
@@ -34,9 +56,9 @@ export function useSettings() {
     localStorage.setItem('chat_model', m)
   }, [])
 
-  const changeMaxTokens = useCallback((t: number) => {
-    setMaxTokens(t)
-    localStorage.setItem('chat_max_tokens', String(t))
+  const changeOutputTarget = useCallback((band: OutputBand) => {
+    setOutputTarget(band)
+    localStorage.setItem('chat_output_target', band)
   }, [])
 
   const toggleImages = useCallback(() => {
@@ -56,7 +78,7 @@ export function useSettings() {
   }, [])
 
   return {
-    fontSize, model, maxTokens, imagesEnabled, loreDebug,
-    changeFontSize, changeModel, changeMaxTokens, toggleImages, toggleLoreDebug,
+    fontSize, model, outputTarget, imagesEnabled, loreDebug,
+    changeFontSize, changeModel, changeOutputTarget, toggleImages, toggleLoreDebug,
   }
 }

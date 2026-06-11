@@ -1,7 +1,7 @@
 // API 타입은 @achat/contracts 가 단일 출처(WS-M P4a) — 수기 interface 제거.
 // 기존 import 경로 호환을 위해 재export.
 export { COMMAND_GROUPS } from '@achat/contracts'
-export type { Command, StoryDetail, StorySummary, RecentStory, MessageDTO } from '@achat/contracts'
+export type { Command, StoryDetail, StorySummary, RecentStory, MessageDTO, SystemCommand } from '@achat/contracts'
 
 function getAuthToken(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]*)/)

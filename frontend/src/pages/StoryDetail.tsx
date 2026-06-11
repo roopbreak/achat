@@ -182,6 +182,102 @@ function PersonaSettings({ slug }: { slug: string }) {
   )
 }
 
+// 응답 구성 토글 (D4 혼합 — 가벼운 토글은 진입화면, 명령어 편집은 StoryEdit 탭)
+function ResponseSettings({ slug, story }: { slug: string; story: StoryDetailData }) {
+  const [open, setOpen] = useState(false)
+  const [statusMode, setStatusMode] = useState<string>(story.status_mode ?? 'bottom')
+  const [choicesMode, setChoicesMode] = useState<string>(story.choices_mode ?? 'on')
+  const [outputTarget, setOutputTarget] = useState<string>(story.output_target ?? '')
+  const [saving, setSaving] = useState(false)
+  const [result, setResult] = useState('')
+
+  const save = async () => {
+    setSaving(true); setResult('')
+    try {
+      await api(`/api/admin/stories/${encodeURIComponent(slug)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status_mode: statusMode,
+          choices_mode: choicesMode,
+          output_target: outputTarget || null,
+        }),
+      })
+      setResult('저장 완료 — 다음 턴부터 적용')
+    } catch (e) {
+      setResult(`저장 실패: ${e instanceof Error ? e.message : String(e)}`)
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <section className="mb-6 rounded-xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-medium">응답 구성 (상태창 / 선택지 / 분량)</span>
+        <ChevronDown className={`size-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="space-y-4 border-t border-border px-4 py-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="rc-status">상태창 (info부)</Label>
+            <Select value={statusMode} onValueChange={setStatusMode}>
+              <SelectTrigger id="rc-status" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bottom">표시</SelectItem>
+                <SelectItem value="off">끄기 (순수 서사)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rc-choices">선택지</Label>
+            <Select value={choicesMode} onValueChange={setChoicesMode}>
+              <SelectTrigger id="rc-choices" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="on">표시</SelectItem>
+                <SelectItem value="off">끄기</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rc-band">분량 기본값 (유저가 "스토리 기본" 선택 시)</Label>
+            <Select value={outputTarget || 'none'} onValueChange={v => setOutputTarget(v === 'none' ? '' : v)}>
+              <SelectTrigger id="rc-band" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">유저 설정 따름</SelectItem>
+                <SelectItem value="short">짧게 (600~900자)</SelectItem>
+                <SelectItem value="light">가볍게 (900~1,400자)</SelectItem>
+                <SelectItem value="medium">보통 (1,400~1,800자)</SelectItem>
+                <SelectItem value="full">충분히 (1,800~2,400자)</SelectItem>
+                <SelectItem value="epic">길게 (2,400~3,600자)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(story.systemCommands?.length ?? 0) > 0 && (
+            <div className="space-y-1.5">
+              <Label>활성 시스템 명령어 (편집은 편집 → 응답 구성 탭)</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {story.systemCommands!.map(c => (
+                  <Badge key={c.trigger} variant="outline" className="font-mono text-muted-foreground" title={c.desc}>
+                    {c.trigger}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={save} disabled={saving}>저장</Button>
+            {result && <span className="text-xs text-muted-foreground">{result}</span>}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function StoryDetail() {
   const { slug: rawName } = useParams<{ slug: string }>()
   const slug = decodeURIComponent(rawName ?? '')
@@ -282,6 +378,7 @@ export default function StoryDetail() {
         </Section>
 
         <PersonaSettings slug={slug} />
+        <ResponseSettings slug={slug} story={story} />
 
         <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 py-3 text-center backdrop-blur">
           <div className="mx-auto flex max-w-3xl items-center justify-center gap-2 px-4">

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry, type GenerationInfo } from '../hooks/useSSEStream'
-import { api, type StoryDetail } from '../lib/api'
+import { api, type StoryDetail, type SystemCommand } from '../lib/api'
 import { splitBodyStatus, splitChoices } from '../lib/status'
 import ChatHeader from '../components/chat/ChatHeader'
 import StatusHUD from '../components/chat/StatusHUD'
@@ -83,6 +83,17 @@ export default function Chat() {
   // 스토리 상세 (가이드 패널용) — fetch 실패 시 null 유지
   const [storyDetail, setStoryDetail] = useState<StoryDetail | null>(null)
 
+  // `!`-시스템 명령어 (three-part-separation P2) — 팔레트·인터셉트·세션 모드 상태
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [modeFlags, setModeFlags] = useState<Record<string, boolean>>({})
+  const [cmdNotice, setCmdNotice] = useState<string | null>(null)
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const notice = useCallback((msg: string) => {
+    setCmdNotice(msg)
+    if (noticeTimer.current) clearTimeout(noticeTimer.current)
+    noticeTimer.current = setTimeout(() => setCmdNotice(null), 4000)
+  }, [])
+
   // 페르소나
   const [personas, setPersonas] = useState<Persona[]>([])
   const [selectedPersonaId, setSelectedPersonaId] = useState<number | null>(null)
@@ -135,6 +146,59 @@ export default function Chat() {
     return () => { cancelled = true }
   }, [slug])
 
+  // 세션 모드 상태 로드 (팔레트 on/off 표시)
+  useEffect(() => {
+    if (!session.sessionId) { setModeFlags({}); return }
+    let cancelled = false
+    api<{ modeFlags: Record<string, boolean> }>(`/api/sessions/${session.sessionId}/modes`)
+      .then(r => { if (!cancelled) setModeFlags(r.modeFlags ?? {}) })
+      .catch(() => { if (!cancelled) setModeFlags({}) })
+    return () => { cancelled = true }
+  }, [session.sessionId])
+
+  // ── `!`-시스템 명령어 실행 (kind 분기 — §3-2) ──
+  const runCommand = useCallback(async (cmd: SystemCommand) => {
+    try {
+      if (cmd.kind === 'client_toggle') {
+        if (cmd.action === 'debugPanel') {
+          settings.toggleLoreDebug()
+          notice(`디버그 패널 ${settings.loreDebug ? 'OFF' : 'ON'}`)
+        } else {
+          notice(`알 수 없는 토글: ${cmd.action}`)
+        }
+        return
+      }
+      // 첫 메시지 전이면 세션 부트스트랩 — 첫 턴부터 모드가 적용되도록(P2 Codex critical 1)
+      let sid = session.sessionId
+      if (!sid) {
+        const boot = await api<{ sessionId: string }>(
+          `/api/stories/${encodeURIComponent(slug)}/session`, { method: 'POST' })
+        sid = boot.sessionId
+        session.persistSessionId(sid)
+        await session.loadMessages(sid)
+      }
+      if (cmd.kind === 'mode_toggle') {
+        const on = !modeFlags[cmd.action]
+        const r = await api<{ modeFlags: Record<string, boolean> }>(
+          `/api/sessions/${sid}/modes`,
+          { method: 'POST', body: JSON.stringify({ action: cmd.action, on }) },
+        )
+        setModeFlags(r.modeFlags ?? {})
+        notice(`${cmd.label} ${on ? 'ON' : 'OFF'} — 다음 턴부터 적용`)
+        return
+      }
+      if (cmd.kind === 'server_action') {
+        const r = await api<{ ran: boolean; detail?: string }>(
+          `/api/sessions/${sid}/actions/${encodeURIComponent(cmd.action)}`,
+          { method: 'POST' },
+        )
+        notice(r.detail ?? (r.ran ? `${cmd.label} 완료` : `${cmd.label} 실행 안 됨`))
+      }
+    } catch (e) {
+      notice(`${cmd.label} 실패: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [session, slug, modeFlags, settings, notice])
+
   // ── 전송 ──
   const sendMessage = useCallback(async (text: string) => {
     if (streamingRef.current) return
@@ -152,7 +216,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: text, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
+        { message: text, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -187,7 +251,19 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.loreDebug])
+
+  // 입력 인터셉트: 등록된 `!`-trigger 정확 일치만 명령어로 실행, 그 외(미등록 !포함)는
+  // 일반 입력으로 LLM 에 그대로 전송(부분/접두 매칭 금지 — §3-2)
+  const handleSendOrCommand = useCallback((text: string) => {
+    const trimmed = text.trim()
+    if (trimmed.startsWith('!')) {
+      const cmd = storyDetail?.systemCommands?.find(c =>
+        c.trigger === trimmed || (c.requiresArg && trimmed.startsWith(c.trigger + ' ')))
+      if (cmd) { void runCommand(cmd); return }
+    }
+    void sendMessage(text)
+  }, [storyDetail, runCommand, sendMessage])
 
   // ── 재생성 ──
   const handleRegen = useCallback(async (exchangeNumber: number, feedback: string) => {
@@ -204,7 +280,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/regen`,
-        { sessionId: session.sessionId, feedback, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
+        { sessionId: session.sessionId, feedback, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -236,7 +312,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.loreDebug])
 
   // ── 수정 (messageId 좌표 — WS-M P4a) ──
   const handleEdit = useCallback(async (message: Message, newContent: string) => {
@@ -270,7 +346,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: newContent, sessionId: session.sessionId, model: settings.model, maxTokens: settings.maxTokens, loreDebug: settings.loreDebug },
+        { message: newContent, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -300,7 +376,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, slug, stream, settings.model, settings.maxTokens, settings.loreDebug])
+  }, [session, slug, stream, settings.model, settings.outputTarget, settings.loreDebug])
 
   // ── 분기 ──
   const handleFork = useCallback(async (exchangeNumber: number) => {
@@ -415,14 +491,14 @@ export default function Chat() {
         open={settingsOpen}
         fontSize={settings.fontSize}
         model={settings.model}
-        maxTokens={settings.maxTokens}
+        outputTarget={settings.outputTarget}
         imagesEnabled={settings.imagesEnabled}
         loreDebug={settings.loreDebug}
         personas={personas}
         selectedPersonaId={selectedPersonaId}
         onChangeFontSize={settings.changeFontSize}
         onChangeModel={settings.changeModel}
-        onChangeMaxTokens={settings.changeMaxTokens}
+        onChangeOutputTarget={settings.changeOutputTarget}
         onToggleImages={settings.toggleImages}
         onToggleLoreDebug={settings.toggleLoreDebug}
         onChangePersona={changePersona}
@@ -470,6 +546,25 @@ export default function Chat() {
         </div>
       )}
 
+      {/* 분량 디버그(D7) — 로어북 정보처럼 디버그 모드에서 응답 분량 표시 */}
+      {settings.loreDebug && lastGen?.outputDebug && (
+        <div className="shrink-0 border-t border-border bg-card px-4 py-1 font-mono text-[11px] text-primary">
+          분량: {lastGen.outputDebug.bodyChars?.toLocaleString() ?? '?'}자
+          {lastGen.outputDebug.floor != null && ` / 하한 ${lastGen.outputDebug.floor.toLocaleString()}자`}
+          {lastGen.outputDebug.band && ` (${lastGen.outputDebug.band})`}
+          {` · ${lastGen.finishReason}`}
+          {lastGen.continued && ` · 이어쓰기 ${lastGen.segmentCount}세그`}
+          {lastGen.outputDebug.outputTokens != null && ` · ${lastGen.outputDebug.outputTokens.toLocaleString()}tk`}
+        </div>
+      )}
+
+      {/* `!`-명령어 실행 결과 안내 (메시지 저장 없음 — 일시 표시) */}
+      {cmdNotice && (
+        <div className="shrink-0 border-t border-border bg-card px-4 py-1 font-mono text-[11px] text-amber-400">
+          ⚡ {cmdNotice}
+        </div>
+      )}
+
       <StatusHUD status={statusBody} fontSize={settings.fontSize} />
 
       {choices.length > 0 && (
@@ -482,7 +577,37 @@ export default function Chat() {
         />
       )}
 
-      <ChatInput ref={inputRef} disabled={isStreaming} onSend={sendMessage} />
+      {/* `!`-명령어 클릭 팔레트 (⚡ 토글) — 모드는 ● 로 on 표시 */}
+      {paletteOpen && (storyDetail?.systemCommands?.length ?? 0) > 0 && (
+        <div className="flex shrink-0 flex-wrap gap-1.5 border-t border-border bg-card px-3 py-2">
+          {storyDetail!.systemCommands!.map(c => (
+            <button
+              key={c.trigger}
+              type="button"
+              title={c.desc ?? c.trigger}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                c.kind === 'mode_toggle' && modeFlags[c.action]
+                  ? 'border-primary bg-primary/15 text-primary'
+                  : 'border-border bg-popover text-muted-foreground hover:border-primary hover:text-foreground'
+              }`}
+              onClick={() => {
+                if (c.requiresArg) { inputRef.current?.insert(`${c.trigger} `); return }
+                void runCommand(c)
+              }}
+            >
+              {c.kind === 'mode_toggle' && modeFlags[c.action] ? '● ' : ''}{c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <ChatInput
+        ref={inputRef}
+        disabled={isStreaming}
+        onSend={handleSendOrCommand}
+        onTogglePalette={(storyDetail?.systemCommands?.length ?? 0) > 0 ? () => setPaletteOpen(v => !v) : undefined}
+        paletteOpen={paletteOpen}
+      />
       <Lightbox />
     </div>
   )

@@ -14,18 +14,20 @@ interface Persona {
   is_default?: boolean
 }
 
+import type { OutputBand } from '@/hooks/useSettings'
+
 interface Props {
   open: boolean
   fontSize: number
   model: string
-  maxTokens: number
+  outputTarget: OutputBand
   imagesEnabled: boolean
   loreDebug: boolean
   personas: Persona[]
   selectedPersonaId: number | null
   onChangeFontSize: (delta: number) => void
   onChangeModel: (model: string) => void
-  onChangeMaxTokens: (tokens: number) => void
+  onChangeOutputTarget: (band: OutputBand) => void
   onToggleImages: () => void
   onToggleLoreDebug: () => void
   onChangePersona: (id: number) => void
@@ -44,18 +46,20 @@ const MODELS = [
   ['gemini-3.5-flash', 'Gemini 3.5 Flash'],
 ] as const
 
-const MAX_TOKENS = [
-  [1024, '짧게 (1K)'],
-  [2048, '보통 (2K)'],
-  [3072, '기본 (3K)'],
-  [4096, '길게 (4K)'],
-  [8192, '매우 길게 (8K)'],
+// 분량 목표 밴드(D5) — 프롬프트 목표만 결정, 상한(max_tokens)은 서버 고정 캡(16K)
+const OUTPUT_BANDS = [
+  ['story', '스토리 기본'],
+  ['short', '짧게 (600~900자)'],
+  ['light', '가볍게 (900~1,400자)'],
+  ['medium', '보통 (1,400~1,800자)'],
+  ['full', '충분히 (1,800~2,400자)'],
+  ['epic', '길게 (2,400~3,600자)'],
 ] as const
 
 export default function SettingsPanel({
-  open, fontSize, model, maxTokens, imagesEnabled, loreDebug,
+  open, fontSize, model, outputTarget, imagesEnabled, loreDebug,
   personas, selectedPersonaId,
-  onChangeFontSize, onChangeModel, onChangeMaxTokens,
+  onChangeFontSize, onChangeModel, onChangeOutputTarget,
   onToggleImages, onToggleLoreDebug, onChangePersona, onClose,
 }: Props) {
   return (
@@ -77,12 +81,12 @@ export default function SettingsPanel({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-muted-foreground">출력량</Label>
-            <Select value={String(maxTokens)} onValueChange={(v) => onChangeMaxTokens(parseInt(v, 10))}>
+            <Label className="text-muted-foreground">서술 분량</Label>
+            <Select value={outputTarget} onValueChange={(v) => onChangeOutputTarget(v as OutputBand)}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {MAX_TOKENS.map(([v, label]) => (
-                  <SelectItem key={v} value={String(v)}>{label}</SelectItem>
+                {OUTPUT_BANDS.map(([v, label]) => (
+                  <SelectItem key={v} value={v}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

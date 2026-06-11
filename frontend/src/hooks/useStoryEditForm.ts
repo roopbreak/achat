@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, apiRaw, type Command } from '../lib/api'
+import { api, apiRaw, type Command, type SystemCommand } from '../lib/api'
 
 // 편집 폼 전용 — 안정적 React key를 위한 클라이언트 id 부착. 저장 시 _cid는 제거됨
 export interface CommandRow extends Command {
@@ -10,6 +10,20 @@ export interface CommandRow extends Command {
 let _cmdCounter = 0
 function newCmdRow(cmd = '', desc = '', group = '기능'): CommandRow {
   return { _cid: `cmd_${Date.now()}_${_cmdCounter++}`, cmd, desc, group }
+}
+
+// `!`-시스템 명령어 편집 행 (three-part-separation P3)
+export interface SystemCommandRow extends SystemCommand {
+  _cid: string
+}
+
+let _sysCmdCounter = 0
+function newSysCmdRow(partial: Partial<SystemCommand> = {}): SystemCommandRow {
+  return {
+    _cid: `sys_${Date.now()}_${_sysCmdCounter++}`,
+    trigger: '', label: '', kind: 'mode_toggle', action: '',
+    ...partial,
+  }
 }
 
 export interface LoreEntry {
@@ -58,6 +72,15 @@ export interface StoryEditForm {
     addLore: () => string
     removeLore: (targetId: string) => boolean
   }
+  responseComposition: {
+    statusMode: string; setStatusMode: (v: string) => void
+    choicesMode: string; setChoicesMode: (v: string) => void
+    outputTarget: string; setOutputTarget: (v: string) => void
+    systemCommands: SystemCommandRow[]
+    addSystemCommand: () => void
+    updateSystemCommand: (index: number, field: keyof SystemCommand, value: unknown) => void
+    removeSystemCommand: (index: number) => void
+  }
   ui: { saving: boolean; status: { text: string; ok: boolean } | null; isEdit: boolean; editName: string | null }
   actions: { save: () => Promise<void>; exportStory: () => Promise<void> }
 }
@@ -83,6 +106,12 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
 
   // ── 커맨드 ──
   const [commands, setCommands] = useState<CommandRow[]>([])
+
+  // ── 응답 구성 (011 — three-part-separation P3) ──
+  const [statusMode, setStatusMode] = useState('bottom')
+  const [choicesMode, setChoicesMode] = useState('on')
+  const [outputTarget, setOutputTarget] = useState('') // '' = 유저 설정 따름(NULL)
+  const [systemCommands, setSystemCommands] = useState<SystemCommandRow[]>([])
 
   // ── 로어북 ──
   const [lore, setLore] = useState<LoreEntry[]>([])
@@ -113,6 +142,14 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
           : []
       )
       try { setTags(story.tags ? JSON.parse(story.tags as string) : []) } catch { setTags([]) }
+      setStatusMode((story.status_mode as string) ?? 'bottom')
+      setChoicesMode((story.choices_mode as string) ?? 'on')
+      setOutputTarget((story.output_target as string) ?? '')
+      setSystemCommands(
+        Array.isArray(story.system_commands)
+          ? (story.system_commands as SystemCommand[]).map(c => newSysCmdRow(c))
+          : []
+      )
       setLore((loreData as Array<Record<string, unknown>>).map(e => ({
         ...e,
         clientId: `db_${e.id}`,
@@ -159,6 +196,19 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     setCommands(prev => prev.filter((_, i) => i !== index))
   }, [])
 
+  // ── 시스템 명령어 핸들러 ──
+  const addSystemCommand = useCallback(() => {
+    setSystemCommands(prev => [...prev, newSysCmdRow()])
+  }, [])
+
+  const updateSystemCommand = useCallback((index: number, field: keyof SystemCommand, value: unknown) => {
+    setSystemCommands(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)))
+  }, [])
+
+  const removeSystemCommand = useCallback((index: number) => {
+    setSystemCommands(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
   // ── 로어 핸들러 (ID 기반) ──
   const updateLore = useCallback((targetId: string, field: string, value: unknown) => {
     setLore(prev => prev.map(e => {
@@ -196,6 +246,10 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
       const cleanCommands = commands
         .map(c => ({ cmd: c.cmd.trim(), desc: c.desc.trim(), group: c.group?.trim() || undefined }))
         .filter(c => c.cmd)
+      // 시스템 명령어: trigger/label/action 빈 행 제외 + _cid 제거
+      const cleanSysCommands = systemCommands
+        .map(({ _cid: _omit, ...c }) => ({ ...c, trigger: c.trigger.trim(), label: c.label.trim(), action: c.action.trim() }))
+        .filter(c => c.trigger && c.label && c.action)
       const storyData = {
         char_name: charName, description: desc,
         personality: personality || null, scenario: scenario || null,
@@ -204,6 +258,9 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
         narration_style_source: narrationStyle ? 'manual' : 'unset',
         category: category || null, tags: tags.length ? tags : null,
         commands: cleanCommands,
+        status_mode: statusMode, choices_mode: choicesMode,
+        output_target: outputTarget || null,
+        system_commands: cleanSysCommands,
       }
       let currentName = editName ?? name
       if (isEdit && name !== editName) {
@@ -241,7 +298,7 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     } catch (err) {
       setStatus({ text: (err as Error).message, ok: false })
     } finally { setSaving(false) }
-  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, narrationStyle, category, tags, commands, lore, isEdit, editName, navigate])
+  }, [name, charName, desc, personality, scenario, firstMes, postHistoryInstructions, narrationStyle, category, tags, commands, lore, statusMode, choicesMode, outputTarget, systemCommands, isEdit, editName, navigate])
 
   // ── 익스포트 ──
   const exportStory = useCallback(async () => {
@@ -261,6 +318,11 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
     promptFields: { desc, setDesc, personality, setPersonality, scenario, setScenario, firstMes, setFirstMes, postHistoryInstructions, setPostHistoryInstructions, narrationStyle, setNarrationStyle },
     loreState: { lore, visible },
     loreActions: { updateLore, addLore, removeLore },
+    responseComposition: {
+      statusMode, setStatusMode, choicesMode, setChoicesMode,
+      outputTarget, setOutputTarget,
+      systemCommands, addSystemCommand, updateSystemCommand, removeSystemCommand,
+    },
     ui: { saving, status, isEdit, editName },
     actions: { save, exportStory },
   }

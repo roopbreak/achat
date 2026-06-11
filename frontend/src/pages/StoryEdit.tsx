@@ -3,15 +3,17 @@ import { useSearchParams, Link } from 'react-router-dom'
 import BasicInfoTab from '../components/story-edit/BasicInfoTab'
 import PromptTab, { type PromptSubTab } from '../components/story-edit/PromptTab'
 import LoreBookTab from '../components/story-edit/LoreBookTab'
+import ResponseTab from '../components/story-edit/ResponseTab'
 import ActionBar from '../components/story-edit/ActionBar'
 import { useStoryEditForm } from '../hooks/useStoryEditForm'
 
-type MainTab = 'basic' | 'prompt' | 'lore'
+type MainTab = 'basic' | 'prompt' | 'lore' | 'response'
 
 const MAIN_TABS: { key: MainTab; label: string }[] = [
   { key: 'basic', label: '기본 정보' },
   { key: 'prompt', label: '프롬프트' },
   { key: 'lore', label: '로어북' },
+  { key: 'response', label: '응답 구성' },
 ]
 
 export default function StoryEdit() {
@@ -55,6 +57,7 @@ export default function StoryEdit() {
           {mainTab === 'basic' && <BasicInfoTab {...form.basicInfo} />}
           {mainTab === 'prompt' && <PromptTab {...form.promptFields} subTab={promptSubTab} onSubTabChange={setPromptSubTab} />}
           {mainTab === 'lore' && <LoreBookTab lore={form.loreState.lore} visible={form.loreState.visible} {...form.loreActions} />}
+          {mainTab === 'response' && <ResponseTab {...form.responseComposition} />}
         </div>
 
         {/* 하단 액션 바 */}

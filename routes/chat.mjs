@@ -7,6 +7,7 @@ import {
   getPersona, getDefaultPersona, getStoryCurrentPresetVersionId,
 } from '../lib/db.mjs';
 import { buildContext } from '../lib/context-builder.mjs';
+import { resolveOutputBand, MAX_TOKENS_CAP } from '../lib/prompt/builtins.mjs';
 import { resolveStoryView } from '../lib/story-resolver.mjs';
 import { streamWithContinuation } from '../lib/providers/auto-continue.mjs';
 import { joinWithSentinel, splitStatus } from '../lib/prompt/status-sentinel.mjs';
@@ -43,6 +44,47 @@ function resolveStory(req, res) {
   return story;
 }
 
+/**
+ * 세션 생성 + first_mes 시드(상태창 분리 포함) — chat 첫 턴과 동일 동작.
+ * 부트스트랩 엔드포인트(/:slug/session)와 chat 경로가 공유한다.
+ */
+function createSeededSession(story) {
+  const sessionId = randomUUID();
+  createSession(sessionId, story.id, story.current_release_id ?? null, getStoryCurrentPresetVersionId(story));
+  const session = getSession(sessionId);
+
+  // 0턴 first_mes 시드도 핀한 release 뷰에서 — buildContext 의 frozen first_mes 와 일치(Codex F1).
+  // legacy(release NULL)면 resolveStoryView 가 원본을 그대로 반환하므로 기존과 동일.
+  const seedView = resolveStoryView(story, session.release_id ?? null);
+  if (seedView.first_mes) {
+    const persona = story.persona_id
+      ? getPersona(story.persona_id)
+      : getDefaultPersona();
+    const userName = persona?.name || '유저';
+    // first_mes 도 상태창 분리: content 는 원본 유지(표시 안전), status 만 추출해
+    // 인트로부터 HUD·선택지 버튼이 작동하게 한다(센티넬 없으면 splitTail 폴백, Codex high 1).
+    const seedText = seedView.first_mes.replaceAll('{{user}}', userName);
+    insertMessage({
+      session_id:      sessionId,
+      role:            'assistant',
+      content:         seedText,
+      status:          splitStatus(seedText).status,
+      exchange_number: 0,
+    });
+  }
+  return sessionId;
+}
+
+// POST /api/stories/:slug/session — 세션 부트스트랩.
+// 첫 메시지 전에 `!`-명령어(모드 토글 등)를 적용하려면 세션이 필요하다
+// (P2 Codex critical 1 — 구 텍스트 스캔은 첫 입력 !음란모드 를 잡았으나 인터셉트 전환으로 소실).
+router.post('/:slug/session', (req, res) => {
+  const story = resolveStory(req, res);
+  if (!story) return;
+  const sessionId = createSeededSession(story);
+  res.json({ ok: true, sessionId });
+});
+
 // POST /api/stories/:slug/chat
 router.post('/:slug/chat', chatLimiter, async (req, res) => {
   // 요청 검증은 세션 생성 등 side effect 이전(Codex minor 14)
@@ -50,7 +92,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: '잘못된 요청', reason: zodReason(parsed.error) });
   }
-  const { message, sessionId: reqSessionId, model, maxTokens, loreDebug } = parsed.data;
+  const { message, sessionId: reqSessionId, model, maxTokens, outputTarget, loreDebug } = parsed.data;
 
   const story = resolveStory(req, res);
   if (!story) return;
@@ -64,29 +106,8 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   }
 
   if (!session) {
-    sessionId = randomUUID();
-    createSession(sessionId, story.id, story.current_release_id ?? null, getStoryCurrentPresetVersionId(story));
+    sessionId = createSeededSession(story);
     session = getSession(sessionId);
-
-    // 0턴 first_mes 시드도 핀한 release 뷰에서 — buildContext 의 frozen first_mes 와 일치(Codex F1).
-    // legacy(release NULL)면 resolveStoryView 가 원본을 그대로 반환하므로 기존과 동일.
-    const seedView = resolveStoryView(story, session.release_id ?? null);
-    if (seedView.first_mes) {
-      const persona = story.persona_id
-        ? getPersona(story.persona_id)
-        : getDefaultPersona();
-      const userName = persona?.name || '유저';
-      // first_mes 도 상태창 분리: content 는 원본 유지(표시 안전), status 만 추출해
-      // 인트로부터 HUD·선택지 버튼이 작동하게 한다(센티넬 없으면 splitTail 폴백, Codex high 1).
-      const seedText = seedView.first_mes.replaceAll('{{user}}', userName);
-      insertMessage({
-        session_id:      sessionId,
-        role:            'assistant',
-        content:         seedText,
-        status:          splitStatus(seedText).status,
-        exchange_number: 0,
-      });
-    }
   }
 
   res.setHeader('Content-Type',  'text/event-stream');
@@ -102,17 +123,19 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   let genResult = null;
 
   try {
-    // buildContext의 OUTPUT_TARGET 하한과 auto-continue의 CONTINUE_FLOORS 기준을
-    // 동일 maxTokens로 통일(생략 시 4096). Codex minor 수용.
-    const effectiveMaxTokens = maxTokens || 4096;
-    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, message.trim(), effectiveMaxTokens, { model });
+    // 분량 체제(D5) — 목표(밴드)와 상한(재난 캡) 분리:
+    //  - 밴드: 요청 outputTarget > legacy maxTokens 매핑 > 스토리 기본 > 서버 기본.
+    //  - 상한: legacy maxTokens 명시 시 그대로(회귀 경로), 아니면 고정 MAX_TOKENS_CAP.
+    const band = resolveOutputBand(outputTarget ?? maxTokens ?? story.output_target);
+    const effectiveMaxTokens = maxTokens || MAX_TOKENS_CAP;
+    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, message.trim(), band, { model });
 
     if (loreDebug && matchedLore.length) {
       const entries = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
       writeSSE(res, 'lore', { entries });
     }
 
-    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens });
+    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band });
     assistantText = genResult.finalText;
   } catch (err) {
     if (!res.writableEnded) {
@@ -131,6 +154,13 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
     finalText: joinWithSentinel(genResult.body, genResult.status),
     status: genResult.status ?? null,
+    // 분량 디버그(D7) — !디버그 패널이 소비(P2). band/floor/본문 자수.
+    outputDebug: {
+      band: genResult.providerMeta?.band ?? null,
+      floor: genResult.providerMeta?.floor ?? null,
+      bodyChars: genResult.providerMeta?.bodyChars ?? genResult.body?.length ?? null,
+      outputTokens: genResult.usage?.outputTokens ?? null,
+    },
   });
 
   let exchNum, userMessageId, assistantRowId;
@@ -191,7 +221,7 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
   if (!parsedRegen.success) {
     return res.status(400).json({ error: '잘못된 요청', reason: zodReason(parsedRegen.error) });
   }
-  const { sessionId, feedback, model, maxTokens, loreDebug } = parsedRegen.data;
+  const { sessionId, feedback, model, maxTokens, outputTarget, loreDebug } = parsedRegen.data;
 
   const session = getSession(sessionId);
   if (!session) return res.status(404).json({ error: '세션 없음' });
@@ -231,15 +261,17 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
   let assistantText = '';
   let genResult = null;
   try {
-    const effectiveMaxTokens = maxTokens || 4096;
-    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, userContent, effectiveMaxTokens, { model });
+    // 분량 체제(D5) — 메인 chat 경로와 동일 규칙.
+    const band = resolveOutputBand(outputTarget ?? maxTokens ?? story.output_target);
+    const effectiveMaxTokens = maxTokens || MAX_TOKENS_CAP;
+    const { systemBlocks, messages, matchedLore } = await buildContext(story, sessionId, userContent, band, { model });
 
     if (loreDebug && matchedLore.length) {
       const entries = matchedLore.map(e => ({ name: e.name, keys: JSON.parse(e.keys ?? '[]') }));
       writeSSE(res, 'lore', { entries });
     }
 
-    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens });
+    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band });
     assistantText = genResult.finalText;
   } catch (err) {
     if (prevAssistant) {
@@ -260,6 +292,12 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
     segmentCount: genResult.providerMeta?.segmentCount ?? genResult.segments?.length ?? 1,
     finalText: joinWithSentinel(genResult.body, genResult.status),
     status: genResult.status ?? null,
+    outputDebug: {
+      band: genResult.providerMeta?.band ?? null,
+      floor: genResult.providerMeta?.floor ?? null,
+      bodyChars: genResult.providerMeta?.bodyChars ?? genResult.body?.length ?? null,
+      outputTokens: genResult.usage?.outputTokens ?? null,
+    },
   });
 
   let assistantRowId;

@@ -4,10 +4,17 @@ import { z } from 'zod'
  * POST /api/stories/:slug/chat 요청.
  * safeParse 는 세션 생성 등 side effect **이전**에 수행한다(Codex minor 14).
  */
+/** 분량 목표 밴드(D5 — 다이얼=프롬프트 목표만, max_tokens 는 서버 고정 캡). */
+export const OutputBandSchema = z.enum(['short', 'light', 'medium', 'full', 'epic'])
+export type OutputBand = z.infer<typeof OutputBandSchema>
+
 export const ChatRequestBodySchema = z.object({
   message: z.string().trim().min(1),
   sessionId: z.string().nullish(),
   model: z.string().nullish(),
+  /** 분량 목표 밴드. 생략 시 스토리 기본(stories.output_target) → 서버 기본. */
+  outputTarget: OutputBandSchema.nullish(),
+  /** @deprecated 구 다이얼(상한 겸 목표). 명시 시 회귀 경로 — 상한·밴드 모두 이 값 기준. */
   maxTokens: z.number().int().positive().nullish(),
   loreDebug: z.boolean().nullish(),
 })
@@ -18,6 +25,8 @@ export const RegenRequestBodySchema = z.object({
   sessionId: z.string().min(1),
   feedback: z.string().nullish(),
   model: z.string().nullish(),
+  outputTarget: OutputBandSchema.nullish(),
+  /** @deprecated 구 다이얼 — ChatRequestBodySchema 와 동일 회귀 경로. */
   maxTokens: z.number().int().positive().nullish(),
   loreDebug: z.boolean().nullish(),
 })

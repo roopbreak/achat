@@ -1,17 +1,22 @@
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { SendHorizontal } from 'lucide-react'
+import { SendHorizontal, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Props {
   disabled: boolean
   onSend: (text: string) => void
+  /** `!`-명령어 팔레트 토글(시스템 명령어 있는 스토리만 전달됨) */
+  onTogglePalette?: () => void
+  paletteOpen?: boolean
 }
 
 export interface ChatInputHandle {
   focus: () => void
+  /** 입력창에 텍스트 삽입(requiresArg 명령어 — 커서를 끝으로) */
+  insert: (text: string) => void
 }
 
-const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({ disabled, onSend }, ref) {
+const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({ disabled, onSend, onTogglePalette, paletteOpen }, ref) {
   const [value, setValue] = useState('')
   const composing = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -19,6 +24,13 @@ const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({ disabl
 
   useImperativeHandle(ref, () => ({
     focus: () => textareaRef.current?.focus(),
+    insert: (text: string) => {
+      setValue(prev => {
+        const next = prev + text
+        cursorPos.current = next.length
+        return next
+      })
+    },
   }), [])
 
   // 커서 위치 복원 (setValue 후 DOM 반영 시점에 실행)
@@ -75,6 +87,16 @@ const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({ disabl
         aria-label="행동 입력 틸드 삽입"
         onClick={insertTilde}
       >~</Button>
+      {onTogglePalette && (
+        <Button
+          variant={paletteOpen ? 'default' : 'secondary'}
+          size="icon"
+          className="size-9 shrink-0"
+          title="시스템 명령어 팔레트"
+          aria-label="시스템 명령어 팔레트 토글"
+          onClick={onTogglePalette}
+        ><Zap /></Button>
+      )}
       <textarea
         ref={textareaRef}
         className="max-h-[140px] min-h-9 flex-1 resize-none rounded-md border border-input bg-popover px-3 py-2 text-[15px] leading-relaxed outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"

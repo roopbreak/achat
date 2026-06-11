@@ -16,8 +16,9 @@ export type ChatStreamEvent =
   | { type: 'usage'; input: number; output: number; cacheRead: number; cacheCreated: number; segmentIndex: number }
   | { type: 'continue_start'; segmentIndex: number }
   | { type: 'lore'; entries: LoreDebugEntry[] }
-  /** finalText = 서버 재조립 본문(수신 시 말풍선 교체), status = 분리된 상태창(HUD) */
-  | { type: 'generation_complete'; finishReason: FinishReason; continued: boolean; segmentCount: number; finalText?: string; status?: string | null }
+  /** finalText = 서버 재조립 본문(수신 시 말풍선 교체), status = 분리된 상태창(HUD), outputDebug = 분량 디버그(D7) */
+  | { type: 'generation_complete'; finishReason: FinishReason; continued: boolean; segmentCount: number; finalText?: string; status?: string | null;
+      outputDebug?: { band: string | null; floor: number | null; bodyChars: number | null; outputTokens: number | null } }
   /** v1 done 번역 시 messageId 들은 null (v2 백엔드는 항상 채움) */
   | { type: 'message_persisted'; sessionId: string; exchangeNumber: number; userMessageId: number | null; assistantMessageId: number | null }
   | { type: 'error'; message: string; phase: 'generation' | 'persistence'; segmentIndex?: number }

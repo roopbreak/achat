@@ -59,6 +59,13 @@ export const GenerationCompleteEventSchema = z.object({
   finalText: z.string().optional(),
   /** 분리된 상태창(없으면 null) — 화면 고정 HUD 갱신용. */
   status: z.string().nullable().optional(),
+  /** 분량 디버그(D7 — !디버그 패널 표시): 목표 밴드·하한·본문 자수·출력 토큰. */
+  outputDebug: z.object({
+    band: z.string().nullable(),
+    floor: z.number().nullable(),
+    bodyChars: z.number().nullable(),
+    outputTokens: z.number().nullable(),
+  }).optional(),
 })
 
 /** DB 저장 완료 — 정상 종결. messageId 는 저장 후에만 존재한다. */

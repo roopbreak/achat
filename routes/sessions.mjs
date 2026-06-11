@@ -3,11 +3,15 @@ import { randomUUID } from 'node:crypto';
 import {
   getSessionsByStory, getSession,
   getSaveSlots, getSaveSlot, upsertSaveSlot,
-  createSession, getDB, getStoryBySlug,
+  createSession, getDB, getStoryBySlug, getStoryById,
+  parseSystemCommands, parseModeFlags, setSessionModeFlag,
 } from '../lib/db.mjs';
+import { findEnabledModeCommand, resolveSystemCommands } from '../lib/commands/builtins.mjs';
+import { maybeRunSummary } from '../lib/summarizer.mjs';
 import {
   ForkBodySchema, ForkResponseSchema, SlotSaveBodySchema, SlotLoadResponseSchema,
   MessagesResponseSchema, LatestSessionResponseSchema,
+  SessionModeBodySchema, SessionModeResponseSchema, SessionActionResponseSchema,
 } from '@achat/contracts';
 import { respond } from '@achat/contracts/server';
 
@@ -91,6 +95,10 @@ storySessionsRouter.post('/:slug/fork', (req, res) => {
   );
   db.transaction(() => {
     for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number, m.status ?? null);
+    // mode_flags 도 상속(§3-3-5 — fork·slot load 모두 새 row 라 복사 안 하면 모드 손실, Codex medium)
+    if (srcSession.mode_flags) {
+      db.prepare('UPDATE chat_sessions SET mode_flags=? WHERE id=?').run(srcSession.mode_flags, newSessionId);
+    }
   })();
 
   respond(res, ForkResponseSchema, { ok: true, sessionId: newSessionId, turnCount: srcMessages.filter(m => m.role === 'assistant').length });
@@ -152,6 +160,10 @@ storySessionsRouter.post('/:slug/slots/:slotId/load', (req, res) => {
   );
   const txn = db.transaction(() => {
     for (const m of srcMessages) stmt.run(newSessionId, m.role, m.content, m.exchange_number, m.status ?? null);
+    // mode_flags 상속(§3-3-5)
+    if (slotSrc?.mode_flags) {
+      db.prepare('UPDATE chat_sessions SET mode_flags=? WHERE id=?').run(slotSrc.mode_flags, newSessionId);
+    }
   });
   txn();
 
@@ -186,4 +198,56 @@ sessionMessagesRouter.get('/:id/messages', (req, res) => {
     : db.prepare('SELECT COUNT(*) as cnt FROM messages WHERE session_id=?').get(req.params.id).cnt > limit;
 
   respond(res, MessagesResponseSchema, { messages: rows, hasMore });
+});
+
+// ── `!`-시스템 명령어 (three-part-separation §3-2/§3-3) ─────────
+
+// POST /api/sessions/:id/modes — mode_toggle. 다음 턴 프롬프트 조립에 반영.
+sessionMessagesRouter.post('/:id/modes', (req, res) => {
+  const session = getSession(req.params.id);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  const parsed = SessionModeBodySchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: '잘못된 요청' });
+  const { action, on } = parsed.data;
+
+  // 서버 측 게이트: 이 스토리에서 enabled 인 mode_toggle 만 허용(팔레트 숨김과 별개 — §3-3-6)
+  const story = getStoryById(session.story_id);
+  const cmd = findEnabledModeCommand(parseSystemCommands(story?.system_commands), action);
+  if (!cmd) return res.status(403).json({ error: '이 스토리에서 허용되지 않은 모드' });
+
+  const modeFlags = setSessionModeFlag(session.id, action, on);
+  respond(res, SessionModeResponseSchema, { ok: true, modeFlags: modeFlags ?? {} });
+});
+
+// GET /api/sessions/:id/modes — 현재 모드 상태(팔레트 표시용)
+sessionMessagesRouter.get('/:id/modes', (req, res) => {
+  const session = getSession(req.params.id);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  respond(res, SessionModeResponseSchema, { ok: true, modeFlags: parseModeFlags(session.mode_flags) });
+});
+
+// POST /api/sessions/:id/actions/:action — server_action (예: summarize)
+sessionMessagesRouter.post('/:id/actions/:action', async (req, res) => {
+  const session = getSession(req.params.id);
+  if (!session) return res.status(404).json({ error: '세션 없음' });
+  const action = req.params.action;
+
+  // 스토리에서 enabled 인 server_action 만(builtin 포함 — 스토리가 enabled:false 로 끌 수 있음)
+  const story = getStoryById(session.story_id);
+  const enabled = resolveSystemCommands(parseSystemCommands(story?.system_commands))
+    .some(c => c.kind === 'server_action' && c.action === action);
+  if (!enabled) return res.status(403).json({ error: '이 스토리에서 허용되지 않은 액션' });
+
+  if (action === 'summarize') {
+    const result = await maybeRunSummary(session.id, { force: true });
+    return respond(res, SessionActionResponseSchema, {
+      ok: true, action, ran: result?.ran ?? false,
+      detail: result?.ran ? '요약 완료' : ({
+        'below-threshold': '요약할 분량이 아직 부족합니다',
+        'already-running': '요약이 이미 진행 중입니다',
+        cooldown: '요약 재시도 대기 중입니다',
+      }[result?.reason] ?? '요약을 실행하지 못했습니다'),
+    });
+  }
+  return res.status(400).json({ error: '알 수 없는 액션' });
 });
