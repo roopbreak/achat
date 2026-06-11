@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import ChatMessage from './ChatMessage'
 import type { Message } from '../../hooks/useSession'
+import type { StatusDisplay } from '../../hooks/useSettings'
 
 interface Props {
   messages: Message[]
@@ -10,6 +11,7 @@ interface Props {
   hasMore: boolean
   fontSize: number
   imagesEnabled: boolean
+  statusDisplay: StatusDisplay
   onLoadMore: () => void
   onRegen: (exchangeNumber: number, feedback: string) => void
   // 수정/삭제는 messageId 좌표(WS-M P4a)
@@ -21,7 +23,7 @@ interface Props {
 
 export default function ChatMessages({
   messages, charName, isStreaming, streamingExchange,
-  hasMore, fontSize, imagesEnabled,
+  hasMore, fontSize, imagesEnabled, statusDisplay,
   onLoadMore, onRegen, onEdit, onFork, onDelete, onImageClick,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
@@ -148,6 +150,7 @@ export default function ChatMessages({
             charName={charName}
             isStreaming={isStreamingMsg}
             isLast={i === messages.length - 1}
+            statusDisplay={statusDisplay}
             onRegen={onRegen}
             onEdit={onEdit}
             onFork={onFork}

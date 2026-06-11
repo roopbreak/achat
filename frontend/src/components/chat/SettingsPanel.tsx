@@ -14,13 +14,15 @@ interface Persona {
   is_default?: boolean
 }
 
-import type { OutputBand } from '@/hooks/useSettings'
+import type { OutputBand, StatusDisplay } from '@/hooks/useSettings'
 
 interface Props {
   open: boolean
   fontSize: number
   model: string
   outputTarget: OutputBand
+  autoContinue: boolean
+  statusDisplay: StatusDisplay
   imagesEnabled: boolean
   loreDebug: boolean
   personas: Persona[]
@@ -28,6 +30,8 @@ interface Props {
   onChangeFontSize: (delta: number) => void
   onChangeModel: (model: string) => void
   onChangeOutputTarget: (band: OutputBand) => void
+  onToggleAutoContinue: () => void
+  onChangeStatusDisplay: (mode: StatusDisplay) => void
   onToggleImages: () => void
   onToggleLoreDebug: () => void
   onChangePersona: (id: number) => void
@@ -57,9 +61,9 @@ const OUTPUT_BANDS = [
 ] as const
 
 export default function SettingsPanel({
-  open, fontSize, model, outputTarget, imagesEnabled, loreDebug,
+  open, fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug,
   personas, selectedPersonaId,
-  onChangeFontSize, onChangeModel, onChangeOutputTarget,
+  onChangeFontSize, onChangeModel, onChangeOutputTarget, onToggleAutoContinue, onChangeStatusDisplay,
   onToggleImages, onToggleLoreDebug, onChangePersona, onClose,
 }: Props) {
   return (
@@ -88,6 +92,22 @@ export default function SettingsPanel({
                 {OUTPUT_BANDS.map(([v, label]) => (
                   <SelectItem key={v} value={v}>{label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="opt-autocont" className="text-muted-foreground">자동 이어쓰기</Label>
+            <Switch id="opt-autocont" checked={autoContinue} onCheckedChange={onToggleAutoContinue} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-muted-foreground">상태창 표시</Label>
+            <Select value={statusDisplay} onValueChange={(v) => onChangeStatusDisplay(v as StatusDisplay)}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inline">본문에 표시</SelectItem>
+                <SelectItem value="hud">화면 하단 고정</SelectItem>
               </SelectContent>
             </Select>
           </div>

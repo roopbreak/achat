@@ -28,10 +28,15 @@ function readOutputTarget(): OutputBand {
   return 'story'
 }
 
+/** 상태창 표시 방식 — inline=본문 말풍선에 녹임(모바일 가독성), hud=화면 하단 고정 */
+export type StatusDisplay = 'inline' | 'hud'
+
 export interface Settings {
   fontSize: number
   model: string
   outputTarget: OutputBand
+  autoContinue: boolean
+  statusDisplay: StatusDisplay
   imagesEnabled: boolean
   loreDebug: boolean
 }
@@ -40,6 +45,10 @@ export function useSettings() {
   const [fontSize, setFontSize] = useState(() => parseInt(read('chat_font_size', String(FONT_DEFAULT)), 10))
   const [model, setModel] = useState(() => read('chat_model', 'claude-sonnet-4-6'))
   const [outputTarget, setOutputTarget] = useState<OutputBand>(readOutputTarget)
+  // 자동 이어쓰기: 기본 on(현행 백스톱 유지). 사용자가 끄면 1회 생성만.
+  const [autoContinue, setAutoContinue] = useState(() => read('chat_auto_continue', 'on') !== 'off')
+  // 상태창 표시: 기본 inline(본문에 녹임 — 모바일 가독성). 'hud'로 화면 고정 전환 가능.
+  const [statusDisplay, setStatusDisplay] = useState<StatusDisplay>(() => read('chat_status_display', 'inline') === 'hud' ? 'hud' : 'inline')
   const [imagesEnabled, setImagesEnabled] = useState(() => read('chat_images', 'on') !== 'off')
   const [loreDebug, setLoreDebug] = useState(() => read('chat_lore_debug', 'off') === 'on')
 
@@ -61,6 +70,19 @@ export function useSettings() {
     localStorage.setItem('chat_output_target', band)
   }, [])
 
+  const toggleAutoContinue = useCallback(() => {
+    setAutoContinue(prev => {
+      const next = !prev
+      localStorage.setItem('chat_auto_continue', next ? 'on' : 'off')
+      return next
+    })
+  }, [])
+
+  const changeStatusDisplay = useCallback((mode: StatusDisplay) => {
+    setStatusDisplay(mode)
+    localStorage.setItem('chat_status_display', mode)
+  }, [])
+
   const toggleImages = useCallback(() => {
     setImagesEnabled(prev => {
       const next = !prev
@@ -78,7 +100,7 @@ export function useSettings() {
   }, [])
 
   return {
-    fontSize, model, outputTarget, imagesEnabled, loreDebug,
-    changeFontSize, changeModel, changeOutputTarget, toggleImages, toggleLoreDebug,
+    fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug,
+    changeFontSize, changeModel, changeOutputTarget, toggleAutoContinue, changeStatusDisplay, toggleImages, toggleLoreDebug,
   }
 }

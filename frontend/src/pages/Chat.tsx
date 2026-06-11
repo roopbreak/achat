@@ -4,7 +4,7 @@ import { useSession, type Message } from '../hooks/useSession'
 import { useSettings } from '../hooks/useSettings'
 import { useSSEStream, type TokenInfo, type LoreDebugEntry, type GenerationInfo } from '../hooks/useSSEStream'
 import { api, type StoryDetail, type SystemCommand } from '../lib/api'
-import { splitBodyStatus, splitChoices } from '../lib/status'
+import { splitBodyStatus, splitChoices, stripSentinel } from '../lib/status'
 import ChatHeader from '../components/chat/ChatHeader'
 import StatusHUD from '../components/chat/StatusHUD'
 import ChatMessages from '../components/chat/ChatMessages'
@@ -156,6 +156,20 @@ export default function Chat() {
     return () => { cancelled = true }
   }, [session.sessionId])
 
+  // 스트리밍 본문 적용 — 표시 모드 분기를 한 곳에 모은다.
+  //  - inline: 상태창을 본문에 녹여 통째 표시(HUD 미사용 — 모바일 가독성)
+  //  - hud:    본문만 말풍선, 상태창은 화면 하단 고정 HUD
+  // apply(text) 는 경로별 메시지 갱신 함수(전송=updateLast, 재생성=replaceByExchange).
+  const renderStream = useCallback((fullText: string, apply: (text: string) => void) => {
+    if (settings.statusDisplay === 'inline') {
+      apply(stripSentinel(fullText))
+    } else {
+      const { body, status } = splitBodyStatus(fullText)
+      apply(body)
+      setHudStatus(status)
+    }
+  }, [settings.statusDisplay])
+
   // ── 전송 ──
   const sendMessage = useCallback(async (text: string) => {
     if (streamingRef.current) return
@@ -173,19 +187,16 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: text, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
+        { message: text, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            // 센티넬로 본문/상태창 분리 — 말풍선엔 body만, HUD는 status 실시간 갱신
-            const { body, status } = splitBodyStatus(fullText)
-            session.updateLastAssistant(body)
-            setHudStatus(status)
+            renderStream(fullText, (t) => session.updateLastAssistant(t))
           },
           onPersisted: (info, fullText) => {
-            // 본문 + exchange + messageId 스탬프(이후 수정/삭제는 id 좌표)
-            const { body, status } = splitBodyStatus(fullText)
-            session.updateLastAssistant(body, info.exchangeNumber, info.assistantMessageId ?? undefined, status)
+            // content 는 합본(센티넬X) 저장 — ChatMessage 가 표시 모드(inline/hud)로 분기.
+            const { status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(stripSentinel(fullText), info.exchangeNumber, info.assistantMessageId ?? undefined, status)
             session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
             // v1 done 번역(롤백 조합)이면 id 가 없다 — 재fetch 로 보강(Codex M2)
@@ -208,7 +219,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.outputTarget, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
 
   // ── `!`-시스템 명령어 실행 (kind 분기 — §3-2) ──
   const runCommand = useCallback(async (cmd: SystemCommand) => {
@@ -287,18 +298,16 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/regen`,
-        { sessionId: session.sessionId, feedback, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
+        { sessionId: session.sessionId, feedback, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            const { body, status } = splitBodyStatus(fullText)
-            session.replaceAssistantByExchange(exchangeNumber, body)
-            setHudStatus(status)
+            renderStream(fullText, (t) => session.replaceAssistantByExchange(exchangeNumber, t))
           },
           onPersisted: (info, fullText) => {
             // regen 은 assistant 가 새 row 로 재생성 — 새 messageId 스탬프(Codex critical 4)
-            const { body, status } = splitBodyStatus(fullText)
-            session.replaceAssistantByExchange(exchangeNumber, body, info.assistantMessageId ?? undefined, status)
+            const { status } = splitBodyStatus(fullText)
+            session.replaceAssistantByExchange(exchangeNumber, stripSentinel(fullText), info.assistantMessageId ?? undefined, status)
             setStreamingExchange(null)
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
           },
@@ -319,7 +328,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.outputTarget, settings.loreDebug])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
 
   // ── 수정 (messageId 좌표 — WS-M P4a) ──
   const handleEdit = useCallback(async (message: Message, newContent: string) => {
@@ -353,17 +362,15 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: newContent, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, loreDebug: settings.loreDebug },
+        { message: newContent, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
-            const { body, status } = splitBodyStatus(fullText)
-            session.updateLastAssistant(body)
-            setHudStatus(status)
+            renderStream(fullText, (t) => session.updateLastAssistant(t))
           },
           onPersisted: (info, fullText) => {
-            const { body, status } = splitBodyStatus(fullText)
-            session.updateLastAssistant(body, info.exchangeNumber, info.assistantMessageId ?? undefined, status)
+            const { status } = splitBodyStatus(fullText)
+            session.updateLastAssistant(stripSentinel(fullText), info.exchangeNumber, info.assistantMessageId ?? undefined, status)
             session.stampLastUser(info.exchangeNumber, info.userMessageId)
             setStreamingExchange(null)
             if (info.assistantMessageId == null && session.sessionId) void session.loadMessages(session.sessionId)
@@ -383,7 +390,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, slug, stream, settings.model, settings.outputTarget, settings.loreDebug])
+  }, [session, slug, stream, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
 
   // ── 분기 ──
   const handleFork = useCallback(async (exchangeNumber: number) => {
@@ -478,6 +485,7 @@ export default function Chat() {
         hasMore={session.hasMore}
         fontSize={settings.fontSize}
         imagesEnabled={settings.imagesEnabled}
+        statusDisplay={settings.statusDisplay}
         onLoadMore={session.loadOlder}
         onRegen={handleRegen}
         onEdit={handleEdit}
@@ -499,6 +507,8 @@ export default function Chat() {
         fontSize={settings.fontSize}
         model={settings.model}
         outputTarget={settings.outputTarget}
+        autoContinue={settings.autoContinue}
+        statusDisplay={settings.statusDisplay}
         imagesEnabled={settings.imagesEnabled}
         loreDebug={settings.loreDebug}
         personas={personas}
@@ -506,6 +516,8 @@ export default function Chat() {
         onChangeFontSize={settings.changeFontSize}
         onChangeModel={settings.changeModel}
         onChangeOutputTarget={settings.changeOutputTarget}
+        onToggleAutoContinue={settings.toggleAutoContinue}
+        onChangeStatusDisplay={settings.changeStatusDisplay}
         onToggleImages={settings.toggleImages}
         onToggleLoreDebug={settings.toggleLoreDebug}
         onChangePersona={changePersona}
@@ -572,16 +584,20 @@ export default function Chat() {
         </div>
       )}
 
-      <StatusHUD status={statusBody} fontSize={settings.fontSize} />
-
-      {choices.length > 0 && (
-        <ChoiceButtons
-          choices={choices}
-          disabled={isStreaming}
-          fontSize={settings.fontSize}
-          onChoose={(text) => sendMessage(text)}
-          onFreeInput={() => inputRef.current?.focus()}
-        />
+      {/* inline 모드는 상태창·선택지를 본문 말풍선에 녹임 — HUD·버튼 미표시(모바일 가독성) */}
+      {settings.statusDisplay === 'hud' && (
+        <>
+          <StatusHUD status={statusBody} fontSize={settings.fontSize} />
+          {choices.length > 0 && (
+            <ChoiceButtons
+              choices={choices}
+              disabled={isStreaming}
+              fontSize={settings.fontSize}
+              onChoose={(text) => sendMessage(text)}
+              onFreeInput={() => inputRef.current?.focus()}
+            />
+          )}
+        </>
       )}
 
       {/* `!`-명령어 클릭 팔레트 (⚡ 토글) — 모드는 ● 로 on 표시 */}

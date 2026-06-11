@@ -27,6 +27,19 @@ export function splitBodyStatus(text: string): { body: string; status: string | 
 }
 
 /**
+ * 센티넬(단독/인라인)만 제거하고 본문↔상태창은 합친 채로 둔다 — inline 표시 모드용.
+ * 분리(splitBodyStatus)와 달리 상태창을 본문에 그대로 녹여 보여주기 위함.
+ */
+export function stripSentinel(text: string): string {
+  return text
+    .split('\n')
+    .filter(l => !SENTINEL_LINE.test(l))
+    .join('\n')
+    .split(STATUS_SENTINEL).join('')
+    .trimEnd()
+}
+
+/**
  * 합본 content(본문\n\n상태창)에서 status 문자열을 떼어 본문만 반환.
  * status 가 없거나 content 와 불일치하면 content 통째.
  */

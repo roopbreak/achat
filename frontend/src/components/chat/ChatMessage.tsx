@@ -2,7 +2,8 @@ import { useState, useRef } from 'react'
 import { GitBranch, MoreHorizontal, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import StreamingText from './StreamingText'
 import type { Message } from '../../hooks/useSession'
-import { stripStatus } from '../../lib/status'
+import type { StatusDisplay } from '../../hooks/useSettings'
+import { stripStatus, stripSentinel } from '../../lib/status'
 import { renderMarkdown } from '../../lib/markdown'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ interface Props {
   charName: string
   isStreaming: boolean
   isLast: boolean
+  statusDisplay: StatusDisplay
   onRegen: (exchangeNumber: number, feedback: string) => void
   // 수정/삭제는 messageId 좌표(WS-M P4a) — message 객체로 전달
   onEdit: (message: Message, newContent: string) => void
@@ -25,7 +27,7 @@ interface Props {
 }
 
 export default function ChatMessage({
-  message, charName, isStreaming, isLast,
+  message, charName, isStreaming, isLast, statusDisplay,
   onRegen, onEdit, onFork, onDelete, onImageClick,
 }: Props) {
   const [showRegen, setShowRegen] = useState(false)
@@ -36,9 +38,13 @@ export default function ChatMessage({
 
   const { role, content, exchange_number } = message
   const showActions = !isStreaming && exchange_number != null && exchange_number >= 0
-  // 본문만 말풍선에 렌더 — status 가 분리 저장된 메시지는 합본 content 에서 상태창 제거.
-  // 과거 메시지(status 없음)는 회귀 방지를 위해 content 통째.
-  const bodyContent = message.status ? stripStatus(content, message.status) : content
+  // 표시 모드:
+  //  - inline: 상태창을 본문에 녹여 통째 표시(content 는 합본 — 모바일 가독성)
+  //  - hud:    본문만 말풍선(합본에서 상태창 제거), 상태는 별도 HUD
+  // 과거 메시지(status 없음)는 어느 모드든 content 통째(회귀 방지).
+  const bodyContent = statusDisplay === 'inline'
+    ? stripSentinel(content)  // 합본 통째 — 단 first_mes 등 원본에 남은 센티넬은 제거
+    : (message.status ? stripStatus(content, message.status) : content)
 
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
@@ -119,7 +125,7 @@ export default function ChatMessage({
     >
       {showActions && <div className="float-right -mt-1 -mr-1 ml-2">{actionsMenu}</div>}
       <StreamingText text={bodyContent} charName={charName} isStreaming={isStreaming && isLast} />
-      {message.status && !isStreaming && (
+      {message.status && !isStreaming && statusDisplay !== 'inline' && (
         <div className="mt-1">
           <button
             type="button"

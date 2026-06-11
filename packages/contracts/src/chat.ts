@@ -16,6 +16,8 @@ export const ChatRequestBodySchema = z.object({
   outputTarget: OutputBandSchema.nullish(),
   /** @deprecated 구 다이얼(상한 겸 목표). 명시 시 회귀 경로 — 상한·밴드 모두 이 값 기준. */
   maxTokens: z.number().int().positive().nullish(),
+  /** 자동 이어쓰기(분량 미달 시 백스톱). false=1회 생성만(사용자 토글). 생략=on(현행). */
+  autoContinue: z.boolean().nullish(),
   loreDebug: z.boolean().nullish(),
 })
 export type ChatRequestBody = z.infer<typeof ChatRequestBodySchema>
@@ -28,6 +30,7 @@ export const RegenRequestBodySchema = z.object({
   outputTarget: OutputBandSchema.nullish(),
   /** @deprecated 구 다이얼 — ChatRequestBodySchema 와 동일 회귀 경로. */
   maxTokens: z.number().int().positive().nullish(),
+  autoContinue: z.boolean().nullish(),
   loreDebug: z.boolean().nullish(),
 })
 export type RegenRequestBody = z.infer<typeof RegenRequestBodySchema>
