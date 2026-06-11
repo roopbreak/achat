@@ -1,14 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Pencil } from 'lucide-react'
 import CommandList from '../components/common/CommandList'
 import { api, type StoryDetail as StoryDetailData } from '../lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
 const DESC_PREVIEW_LEN = 320
+// radix Select는 빈 문자열 value를 허용하지 않으므로 "없음"용 sentinel 사용
+const PERSONA_NONE = '__none__'
+
+interface Persona {
+  id: number
+  name: string
+  is_default?: boolean
+}
 
 function parseTags(tags?: string | null): string[] {
   if (!tags) return []
@@ -23,6 +37,147 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <section className="mb-6">
       <h3 className="mb-2 text-xs font-semibold tracking-wide text-primary uppercase">{title}</h3>
       {children}
+    </section>
+  )
+}
+
+function PersonaSettings({ slug }: { slug: string }) {
+  const [open, setOpen] = useState(false)
+  const [personas, setPersonas] = useState<Persona[]>([])
+  const [sel, setSel] = useState(PERSONA_NONE)
+  const [override, setOverride] = useState('')
+  const [ageStr, setAgeStr] = useState('')
+  const [personaResult, setPersonaResult] = useState('')
+  const [ageResult, setAgeResult] = useState('')
+  const [savingPersona, setSavingPersona] = useState(false)
+  const [savingAge, setSavingAge] = useState(false)
+
+  const load = useCallback(async () => {
+    setPersonaResult(''); setAgeResult('')
+    try {
+      const list = await api<Persona[]>('/api/admin/personas')
+      setPersonas(list)
+      const data = await api<{ persona_id?: number; persona_override?: string; persona_age_override?: number | null }>(
+        `/api/admin/stories/${encodeURIComponent(slug)}/persona`,
+      )
+      setSel(data.persona_id == null ? PERSONA_NONE : String(data.persona_id))
+      setOverride(data.persona_override ?? '')
+      setAgeStr(data.persona_age_override == null ? '' : String(data.persona_age_override))
+    } catch (e: any) {
+      setPersonaResult(`불러오기 실패: ${e.message || e}`)
+    }
+  }, [slug])
+
+  useEffect(() => { load() }, [load])
+
+  const savePersona = async () => {
+    setSavingPersona(true)
+    setPersonaResult('')
+    try {
+      const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${encodeURIComponent(slug)}/persona`, {
+        method: 'POST',
+        body: JSON.stringify({
+          persona_id: sel === PERSONA_NONE ? null : Number(sel),
+          persona_override: override || null,
+        }),
+      })
+      setPersonaResult(res.ok ? '페르소나 저장 완료' : (res.error ?? '오류'))
+    } catch (e: any) {
+      setPersonaResult(`저장 실패: ${e.message || e}`)
+    } finally {
+      setSavingPersona(false)
+    }
+  }
+
+  const saveAge = async () => {
+    setSavingAge(true)
+    setAgeResult('')
+    try {
+      const res = await api<{ ok: boolean; error?: string }>(`/api/admin/stories/${encodeURIComponent(slug)}/persona-age`, {
+        method: 'POST',
+        body: JSON.stringify({ age: ageStr === '' ? null : Number(ageStr) }),
+      })
+      setAgeResult(res.ok ? (ageStr === '' ? '나이 오버라이드 해제됨' : '나이 저장 완료') : (res.error ?? '오류'))
+    } catch (e: any) {
+      setAgeResult(`저장 실패: ${e.message || e}`)
+    } finally {
+      setSavingAge(false)
+    }
+  }
+
+  return (
+    <section className="mb-6 rounded-xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-medium">페르소나 / 나이 설정</span>
+        <ChevronDown className={`size-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="space-y-6 border-t border-border px-4 py-4">
+          {/* 페르소나 */}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="persona-select">페르소나</Label>
+              <Select value={sel} onValueChange={setSel}>
+                <SelectTrigger id="persona-select" className="w-full">
+                  <SelectValue placeholder="페르소나 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PERSONA_NONE}>없음</SelectItem>
+                  {personas.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}{p.is_default ? ' (기본)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="persona-override">이 스토리 전용 오버라이드 (선택)</Label>
+              <Textarea
+                id="persona-override"
+                value={override}
+                onChange={e => setOverride(e.target.value)}
+                rows={3}
+                placeholder="이 스토리에서만 적용할 수정사항"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button size="sm" onClick={savePersona} disabled={savingPersona}>페르소나 저장</Button>
+              {personaResult && <span className="text-xs text-muted-foreground">{personaResult}</span>}
+            </div>
+          </div>
+
+          {/* 나이 */}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="persona-age">나이 (이 스토리 전용, 비우면 페르소나 기본값)</Label>
+              <Input
+                id="persona-age"
+                type="number"
+                min={0}
+                max={200}
+                value={ageStr}
+                onChange={e => setAgeStr(e.target.value)}
+                placeholder="비우면 오버라이드 해제"
+                className="w-40"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button size="sm" onClick={saveAge} disabled={savingAge}>나이 저장</Button>
+              {ageResult && <span className="text-xs text-muted-foreground">{ageResult}</span>}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -126,10 +281,19 @@ export default function StoryDetail() {
           <CommandList commands={story.commands} />
         </Section>
 
+        <PersonaSettings slug={slug} />
+
         <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 py-3 text-center backdrop-blur">
-          <Button size="lg" onClick={() => navigate(`/chat/${encodeURIComponent(slug)}`)}>
-            {hasSession ? '이어하기' : '시작하기'}
-          </Button>
+          <div className="mx-auto flex max-w-3xl items-center justify-center gap-2 px-4">
+            <Button variant="outline" asChild>
+              <Link to={`/story-edit?story=${encodeURIComponent(slug)}`}>
+                <Pencil className="size-4" /> 편집
+              </Link>
+            </Button>
+            <Button size="lg" onClick={() => navigate(`/chat/${encodeURIComponent(slug)}`)}>
+              {hasSession ? '이어하기' : '시작하기'}
+            </Button>
+          </div>
         </div>
       </div>
     </>
