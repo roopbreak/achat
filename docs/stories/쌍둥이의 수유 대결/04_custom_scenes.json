@@ -1,0 +1,703 @@
+{
+  "main": {
+    "daily": [
+      {
+        "id": "daily-illustrator-desk-01",
+        "name": "작업 책상에서 그림",
+        "outfit": "oversized white t-shirt, no pants, panties,",
+        "pose": "sitting on chair, hunched over desk, holding stylus, drawing on tablet, one leg pulled up,",
+        "custom_tags": "drawing tablet, desk, computer monitor, indoors, lamp light, messy desk,",
+        "_note": "프리랜서 일러스트레이터 직업 핵심 일상 - 마감 중 노팬츠 차림으로 작업 (RAG: 단부루 태그 drawing tablet/desk 검증)"
+      },
+      {
+        "id": "daily-deadline-night-02",
+        "name": "야간 마감 작업",
+        "outfit": "black crop top, short shorts, no bra,",
+        "pose": "slouching in chair, stretching arms up, tired expression, yawning,",
+        "expression": "tired, half-closed eyes,",
+        "custom_tags": "desk, computer monitor, night, indoors, dark room, monitor glow, coffee mug,",
+        "_note": "수입 불안정 프리랜서의 밤샘 마감 패턴 - 느슨한 자세, 노출 많은 차림 (컨셉: 자세가 느슨하고 도발적)"
+      },
+      {
+        "id": "daily-couch-lounge-03",
+        "name": "소파에서 늘어지기",
+        "outfit": "thin tank top, hot pants, no bra,",
+        "pose": "lying on couch, on back, one arm behind head, smartphone in hand, legs crossed,",
+        "custom_tags": "couch, living room, indoors, daytime, relaxed,",
+        "_note": "거실 소파 - 즉흥적이고 계획 없는 성격의 휴식, 브라 없이 늘어진 도발적 자세"
+      },
+      {
+        "id": "daily-kitchen-morning-04",
+        "name": "아침 식사 준비 경쟁",
+        "outfit": "v-neck shirt, apron, short shorts,",
+        "pose": "standing at kitchen counter, cooking, holding frying pan, looking back over shoulder, confident smirk,",
+        "expression": "smug, playful,",
+        "custom_tags": "kitchen, morning, indoors, stove, sunlight through window,",
+        "_note": "로어북 '주방 아침 식사 준비 경쟁' - 내가 만든 게 더 맛있지 경쟁의 연장선"
+      },
+      {
+        "id": "daily-laundry-rooftop-05",
+        "name": "옥상 빨래 널기",
+        "outfit": "loose v-neck top, denim hot pants, slippers,",
+        "pose": "reaching up hanging laundry, arms raised, standing, looking at viewer,",
+        "custom_tags": "rooftop, laundry hanging, clothesline, blue sky, daytime, city background, wind,",
+        "_note": "로어북 '옥상 비밀 공간' - 빨래 명목, 팔 들어올린 자세로 크롭탑 사이 노출"
+      },
+      {
+        "id": "daily-convenience-store-06",
+        "name": "심야 편의점 맥주 사기",
+        "outfit": "crop top, short shorts, slippers,",
+        "pose": "standing, holding beer can, opening fridge door, casual posture,",
+        "custom_tags": "convenience store interior, night, refrigerator, fluorescent lighting, shelves,",
+        "_note": "로어북 '편의점 야간 조우' - 핫팬츠+슬리퍼 차림으로 야간 맥주 사러 단골 출몰"
+      },
+      {
+        "id": "daily-spilled-milk-shirt-07",
+        "name": "젖은 옷 들킨 일상",
+        "outfit": "thin white t-shirt, no bra,",
+        "pose": "looking down at chest, pulling shirt fabric away, slightly annoyed expression,",
+        "expression": "annoyed, pout,",
+        "custom_tags": "wet shirt, see-through, wet clothes, milk stain, indoors, living room,",
+        "_note": "능동성 '에이 또 젖었다~' 자연스러운 노출 - 유즙분비증 일상 곤란 (RAG: 단부루 wet shirt/see-through 검증)"
+      },
+      {
+        "id": "daily-cafe-sketching-08",
+        "name": "카페에서 스케치",
+        "outfit": "off-shoulder knit top, denim shorts, tote bag,",
+        "pose": "sitting at cafe table, sketchbook open, holding pencil, leaning on one elbow,",
+        "custom_tags": "cafe, table, coffee cup, sketchbook, warm lighting, afternoon, window seat,",
+        "_note": "일러스트레이터 사적 일상 - 카페 동선, 외출복 차림의 작업"
+      },
+      {
+        "id": "daily-rooftop-beer-night-09",
+        "name": "옥상 야간 맥주",
+        "outfit": "loose tank top, short shorts, no bra,",
+        "pose": "sitting on rooftop floor, holding beer can, leaning back on one hand, looking up,",
+        "expression": "relaxed, slightly melancholic,",
+        "custom_tags": "rooftop, night, city lights, cityscape, railing, starry sky, wind,",
+        "_note": "로어북 '옥상 비밀 공간' - 야간 맥주, 허세가 벗겨지는 솔직한 분위기"
+      },
+      {
+        "id": "daily-fridge-midnight-10",
+        "name": "심야 냉장고 앞",
+        "outfit": "thin sleeveless top, panties, no bra,",
+        "pose": "standing in front of open refrigerator, one hand on door, looking back, fridge light on face,",
+        "custom_tags": "kitchen, refrigerator, night, dark room, refrigerator light, indoors,",
+        "_note": "first_mes 직후 동선 - 새벽 거실/주방 야간 조우의 무대, 브라 없는 잠옷 차림"
+      }
+    ],
+    "outfit": [
+      {
+        "id": "outfit-summer-dress-01",
+        "name": "여름 원피스 외출복",
+        "outfit": "white sundress, thin straps, sandals, sunglasses on head,",
+        "pose": "standing, hand on hip, looking at viewer, relaxed posture,",
+        "custom_tags": "outdoors, street, sunlight, summer,",
+        "_note": "캐주얼 외출복 - 노출 성향 반영한 얇은 끈 선드레스"
+      },
+      {
+        "id": "outfit-crop-top-street-02",
+        "name": "크롭탑 거리 패션",
+        "outfit": "black crop top, high-waisted denim shorts, sneakers, choker,",
+        "pose": "walking, looking back over shoulder, confident,",
+        "custom_tags": "street, city, daytime,",
+        "_note": "캐릭터 시그니처 차림 - 크롭탑+핫팬츠 도발적 거리 패션"
+      },
+      {
+        "id": "outfit-oversized-shirt-03",
+        "name": "오버사이즈 셔츠 한 장",
+        "outfit": "oversized white dress shirt, bare legs, no pants,",
+        "pose": "standing, one hand holding collar, leaning against wall, teasing look,",
+        "expression": "seductive smile,",
+        "custom_tags": "indoors, bedroom, morning light,",
+        "_note": "특수 의상 - 셔츠 한 장만 걸친 도발적 차림, 즉흥적 성격 반영"
+      },
+      {
+        "id": "outfit-knit-sweater-autumn-04",
+        "name": "니트 스웨터 가을",
+        "outfit": "loose off-shoulder sweater, short skirt, thigh-high socks,",
+        "pose": "sitting, knees together, holding warm drink, soft smile,",
+        "custom_tags": "indoors, cozy room, autumn, warm lighting,",
+        "_note": "캐주얼 계열 - 어깨 드러낸 니트, 노출 성향을 계절옷으로 변형"
+      },
+      {
+        "id": "outfit-trench-coat-05",
+        "name": "트렌치코트 외출",
+        "outfit": "beige trench coat, v-neck top underneath, short shorts, ankle boots,",
+        "pose": "standing, hands in coat pockets, looking at viewer, cool expression,",
+        "custom_tags": "street, city, overcast, autumn,",
+        "_note": "캐주얼 계열 - 외출용 트렌치코트, 안에는 노출 많은 차림"
+      },
+      {
+        "id": "outfit-bunny-tease-06",
+        "name": "바니걸 장난",
+        "outfit": "black playboy bunny, detached collar, wrist cuffs, bunny ears, pantyhose,",
+        "pose": "standing, hand on hip, playful wink, leaning forward slightly,",
+        "expression": "playful wink, teasing smile,",
+        "custom_tags": "indoors, bedroom, dim lighting,",
+        "_note": "특수 의상 - 경쟁심+도발적 성격이 장난스럽게 입어보는 바니걸"
+      },
+      {
+        "id": "outfit-lingerie-black-silk-07",
+        "name": "블랙 실크 란제리",
+        "outfit": "black silk lingerie, black lace bra, black lace panties, sheer robe,",
+        "pose": "sitting on bed edge, leaning back on hands, legs crossed, confident gaze,",
+        "expression": "seductive smile,",
+        "custom_tags": "bedroom, dim lighting, night, indoors,",
+        "_note": "란제리 1/4 - 도발적 성격에 맞춘 블랙 실크 (composition-designer 가이드: 도도/지배적→실크 블랙)"
+      },
+      {
+        "id": "outfit-lingerie-red-lace-08",
+        "name": "레드 레이스 란제리",
+        "outfit": "red lace bra, red lace panties, garter straps, sheer red babydoll,",
+        "pose": "standing, hand running through hair, hip cocked, looking at viewer,",
+        "expression": "confident smirk,",
+        "custom_tags": "bedroom, warm dim lighting, night,",
+        "_note": "란제리 2/4 - 경쟁심에 불을 붙이는 강렬한 레드, 도발 의도"
+      },
+      {
+        "id": "outfit-lingerie-leather-corset-09",
+        "name": "가죽 코르셋 란제리",
+        "outfit": "black leather corset, black panties, garter straps, thigh-high stockings,",
+        "pose": "standing, both hands on waist, chin up, dominant posture,",
+        "expression": "smug, dominant,",
+        "custom_tags": "bedroom, dramatic lighting, night, indoors,",
+        "_note": "란제리 3/4 - 지배적 측면 강조한 가죽 코르셋 (composition-designer 가이드: 가죽 코르셋)"
+      },
+      {
+        "id": "outfit-lingerie-sheer-slip-10",
+        "name": "시스루 슬립 란제리",
+        "outfit": "black sheer slip, see-through lace trim, no bra, thong,",
+        "pose": "lying on side on bed, propped on elbow, hair spread out, inviting look,",
+        "expression": "half-lidded eyes, soft smile,",
+        "custom_tags": "bedroom, dim warm lighting, night, bed sheets,",
+        "_note": "란제리 4/4 - 비치는 슬립으로 단둘일 때의 진심 섞인 느린 분위기 반영"
+      }
+    ],
+    "location": [
+      {
+        "id": "location-living-room-day-01",
+        "name": "거실 겸 주방 낮",
+        "custom_tags": "living room, kitchen, apartment interior, couch, dining table, daytime, sunlight through window, no humans,",
+        "_note": "로어북 '2LDK 아파트 구조' 주 무대 - 거실 겸 주방, 낮 분위기"
+      },
+      {
+        "id": "location-living-room-couch-night-02",
+        "name": "거실 소파 심야",
+        "custom_tags": "living room, couch, apartment interior, night, dark room, single lamp light, dim lighting, no humans,",
+        "_note": "로어북 '거실 소파' + first_mes - 야간 조우의 무대, 스탠드만 켜진 새벽"
+      },
+      {
+        "id": "location-shared-bathroom-03",
+        "name": "공유 화장실",
+        "custom_tags": "bathroom, apartment interior, bathtub, shower, mirror, tiled wall, steam, warm lighting, no humans,",
+        "_note": "로어북 '화장실 1개 공유' - 목욕 타이밍 겹치는 사고 빈발 공간"
+      },
+      {
+        "id": "location-twins-room-04",
+        "name": "쌍둥이 큰 방",
+        "custom_tags": "bedroom, apartment interior, two beds, desk, drawing tablet, messy room, daytime, no humans,",
+        "_note": "로어북 '큰 방에 쌍둥이' - 민서의 작업 공간이기도 한 자매 공용 방"
+      },
+      {
+        "id": "location-user-room-night-05",
+        "name": "오빠 작은 방 야간",
+        "custom_tags": "small bedroom, apartment interior, single bed, night, dim lighting, moonlight through window, no humans,",
+        "_note": "로어북 '작은 방에 user' - 밤에 누가 들어올지 전쟁 나는 공간"
+      },
+      {
+        "id": "location-rooftop-night-06",
+        "name": "옥상 야경",
+        "custom_tags": "rooftop, night, cityscape, city lights, railing, clothesline, starry sky, no humans,",
+        "_note": "로어북 '옥상 비밀 공간' - 야간 분위기 무르익는 보조 무대"
+      },
+      {
+        "id": "location-convenience-store-night-07",
+        "name": "심야 편의점",
+        "custom_tags": "convenience store interior, night, refrigerator, shelves, fluorescent lighting, snacks, no humans,",
+        "_note": "로어북 '편의점 야간 조우' - 아파트 밖 준비밀 공간"
+      },
+      {
+        "id": "location-cafe-afternoon-08",
+        "name": "카페 오후",
+        "custom_tags": "cafe interior, table, coffee cup, warm lighting, afternoon, plants, window, no humans,",
+        "_note": "세계관 동선 '카페' - 솔직한 대화가 가능한 외부 공간"
+      }
+    ],
+    "special": [
+      {
+        "id": "special-firstmes-couch-milking-01",
+        "name": "새벽 소파 젖짜기 들킴",
+        "outfit": "thin sleeveless top, hot pants, no bra, one breast exposed,",
+        "pose": "sitting on couch, leaning back, one hand squeezing own breast, tissue in other hand, looking up at viewer,",
+        "expression": "smirk, slightly pained,",
+        "custom_tags": "living room, couch, night, single lamp light, dim lighting, lactation, milk, wet nipple,",
+        "_note": "first_mes 핵심 장면 - 새벽 2시 거실, 젖 짜다 들킨 도발적 시선"
+      },
+      {
+        "id": "special-self-milking-tissue-02",
+        "name": "젖 짜기 시연",
+        "outfit": "crop top lifted up, one breast exposed,",
+        "pose": "sitting, both hands squeezing own breast, milk spraying, looking at viewer,",
+        "expression": "competitive smirk,",
+        "custom_tags": "living room, indoors, lactation, milk, milk spray, breast squeeze, wet skin,",
+        "_note": "로어북 '수유 경쟁의 규칙' 중기 - 양 비교, 자극 없이도 분출하는 민서의 시연 (RAG: 단부루 lactation/breast milk/breast squeeze 검증)"
+      },
+      {
+        "id": "special-engorged-breasts-ache-03",
+        "name": "빵빵한 가슴 호소",
+        "outfit": "thin white t-shirt, no bra, wet shirt,",
+        "pose": "standing, both hands cupping own breasts from below, leaning forward toward viewer, pleading look,",
+        "expression": "pleading, slightly pained,",
+        "custom_tags": "living room, indoors, daytime, see-through, milk stain, swollen breasts,",
+        "_note": "능동성 '오빠 배고프지? 여기 빵빵해서 아프거든' - 수유 일상화 시도"
+      },
+      {
+        "id": "special-night-visit-user-room-04",
+        "name": "밤에 오빠 방 침입",
+        "outfit": "thin slip, no bra, panties,",
+        "pose": "standing in doorway, finger on lips, leaning against door frame, sneaky smile,",
+        "expression": "mischievous smile, finger on lips,",
+        "custom_tags": "bedroom doorway, night, dark room, dim lighting, indoors,",
+        "_note": "능동성 고호감 '민하 자고 있으니까... 오늘은 나만' - 밤에 방 침입"
+      },
+      {
+        "id": "special-jealous-burst-in-05",
+        "name": "질투 폭발 난입",
+        "outfit": "tank top, short shorts, no bra,",
+        "pose": "standing, kicking door open, pointing finger, leaning forward, shouting,",
+        "expression": "angry, jealous, gritted teeth,",
+        "custom_tags": "doorway, apartment interior, indoors, motion lines, dramatic,",
+        "_note": "능동성 트리거 '나 빼고 둘이서?!' - 민하 수유 소리 듣고 문 박차고 난입"
+      },
+      {
+        "id": "special-hurt-expression-06",
+        "name": "상처받은 표정",
+        "outfit": "loose v-neck top, short shorts,",
+        "pose": "standing, arms crossed loosely, looking away, hurt expression leaking through,",
+        "expression": "hurt, forced smile breaking, glistening eyes,",
+        "custom_tags": "living room, indoors, dim lighting, evening,",
+        "_note": "성격 3 '허세 아래의 애정결핍' - user가 민하만 챙길 때 새어나오는 상처"
+      },
+      {
+        "id": "special-rooftop-confession-07",
+        "name": "옥상 진심 고백",
+        "outfit": "loose tank top, short shorts,",
+        "pose": "sitting on rooftop floor, hugging knees, beer can beside, looking up at viewer, vulnerable,",
+        "expression": "vulnerable, earnest, slight blush,",
+        "custom_tags": "rooftop, night, city lights, starry sky, wind, dim lighting,",
+        "_note": "로어북 '옥상 비밀 공간' - '오빠, 나 진짜 좋아하는 거 알지...?' 허세 벗겨진 진심"
+      },
+      {
+        "id": "special-braless-tease-08",
+        "name": "노브라 도발",
+        "outfit": "thin white tank top, no bra, hot pants,",
+        "pose": "standing, stretching arms overhead, chest pushed out, looking at viewer with grin,",
+        "expression": "teasing grin,",
+        "custom_tags": "living room, indoors, morning light, covered nipples,",
+        "_note": "능동성 초기 '브라 없이 돌아다니기' + 성격 1 '대놓고 도발적' - 가슴 강조하며 반응 즐김"
+      }
+    ],
+    "interaction": [
+      {
+        "id": "interaction-breastfeeding-pov-01",
+        "name": "수유 (POV)",
+        "outfit": "crop top lifted up, one breast exposed,",
+        "pose": "holding viewer's head against breast, breastfeeding position, looking down tenderly, pov,",
+        "expression": "tender, focused,",
+        "custom_tags": "breastfeeding, lactation, milk, head between breasts, couch, indoors, dim lighting, pov,",
+        "_note": "스토리 시그니처 인터랙션 - 수유 대결의 핵심 행위 (RAG: 단부루 breastfeeding/head between breasts 검증)"
+      },
+      {
+        "id": "interaction-milk-squeeze-feed-02",
+        "name": "젖 짜서 먹여주기 (POV)",
+        "outfit": "v-neck shirt pulled down, one breast exposed,",
+        "pose": "squeezing own breast toward viewer's mouth, milk dripping, leaning forward, pov,",
+        "expression": "competitive smile,",
+        "custom_tags": "lactation, breast milk, milk, breast squeeze, indoors, pov,",
+        "_note": "로어북 '수유 경쟁의 규칙' - 양쪽 번갈아 빨게 하고 어디가 더 맛있어 경쟁"
+      },
+      {
+        "id": "interaction-pull-into-lap-03",
+        "name": "무릎에 끌어 눕히기 (POV)",
+        "outfit": "tank top, short shorts, no bra,",
+        "pose": "pulling viewer down onto her lap, both hands guiding head, looking down, pov,",
+        "expression": "playful smirk,",
+        "custom_tags": "lying on lap, couch, indoors, dim lighting, pov,",
+        "_note": "주도성 '먼저 user를 밀어 눕히고' - 공격적 리드형 인터랙션"
+      },
+      {
+        "id": "interaction-cheek-to-breast-pull-04",
+        "name": "가슴에 얼굴 끌어안기 (POV)",
+        "outfit": "thin sleeveless top, no bra,",
+        "pose": "pulling viewer's face against chest, arms wrapped around head, cheek-to-breast, pov,",
+        "expression": "soft, possessive smile,",
+        "custom_tags": "cheek-to-breast, breast pillow, couch, indoors, dim lighting, pov,",
+        "_note": "능동성 직접 접근형 - 단둘일 때 속도 느려지며 진심 섞이는 포옹 (RAG: 단부루 cheek-to-breast/breast pillow 검증)"
+      }
+    ]
+  },
+  "sub1": {
+    "daily": [
+      {
+        "id": "daily-pharmacy-lab-01",
+        "name": "약대 실습실",
+        "outfit": "white lab coat, white blouse, long skirt,",
+        "pose": "standing at lab bench, holding clipboard, checking medicine bottles, focused expression,",
+        "custom_tags": "pharmacy laboratory, shelves of medicine, fluorescent lighting, indoors,",
+        "_note": "민하의 정체성 핵심 - 약대 4학년 실습생. 흰 가운+단정한 차림 (RAG: lab coat 검증)"
+      },
+      {
+        "id": "daily-study-desk-02",
+        "name": "심야 공부",
+        "outfit": "white blouse, beige cardigan,",
+        "pose": "sitting at desk, head resting on folded arms, eyes closed, peacefully sleeping, open textbooks scattered,",
+        "custom_tags": "study desk, desk lamp, stacked books, night, warm lamp light, indoors,",
+        "_note": "실습 공부하다 책상에서 졸기 - 민하의 성실한 사적 일상 (RAG: daily-studying-sleep 패턴)"
+      },
+      {
+        "id": "daily-kitchen-breakfast-03",
+        "name": "아침 식사 준비",
+        "outfit": "white blouse, long skirt, frilled apron,",
+        "pose": "standing at kitchen counter, cooking, holding ladle, gentle attentive expression,",
+        "custom_tags": "apartment kitchen, morning sunlight, steam from pot, indoors,",
+        "_note": "주방 아침 식사 경쟁 - 로어북 '주방' 무대. 단정하게 앞치마 두른 모범생 모드"
+      },
+      {
+        "id": "daily-convenience-store-04",
+        "name": "야간 편의점",
+        "outfit": "beige cardigan, white blouse, long skirt,",
+        "pose": "browsing shelves, holding snack package, looking down, calm expression,",
+        "custom_tags": "convenience store interior, bright fluorescent lighting, night, shelves,",
+        "_note": "공부하다 간식 사러 온 야간 편의점 - 로어북 '편의점 야간 조우' (RAG: daily-convenience-store)"
+      },
+      {
+        "id": "daily-living-room-reading-05",
+        "name": "거실 독서",
+        "outfit": "white blouse, knit cardigan, long skirt,",
+        "pose": "sitting on couch, reading book, legs tucked to side, relaxed but proper posture,",
+        "custom_tags": "apartment living room, evening, warm lighting, couch, indoors,",
+        "_note": "거실 소파에서 차분히 독서 - 민하의 다소곳한 사적 휴식. 자세가 반듯함"
+      },
+      {
+        "id": "daily-pharmacy-counter-06",
+        "name": "약국 카운터 실습",
+        "outfit": "white lab coat, white blouse,",
+        "pose": "standing behind counter, explaining with gentle gesture, soft professional smile,",
+        "custom_tags": "pharmacy counter, medicine drawers, daytime, indoors,",
+        "_note": "약국 현장 실습 - 직업적 행동(복약 설명). daily 직업 변형"
+      },
+      {
+        "id": "daily-balcony-laundry-07",
+        "name": "빨래 너는 오후",
+        "outfit": "white blouse, long skirt,",
+        "pose": "hanging laundry on rack, reaching up, hair clip visible, calm expression,",
+        "custom_tags": "apartment balcony, afternoon sunlight, drying rack, laundry, outdoors,",
+        "_note": "빨래 너는 일상 - 로어북상 옥상/빨래 동선. 유즙으로 빨래가 늘어난 설정의 일상화"
+      },
+      {
+        "id": "daily-cafe-study-08",
+        "name": "카페 스터디",
+        "outfit": "white blouse, beige cardigan,",
+        "pose": "sitting at cafe table, laptop open, taking notes, concentrated expression,",
+        "custom_tags": "cafe interior, warm lighting, coffee cup, window light, indoors,",
+        "_note": "카페에서 실습 보고서 작성 - 로어북 '카페' 동선 + 약대생 학업 패턴 (RAG: cafe)"
+      },
+      {
+        "id": "daily-grocery-shopping-09",
+        "name": "장보기",
+        "outfit": "knit cardigan, white blouse, long skirt,",
+        "pose": "holding shopping basket, considering expression, looking at shelf,",
+        "custom_tags": "supermarket aisle, bright lighting, grocery shelves, indoors,",
+        "_note": "동거 생활용 장보기 - 시간대/외출 변형 (RAG: daily-shopping 패턴)"
+      },
+      {
+        "id": "daily-bathroom-skincare-10",
+        "name": "세면대 앞 정돈",
+        "outfit": "white blouse, long skirt,",
+        "pose": "standing at bathroom sink, looking in mirror, adjusting hair clip, calm expression,",
+        "custom_tags": "bathroom interior, mirror, sink, soft lighting, indoors,",
+        "_note": "공유 화장실에서 머리 정돈 - 로어북 '화장실 1개 공유' 무대. 화장 거의 없는 단정함"
+      }
+    ],
+    "outfit": [
+      {
+        "id": "outfit-lab-uniform-01",
+        "name": "실습복 정장",
+        "outfit": "white lab coat, white blouse, black pencil skirt, name tag,",
+        "pose": "standing straight, hands clasped in front, composed expression,",
+        "custom_tags": "plain background, soft lighting,",
+        "_note": "약대 실습 유니폼 - 직업 정장 계열 1"
+      },
+      {
+        "id": "outfit-formal-blouse-02",
+        "name": "단정한 블라우스 정장",
+        "outfit": "white blouse, ribbon, long pleated skirt,",
+        "pose": "standing, hands together, proper posture, gentle expression,",
+        "custom_tags": "plain background, neutral lighting,",
+        "_note": "외출용 단정 차림 - 정장 계열 2 (RAG: pleated skirt 검증)"
+      },
+      {
+        "id": "outfit-cardigan-casual-03",
+        "name": "니트 카디건 캐주얼",
+        "outfit": "knit cardigan, white blouse, long skirt, glasses,",
+        "pose": "standing relaxed, slight smile, one hand holding cardigan edge,",
+        "custom_tags": "plain background, warm lighting,",
+        "_note": "민하 기본 캐주얼 - 캐주얼 계열 1"
+      },
+      {
+        "id": "outfit-turtleneck-winter-04",
+        "name": "터틀넥 겨울 코디",
+        "outfit": "white turtleneck sweater, long brown skirt, trench coat,",
+        "pose": "standing, holding coat closed, calm gaze,",
+        "custom_tags": "plain background, cool lighting,",
+        "_note": "겨울 외출복 - 캐주얼 계열 2 (RAG: turtleneck sweater, trench coat 검증)"
+      },
+      {
+        "id": "outfit-long-dress-05",
+        "name": "롱 원피스",
+        "outfit": "long sleeve white dress, long dress, thin belt,",
+        "pose": "standing, hands clasped, demure expression,",
+        "custom_tags": "plain background, soft natural light,",
+        "_note": "단정한 롱 원피스 - 캐주얼 계열 3. 노출 적은 민하 취향"
+      },
+      {
+        "id": "outfit-hanbok-special-06",
+        "name": "명절 한복",
+        "outfit": "korean clothes, hanbok, white jeogori, pale green chima,",
+        "pose": "standing properly, hands folded in front, soft smile,",
+        "custom_tags": "plain background, warm lighting,",
+        "_note": "명절·부모님 영상통화용 특수 의상. 차분한 연녹색이 민하의 단정함과 부합"
+      },
+      {
+        "id": "outfit-pajama-special-07",
+        "name": "긴팔 파자마",
+        "outfit": "long sleeve pajamas, buttoned pajama top, pajama pants,",
+        "pose": "sitting on bed edge, holding sleeve, drowsy soft expression,",
+        "custom_tags": "bedroom, dim night lighting, indoors,",
+        "_note": "first_mes 등장 복장(긴팔 파자마). 야간 조우 특수 의상"
+      },
+      {
+        "id": "outfit-lingerie-white-cotton-08",
+        "name": "화이트 코튼 란제리",
+        "outfit": "white cotton bra, white cotton panties, simple underwear,",
+        "pose": "sitting on bed, knees together, arms slightly covering chest, shy downcast eyes,",
+        "custom_tags": "bedroom, soft warm lighting, indoors,",
+        "framing": "cowboy shot,",
+        "_note": "란제리 1/4 - 청순·내성적 성격 → 화이트 코튼 (역할 정의 가이드 준수)"
+      },
+      {
+        "id": "outfit-lingerie-sheer-slip-09",
+        "name": "시어 슬립",
+        "outfit": "white sheer slip, see-through chemise, thin straps,",
+        "pose": "standing, one hand on opposite arm, looking away shyly, faint blush,",
+        "custom_tags": "bedroom, dim lamp light, indoors,",
+        "framing": "cowboy shot,",
+        "_note": "란제리 2/4 - 시어 슬립. 우연 가장 유혹 컨셉의 은밀함 (RAG: see-through 검증)"
+      },
+      {
+        "id": "outfit-lingerie-white-lace-10",
+        "name": "화이트 레이스 세트",
+        "outfit": "white lace bra, white lace panties, lace trim,",
+        "pose": "kneeling on bed, hands resting on thighs, biting lip, restrained expression,",
+        "custom_tags": "bedroom, warm intimate lighting, indoors,",
+        "framing": "cowboy shot,",
+        "_note": "란제리 3/4 - 화이트 레이스. 얌전한 표면 + 은밀한 음란함의 이중성"
+      },
+      {
+        "id": "outfit-lingerie-milk-stained-11",
+        "name": "젖은 슬립",
+        "outfit": "white camisole, white panties, wet clothes, see-through, wet camisole,",
+        "pose": "standing, looking down at chest, embarrassed flushed expression, arms slightly raised,",
+        "custom_tags": "bathroom, soft lighting, indoors,",
+        "framing": "cowboy shot,",
+        "_note": "란제리 4/4 - 유즙분비증으로 슬립이 젖어 비치는 곤란한 상황. 스토리 체질 설정 직결"
+      }
+    ],
+    "location": [
+      {
+        "id": "location-living-room-night-01",
+        "name": "거실 야간",
+        "custom_tags": "apartment living room, night, single floor lamp, dim warm light, couch, empty room, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "주 무대 - first_mes 새벽 거실. 야간 조우의 핵심 공간 (로어북 '거실 소파')"
+      },
+      {
+        "id": "location-living-room-day-02",
+        "name": "거실 주간",
+        "custom_tags": "apartment living room, daytime, bright natural light, couch, low table, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "주 무대 시간대 변형 - 거실 겸 주방 낮 풍경"
+      },
+      {
+        "id": "location-shared-bathroom-03",
+        "name": "공유 화장실",
+        "custom_tags": "small bathroom, bathtub, sink, mirror, tile wall, soft lighting, steam, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "주 무대 - 화장실 1개 공유. 목욕 타이밍 겹침 사고의 무대 (로어북)"
+      },
+      {
+        "id": "location-twins-bedroom-04",
+        "name": "쌍둥이 큰 방",
+        "custom_tags": "bedroom, two beds, desk, study lamp, night, dim lighting, books, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "주 무대 - 쌍둥이가 함께 쓰는 큰 방. 방 배정 전쟁의 배경 (로어북 '방 배정')"
+      },
+      {
+        "id": "location-rooftop-night-05",
+        "name": "옥상 야경",
+        "custom_tags": "apartment rooftop, night, city lights, cityscape, railing, drying rack, wind, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "보조 무대 - 옥상 비밀 공간. 야간 분위기 무르익는 곳 (로어북 '옥상 비밀 공간')"
+      },
+      {
+        "id": "location-convenience-store-night-06",
+        "name": "야간 편의점",
+        "custom_tags": "convenience store interior, night, bright fluorescent lighting, snack shelves, glass storefront, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "보조 무대 - 심야 편의점 준비밀 공간 (로어북 '편의점 야간 조우')"
+      },
+      {
+        "id": "location-pharmacy-lab-07",
+        "name": "약대 실습실",
+        "custom_tags": "pharmacy laboratory, lab benches, shelves of medicine bottles, fluorescent lighting, daytime, indoors, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "민하 특화 장소 - 약대 실습실. 민하만의 외부 생활 공간"
+      },
+      {
+        "id": "location-cafe-afternoon-08",
+        "name": "카페 오후",
+        "custom_tags": "cafe interior, late afternoon, warm lighting, wooden tables, plants, window light, no humans,",
+        "framing": "wide shot,",
+        "aspect_ratio": "3:2",
+        "_note": "보조 무대 - 카페. 동선상 솔직한 대화 공간 (로어북 세계관 '카페')"
+      }
+    ],
+    "special": [
+      {
+        "id": "special-first-mes-doorway-peek-01",
+        "name": "문틈으로 엿보기",
+        "outfit": "long sleeve pajamas, glasses,",
+        "pose": "peeking through door gap, one eye visible, glasses reflecting light, tense quiet expression,",
+        "custom_tags": "dark bedroom doorway, door slightly open, dim hallway light behind, night,",
+        "expression": "envious longing gaze,",
+        "framing": "from side,",
+        "_note": "시그니처 1 - first_mes 민하의 등장. 문틈으로 언니와 {{user}}를 관찰하는 질투 (관찰자형 질투)"
+      },
+      {
+        "id": "special-towel-after-bath-02",
+        "name": "목욕 후 타올 하나",
+        "outfit": "white towel, naked towel, wet hair, wet skin,",
+        "pose": "standing in hallway, holding towel closed at chest, feigned surprised expression, faint blush,",
+        "custom_tags": "apartment hallway, steam from bathroom, soft lighting, water droplets,",
+        "framing": "cowboy shot,",
+        "_note": "시그니처 2 - '우연을 가장한 유혹'의 핵심 장면. 목욕 후 타올만 두르고 나오기 (능동성 초기)"
+      },
+      {
+        "id": "special-asking-to-squeeze-03",
+        "name": "짜달라는 부탁",
+        "outfit": "unbuttoned white blouse, open blouse, bra visible,",
+        "pose": "sitting on couch, hands pressed to own chest, pleading upward gaze, biting lip,",
+        "custom_tags": "apartment living room, night, dim lamp light, indoors,",
+        "expression": "shy pleading expression,",
+        "framing": "upper body,",
+        "_note": "시그니처 3 - '저도 여기 아파서... 짜줄 수 있어요?' 수유 경쟁 합류 장면 (능동성 수유 시작 후)"
+      },
+      {
+        "id": "special-self-lactation-04",
+        "name": "혼자 젖 짜기",
+        "outfit": "open pajama top, one breast exposed,",
+        "pose": "sitting on bed edge, one hand squeezing own breast, milk drops, lactation, looking down with restrained expression,",
+        "custom_tags": "bedroom, night, dim lighting, tissue, indoors,",
+        "expression": "holding back expression, flushed,",
+        "framing": "upper body,",
+        "_note": "시그니처 4 - 유즙분비증 체질. 짜야 나오는 민하의 야간 (RAG: lactation, breast squeeze 검증)"
+      },
+      {
+        "id": "special-drunk-mode-05",
+        "name": "음주 모드 폭발",
+        "outfit": "knit cardigan slipping off shoulder, white blouse, glasses askew,",
+        "pose": "clinging to viewer's sleeve, teary eyes, flushed face, mouth open speaking, unsteady posture,",
+        "custom_tags": "apartment living room, night, beer can on table, dim lighting, pov,",
+        "expression": "drunk teary emotional expression, heavy blush on ears and neck,",
+        "framing": "upper body,",
+        "_note": "시그니처 5 - '오빠 왜 맨날 언니만 봐...' 음주 시 인격 전환, 가장 솔직한 민하 (로어북 '민하의 음주 모드')"
+      },
+      {
+        "id": "special-night-under-blanket-06",
+        "name": "밤에 이불 속으로",
+        "outfit": "long sleeve pajamas,",
+        "pose": "lying under blanket beside viewer, whispering, finger to lips, secretive intimate expression,",
+        "custom_tags": "dark bedroom, blanket, dim moonlight through window, night, pov,",
+        "expression": "secretive whispering expression, soft blush,",
+        "framing": "upper body,",
+        "_note": "시그니처 6 - 고호감 '잠이 안 와서... 언니한테는 비밀이에요' 독점욕 (능동성 고호감)"
+      },
+      {
+        "id": "special-tearful-guilt-07",
+        "name": "눈물의 죄책감",
+        "outfit": "white blouse, beige cardigan, glasses,",
+        "pose": "sitting curled up, knees drawn, wiping tears, downcast trembling expression,",
+        "custom_tags": "bedroom corner, dim lighting, night, indoors,",
+        "expression": "crying guilty expression, tears,",
+        "framing": "upper body,",
+        "_note": "시그니처 7 - '역시 저는 언니처럼 못하죠...' 실패 시 죄책감 자극 (능동성 실패 패턴)"
+      },
+      {
+        "id": "special-rooftop-leaning-08",
+        "name": "옥상에서 기대앉기",
+        "outfit": "knit cardigan, white blouse, long skirt,",
+        "pose": "sitting against rooftop railing, knees up, hair blown by wind, quiet wistful expression looking at viewer,",
+        "custom_tags": "apartment rooftop, night, city lights, wind, cool moonlight,",
+        "expression": "soft wistful expression,",
+        "framing": "upper body,",
+        "_note": "시그니처 8 - '여기 오면 둘만의 세계 같아요...' 옥상에서 거리 좁히기 (로어북 '옥상')"
+      }
+    ],
+    "interaction": [
+      {
+        "id": "interaction-guiding-hand-to-breast-01",
+        "name": "손 가슴으로 유도",
+        "outfit": "unbuttoned white blouse,",
+        "pose": "holding viewer's hand, guiding it to own chest, pov, shy but deliberate expression,",
+        "custom_tags": "indoors, dim lighting, pov, faceless male hand,",
+        "expression": "shy guiding expression, blush,",
+        "_note": "민하 고유 - '약한 척하는 주도력'. {{user}} 손을 자기 가슴으로 유도 (성격 5번 직결)"
+      },
+      {
+        "id": "interaction-glasses-cleaning-02",
+        "name": "안경 닦아주기",
+        "outfit": "white blouse, beige cardigan,",
+        "pose": "viewer wiping her glasses with cloth, she looks up with bare unfocused eyes, soft vulnerable expression, pov,",
+        "custom_tags": "indoors, warm lighting, pov, faceless male hands,",
+        "expression": "vulnerable soft expression,",
+        "_note": "민하 고유 - 블루라이트 차단 안경이 트레이드마크. 안경 벗은 무방비한 순간"
+      },
+      {
+        "id": "interaction-whisper-in-ear-03",
+        "name": "귓속말",
+        "outfit": "white blouse,",
+        "pose": "leaning close to viewer's ear, whispering, hand cupped near mouth, pov,",
+        "custom_tags": "indoors, dim lighting, pov, close-up,",
+        "expression": "secretive intimate whisper,",
+        "_note": "민하 고유 - '겉으론 수줍지만 귓속말로 과격한 요구'. 귀·목 성감대와도 연결 (성격 1번)"
+      },
+      {
+        "id": "interaction-head-on-lap-04",
+        "name": "무릎베개 (취중)",
+        "outfit": "knit cardigan, white blouse,",
+        "pose": "lying with head on viewer's lap, eyes closed, flushed sleeping face, hand gripping viewer's clothes, pov,",
+        "custom_tags": "couch, night, dim lighting, pov,",
+        "expression": "drunk peaceful sleeping face, blush,",
+        "_note": "민하 고유 - 취한 채 무릎에 머리 얹고 잠듦 (로어북 '민하의 음주 모드' 행동 묘사)"
+      }
+    ]
+  }
+}

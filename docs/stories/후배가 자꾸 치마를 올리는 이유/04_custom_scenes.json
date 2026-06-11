@@ -1,0 +1,365 @@
+{
+  "_meta": {
+    "story": "후배가 자꾸 치마를 올리는 이유",
+    "character": "강시은",
+    "template_type": "modern",
+    "designer": "composition-designer",
+    "rag_note": "RAG 컬렉션(babechat-studio)의 '단부루 태그.md'에서 의상/외투/속옷/배경/장식 태그를 직접 검증해 사용. 오피스 특화 태그(office, photocopier, office lady, cubicle, meeting room, rooftop, convenience store 등)는 RAG에 항목이 없어 검증된 danbooru 표준 태그를 AI 지식으로 보강함.",
+    "category_counts": {
+      "daily": 10,
+      "outfit": 10,
+      "location": 8,
+      "special": 8,
+      "interaction": 4,
+      "total": 40
+    }
+  },
+  "daily": [
+    {
+      "id": "daily-desk-work-01",
+      "name": "책상 업무",
+      "outfit": "white blouse, black pencil skirt, lanyard, id card,",
+      "pose": "sitting, typing, looking at computer screen, office chair,",
+      "custom_tags": "office, desk, computer, paperwork, indoors,",
+      "_note": "마케팅팀 오픈형 사무실의 자기 자리 - 모범 사원 강시은의 기본 일상"
+    },
+    {
+      "id": "daily-peek-over-monitor-02",
+      "name": "모니터 너머 훔쳐보기",
+      "outfit": "white blouse, black pencil skirt,",
+      "pose": "sitting, peeking over monitor, looking to the side, hand on desk,",
+      "expression": "half-closed eyes,",
+      "custom_tags": "office, desk, computer, cubicle, indoors,",
+      "_note": "{{user}} 뒷줄 대각선 자리에서 모니터 보는 척 훔쳐보는 습관 - 컨셉 핵심"
+    },
+    {
+      "id": "daily-stretch-arms-up-03",
+      "name": "기지개 켜기",
+      "outfit": "white blouse, black pencil skirt,",
+      "pose": "sitting, stretching, arms up, head back, midriff peek,",
+      "custom_tags": "office, desk, computer, indoors,",
+      "_note": "업무 중 기지개로 목선·배를 슬쩍 노출하는 유혹 일상 패턴"
+    },
+    {
+      "id": "daily-hair-tuck-04",
+      "name": "머리 귀 뒤로 넘기기",
+      "outfit": "white blouse, black pencil skirt,",
+      "pose": "hand in own hair, tucking hair behind ear, looking to the side,",
+      "framing": "upper body,",
+      "custom_tags": "office, indoors, blurry background,",
+      "_note": "한쪽 귀 뒤로 머리 넘기는 시은의 시그니처 습관"
+    },
+    {
+      "id": "daily-photocopier-05",
+      "name": "복사실 복합기",
+      "outfit": "white blouse, black pencil skirt,",
+      "pose": "standing, operating photocopier, holding documents, looking back,",
+      "custom_tags": "photocopier, office, indoors, fluorescent lighting,",
+      "_note": "좁은 복사실 복합기 작업 - 유혹 핫스팟의 일상 버전"
+    },
+    {
+      "id": "daily-meeting-presentation-06",
+      "name": "회의실 프레젠테이션",
+      "outfit": "black blazer, white blouse, black pencil skirt,",
+      "pose": "standing, holding pointer, presenting, gesturing at screen,",
+      "custom_tags": "meeting room, whiteboard, projector screen, conference table, indoors,",
+      "_note": "회의실 B 프레젠테이션 - 일 잘하는 사원의 직업적 행동"
+    },
+    {
+      "id": "daily-rooftop-coffee-07",
+      "name": "옥상 커피 한 잔",
+      "outfit": "white blouse, black pencil skirt, cardigan on shoulders,",
+      "pose": "standing, holding coffee cup, leaning on railing, looking away,",
+      "custom_tags": "rooftop, railing, cityscape, day, blue sky,",
+      "_note": "옥상 흡연구역 커피 루틴 - {{user}} 따라 올라오는 일상"
+    },
+    {
+      "id": "daily-convenience-store-night-08",
+      "name": "편의점 야근 간식",
+      "outfit": "white blouse, black pencil skirt, beige cardigan,",
+      "pose": "standing, holding instant food, looking at viewer, slight smile,",
+      "custom_tags": "convenience store, shelves, night, indoors, fluorescent lighting,",
+      "_note": "회사 근처 편의점 야근 루틴 - 경계가 풀린 편한 시은"
+    },
+    {
+      "id": "daily-overtime-tired-09",
+      "name": "야근 피로",
+      "outfit": "white blouse, black pencil skirt, beige cardigan, loosened collar,",
+      "pose": "sitting, slumped on desk, chin on hand, tired,",
+      "custom_tags": "office, desk, computer, desk lamp, night, indoors,",
+      "_note": "둘만 남은 야근 사무실에서 지친 모습 - 야근 카디건 착용"
+    },
+    {
+      "id": "daily-commute-elevator-10",
+      "name": "출근 엘리베이터",
+      "outfit": "black blazer, white blouse, black pencil skirt, holding handbag,",
+      "pose": "standing, holding bag with both hands, looking forward,",
+      "custom_tags": "elevator, indoors, mirror, morning,",
+      "_note": "출근 시간대 변형 - 단정한 모범 사원 모드"
+    }
+  ],
+  "outfit": [
+    {
+      "id": "outfit-signature-office-01",
+      "name": "시그니처 오피스룩 (단추 하나 더)",
+      "outfit": "white dress shirt, unbuttoned, cleavage, black pencil skirt,",
+      "pose": "standing, hand on hip, looking at viewer,",
+      "custom_tags": "office, indoors,",
+      "_note": "단추를 하나 더 푼 은밀한 포인트 - 시은의 의도적 노출 기본 의상"
+    },
+    {
+      "id": "outfit-vneck-inner-02",
+      "name": "V넥 이너 + 펜슬 스커트",
+      "outfit": "white v-neck shirt, collarbone, black pencil skirt,",
+      "pose": "standing, arms behind back, looking at viewer,",
+      "custom_tags": "office, indoors,",
+      "_note": "쇄골 또렷한 V넥 이너 - 컨셉에 명시된 자주 입는 차림"
+    },
+    {
+      "id": "outfit-blazer-suit-03",
+      "name": "정장 재킷 풀세트",
+      "outfit": "black blazer, white blouse, black pencil skirt, skirt suit,",
+      "pose": "standing, holding documents, professional,",
+      "custom_tags": "office, indoors,",
+      "_note": "김부장 앞 완벽한 모범 사원 모드 - 정장 재킷 풀세트"
+    },
+    {
+      "id": "outfit-overtime-cardigan-04",
+      "name": "야근용 카디건",
+      "outfit": "beige cardigan, white blouse, black pencil skirt,",
+      "pose": "sitting, pulling cardigan closed, looking to the side,",
+      "custom_tags": "office, desk, night, desk lamp, indoors,",
+      "_note": "야근 때 걸치는 카디건 - 둘만 남은 사무실 분위기"
+    },
+    {
+      "id": "outfit-casual-afterwork-05",
+      "name": "퇴근 후 사복",
+      "outfit": "white knit sweater, blue jeans, handbag,",
+      "pose": "standing, looking at viewer, slight smile,",
+      "custom_tags": "city, street, evening, outdoors,",
+      "_note": "퇴근 후 사복 - 회사 밖에서의 시은, 청순한 니트"
+    },
+    {
+      "id": "outfit-trench-coat-06",
+      "name": "트렌치코트 외출복",
+      "outfit": "beige trench coat, white blouse, black pencil skirt,",
+      "pose": "standing, holding coat collar, looking away,",
+      "custom_tags": "city, street, day, outdoors,",
+      "_note": "외근/외출 시 트렌치코트 - 단정하면서 분위기 있는 차림"
+    },
+    {
+      "id": "outfit-white-dress-date-07",
+      "name": "화이트 원피스 (특수의상)",
+      "outfit": "white dress, sleeveless dress, collarbone,",
+      "pose": "standing, hands clasped in front, looking at viewer,",
+      "custom_tags": "cafe, indoors, warm lighting,",
+      "_note": "관계 발전 후 사적인 자리용 화이트 원피스 - 청순·순애 성향 반영 특수의상"
+    },
+    {
+      "id": "outfit-lingerie-white-cotton-08",
+      "name": "란제리 - 화이트 코튼",
+      "outfit": "white cotton bra, white cotton panties, underwear,",
+      "pose": "sitting on bed, knees together, hand on chest, shy,",
+      "expression": "blush,",
+      "custom_tags": "bedroom, indoors, soft lighting,",
+      "custom_negative": "+lace, +garter belt,",
+      "_note": "청순·내성적 성향 → 장식 없는 화이트 코튼 속옷. 떨리는 순애 반영"
+    },
+    {
+      "id": "outfit-lingerie-sheer-slip-09",
+      "name": "란제리 - 시어 슬립",
+      "outfit": "white sheer babydoll, see-through, white panties,",
+      "pose": "standing, arms covering chest, looking down, embarrassed,",
+      "expression": "blush,",
+      "custom_tags": "bedroom, indoors, soft lighting, curtain,",
+      "_note": "시어 슬립(베이비돌) - 청순하지만 살짝 비치는, 부끄러워하는 강시은"
+    },
+    {
+      "id": "outfit-lingerie-white-camisole-10",
+      "name": "란제리 - 화이트 캐미솔",
+      "outfit": "white camisole, white cotton panties, collarbone, bare shoulders,",
+      "pose": "sitting on bed, hugging knees, looking at viewer, timid,",
+      "expression": "blush,",
+      "custom_tags": "bedroom, night, indoors, dim lighting,",
+      "_note": "화이트 캐미솔 - 란제리 3번째, 웅크린 자세로 내성적 성격 표현"
+    }
+  ],
+  "location": [
+    {
+      "id": "location-marketing-office-01",
+      "name": "마케팅팀 오픈형 사무실",
+      "custom_tags": "office, open plan office, cubicles, desks, computers, fluorescent lighting, indoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "주 무대 - 오픈형 마케팅팀 사무실 전경, 시은 자리는 {{user}} 뒷줄 대각선"
+    },
+    {
+      "id": "location-office-night-02",
+      "name": "야근 중 텅 빈 사무실",
+      "custom_tags": "office, empty office, desks, night, desk lamp, dim lighting, indoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "주 무대 야간 변형 - 둘만 남은 야근 사무실의 적막한 분위기"
+    },
+    {
+      "id": "location-copy-room-03",
+      "name": "좁은 복사실",
+      "custom_tags": "photocopier, small room, narrow space, office supplies, fluorescent lighting, indoors, no humans,",
+      "framing": "from above,",
+      "_note": "유혹 핫스팟 - 좁아서 몸이 스칠 수밖에 없는 복사실. first_mes 무대"
+    },
+    {
+      "id": "location-meeting-room-b-04",
+      "name": "블라인드 회의실 B",
+      "custom_tags": "meeting room, conference table, office chairs, glass wall, closed blinds, whiteboard, indoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "회의실 B - 유리벽이지만 블라인드 내릴 수 있는 소회의실, 둘만의 미팅"
+    },
+    {
+      "id": "location-rooftop-day-05",
+      "name": "옥상 흡연구역 (낮)",
+      "custom_tags": "rooftop, railing, cityscape, buildings, blue sky, day, outdoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "옥상 흡연구역 낮 - {{user}} 커피 루틴 장소"
+    },
+    {
+      "id": "location-rooftop-night-06",
+      "name": "옥상 흡연구역 (야경)",
+      "custom_tags": "rooftop, railing, city lights, cityscape, night, night sky, outdoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "옥상 야경 - 진심 분출 장면의 무대가 되는 시간대"
+    },
+    {
+      "id": "location-convenience-store-07",
+      "name": "회사 근처 편의점 (밤)",
+      "custom_tags": "convenience store, shelves, refrigerator, fluorescent lighting, night, indoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "야근 단둘 시간을 만드는 편의점 - 경계가 풀리는 공간"
+    },
+    {
+      "id": "location-office-restroom-08",
+      "name": "회사 화장실",
+      "custom_tags": "restroom, sink, mirror, tile floor, fluorescent lighting, indoors, no humans,",
+      "framing": "wide shot,",
+      "_note": "능동 실패 시 세수하러 도망가는 화장실 - 시그니처 갈등 공간"
+    }
+  ],
+  "special": [
+    {
+      "id": "special-copyroom-eye-contact-01",
+      "name": "복사실 치마 정리 중 눈 마주침",
+      "outfit": "white blouse, black pencil skirt, skirt hold, skirt lift,",
+      "pose": "standing, one hand holding skirt up, thigh exposed, looking back at viewer, surprised,",
+      "expression": "parted lips,",
+      "custom_tags": "photocopier, small room, fluorescent lighting, indoors,",
+      "framing": "cowboy shot,",
+      "_note": "first_mes 시그니처 - 펜슬 스커트가 허벅지 위에 걸쳐진 채 문 열리는 소리에 눈 마주치는 순간"
+    },
+    {
+      "id": "special-meeting-foot-on-leg-02",
+      "name": "회의실 테이블 밑 발 올리기",
+      "outfit": "white blouse, black pencil skirt, pantyhose, no shoes,",
+      "pose": "sitting, leg up, foot on viewer's leg, leaning forward, looking at viewer,",
+      "expression": "half-closed eyes, smirk,",
+      "custom_tags": "meeting room, conference table, closed blinds, indoors,",
+      "framing": "from below,",
+      "_note": "회의실 B 테이블 밑에서 발을 {{user}} 다리에 올리는 의도적 유혹"
+    },
+    {
+      "id": "special-overtime-alone-office-03",
+      "name": "야근 둘만 남은 사무실",
+      "outfit": "white blouse, black pencil skirt, beige cardigan,",
+      "pose": "standing beside desk, leaning toward viewer, hands on desk, looking at viewer,",
+      "expression": "soft smile,",
+      "custom_tags": "office, empty office, desk lamp, night, dim lighting, indoors,",
+      "framing": "upper body,",
+      "_note": "의도적으로 단둘이 남긴 야근 사무실 - 긴장감 도는 시그니처"
+    },
+    {
+      "id": "special-restroom-splash-water-04",
+      "name": "화장실에서 세수하며 진정 (능동 실패)",
+      "outfit": "white blouse, black pencil skirt,",
+      "pose": "leaning over sink, splashing water on face, wet face, looking down,",
+      "expression": "embarrassed, blush,",
+      "custom_tags": "restroom, sink, mirror, water drop, tile floor, indoors,",
+      "framing": "upper body,",
+      "_note": "능동 실패 패턴 - {{user}}가 진지하게 반응하자 도망쳐 세수하며 두근거림 진정"
+    },
+    {
+      "id": "special-rooftop-confession-05",
+      "name": "옥상에서 진심 분출",
+      "outfit": "white blouse, black pencil skirt, hair blowing in wind,",
+      "pose": "standing, facing viewer, hands clenched, leaning forward slightly,",
+      "expression": "teary eyes, serious,",
+      "custom_tags": "rooftop, railing, city lights, night, wind, outdoors,",
+      "framing": "upper body,",
+      "_note": "옥상 야경에서 유혹 너머 진심을 터뜨리는 감정 절정 장면"
+    },
+    {
+      "id": "special-hansomi-jealousy-06",
+      "name": "한소미 목격 후 굳은 표정",
+      "outfit": "white blouse, black pencil skirt, holding pen,",
+      "pose": "standing, gripping pen tightly, forced smile, looking to the side,",
+      "expression": "forced smile, narrowed eyes,",
+      "custom_tags": "office, cubicles, indoors,",
+      "framing": "upper body,",
+      "_note": "한소미가 {{user}}에게 접근하는 걸 목격하고 볼펜을 꽉 쥔 채 굳은 질투 표정"
+    },
+    {
+      "id": "special-bra-strap-stretch-07",
+      "name": "야근 스트레칭 중 브라 끈 노출",
+      "outfit": "white blouse, off shoulder, bra strap slip, black pencil skirt,",
+      "pose": "sitting, stretching, arms up, shoulder exposed, looking at viewer,",
+      "expression": "innocent, faint smile,",
+      "custom_tags": "office, desk, night, desk lamp, indoors,",
+      "framing": "upper body,",
+      "_note": "야근 때 스트레칭하며 의도적으로 브라 끈 보이기 - 중간 호감도 유혹 시그니처"
+    },
+    {
+      "id": "special-convenience-store-share-08",
+      "name": "편의점 불빛 아래 한 입 권하기",
+      "outfit": "white blouse, black pencil skirt, beige cardigan,",
+      "pose": "standing, holding food toward viewer, leaning in, looking at viewer,",
+      "expression": "soft smile, relaxed,",
+      "custom_tags": "convenience store, shelves, night, fluorescent lighting, indoors,",
+      "framing": "upper body,",
+      "_note": "편의점 불빛 아래 경계가 풀린 시은 - '선배, 이거 맛있어요 한 입만~' 분위기 장면"
+    }
+  ],
+  "interaction": [
+    {
+      "id": "interaction-fix-necktie-01",
+      "name": "넥타이 매만지기",
+      "pose": "adjusting another's necktie, both hands on necktie, standing close, looking up at viewer,",
+      "expression": "soft smile, blush,",
+      "custom_tags": "office, indoors, pov, close-up,",
+      "framing": "upper body,",
+      "_note": "스토리 고유 인터랙션 - 출근 전/회의 전 {{user}}의 넥타이를 매만져주는 가까운 접촉"
+    },
+    {
+      "id": "interaction-foot-on-leg-pov-02",
+      "name": "회의실 밑 발 올리기 (POV)",
+      "pose": "sitting across table, leg up, foot on viewer's lap, looking at viewer,",
+      "expression": "half-closed eyes, faint smile,",
+      "custom_tags": "meeting room, conference table, closed blinds, indoors, pov,",
+      "framing": "pov,",
+      "_note": "회의실 테이블 밑 발 올리기의 1인칭 인터랙션 버전 - 스토리 고유"
+    },
+    {
+      "id": "interaction-hold-my-hair-rooftop-03",
+      "name": "옥상에서 머리카락 잡아달라기",
+      "pose": "standing close, hair blowing in wind, viewer's hand holding her hair, looking up at viewer,",
+      "expression": "shy smile, blush,",
+      "custom_tags": "rooftop, railing, wind, cityscape, day, outdoors, pov,",
+      "framing": "upper body,",
+      "_note": "옥상에서 바람에 날리는 머리카락을 잡아달라며 거리를 좁히는 시은 고유 인터랙션"
+    },
+    {
+      "id": "interaction-feed-bite-convenience-04",
+      "name": "편의점 음식 한 입 내밀기",
+      "pose": "holding food up to viewer's mouth, leaning in, other hand under food, looking at viewer,",
+      "expression": "bright smile,",
+      "custom_tags": "convenience store, night, fluorescent lighting, indoors, pov,",
+      "framing": "upper body,",
+      "_note": "'선배, 이거 한 입만~' 편의점에서 음식 먹여주는 스토리 고유 인터랙션"
+    }
+  ]
+}

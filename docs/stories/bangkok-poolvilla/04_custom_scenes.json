@@ -1,0 +1,400 @@
+{
+  "_meta": {
+    "character": "백시아",
+    "story": "bangkok-poolvilla",
+    "template_type": "modern",
+    "rag_used": false,
+    "rag_note": "mcp__local-rag__search 도구가 이번 세션에서 비활성. AI 지식 + 기존 05_special_scenes.md의 검증 태그를 fallback으로 사용",
+    "base_prompt_excluded_tags": [
+      "black hair", "very long hair", "straight hair", "hair past waist",
+      "sharp eyes", "narrow eyes", "red eyes",
+      "huge breasts", "sagging breasts", "cleavage", "narrow waist", "wide hips",
+      "hourglass figure", "thick thighs", "large ass",
+      "navel piercing", "toned abs", "tall female",
+      "fair skin", "pale skin", "high nose", "dimples", "collarbone"
+    ]
+  },
+
+  "daily": [
+    {
+      "id": "daily-airport-arrival-01",
+      "name": "공항 도착",
+      "outfit": "black crop top, high-waisted wide-leg pants, sunglasses on head,",
+      "pose": "standing, leaning on suitcase, hand waving, looking at viewer,",
+      "custom_tags": "airport interior, arrival gate, soft lighting, luggage,",
+      "_note": "Day 1 first_mes 장면 — 수완나품 공항에서 합류하는 첫 등장. 캐릭터 정체성의 시작점"
+    },
+    {
+      "id": "daily-influencer-selfie-02",
+      "name": "셀카 촬영",
+      "outfit": "deep v-neck crop top, denim mini skirt,",
+      "pose": "holding smartphone, taking selfie, mirror selfie, looking at phone, hand on hip,",
+      "expression": "smug smile,",
+      "custom_tags": "indoors, mirror, ring light, modern bedroom,",
+      "_note": "350만 인플루언서 정체성 — 셀카 찍는 모습은 직업 핵심 행동"
+    },
+    {
+      "id": "daily-content-shoot-assistant-03",
+      "name": "촬영 보조 받기",
+      "outfit": "white tank top, denim shorts,",
+      "pose": "posing for camera, hand in hair, looking at camera, slight smile,",
+      "custom_tags": "behind the scenes, camera tripod, reflector, studio lights, photo shoot,",
+      "_note": "유저가 촬영 보조를 맡는 컨셉의 핵심 — 인플루언서 촬영 현장"
+    },
+    {
+      "id": "daily-stretching-homewear-04",
+      "name": "민낯 스트레칭",
+      "outfit": "oversized t-shirt, short shorts, glasses,",
+      "pose": "stretching, arms up, yawning,",
+      "expression": "tired, relaxed,",
+      "custom_tags": "messy hair, indoors, morning light, no makeup,",
+      "_note": "갭모에 핵심 — 안경 쓰고 츄리닝 차림의 동네 누나 모드"
+    },
+    {
+      "id": "daily-couch-snacks-05",
+      "name": "소파에서 과자",
+      "outfit": "oversized hoodie, short shorts,",
+      "pose": "sitting on couch, legs crossed, holding snack bag, looking at tv,",
+      "expression": "laughing, dimples,",
+      "custom_tags": "living room, couch, tv screen, cozy lighting, casual,",
+      "_note": "허물없는 동네친구 모드 — 다리 꼬고 과자 먹으며 예능 보는 모습"
+    },
+    {
+      "id": "daily-cafe-bangkok-06",
+      "name": "방콕 카페",
+      "outfit": "off-shoulder white top, high-waisted denim shorts, straw hat,",
+      "pose": "sitting at cafe table, holding iced coffee, looking at viewer,",
+      "expression": "soft smile,",
+      "custom_tags": "outdoor cafe, tropical plants, sunlight, iced coffee, bangkok street,",
+      "_note": "방콕 일상 — 시아가 자주 들르는 감성 카페"
+    },
+    {
+      "id": "daily-workout-park-07",
+      "name": "룸피니 공원 운동",
+      "outfit": "sports bra, leggings, sneakers,",
+      "pose": "stretching, leg up, water bottle in hand,",
+      "expression": "panting, sweat,",
+      "custom_tags": "outdoor park, jogging track, palm trees, sweat, morning, lumpini park,",
+      "_note": "Day 5 룸피니 공원 운동복 촬영 — 스포츠브라+레깅스 컨셉"
+    },
+    {
+      "id": "daily-night-market-08",
+      "name": "야시장 산책",
+      "outfit": "halter neck top, denim mini skirt, crossbody bag,",
+      "pose": "walking, holding street food skewer, looking back at viewer,",
+      "expression": "laughing,",
+      "custom_tags": "night market, neon lights, street food stalls, bangkok, crowd, lantern,",
+      "_note": "Day 1 카오산로드 / Day 6 팟퐁 야시장 — 길거리 음식 먹방"
+    },
+    {
+      "id": "daily-shopping-mall-09",
+      "name": "쇼핑몰",
+      "outfit": "tube top, pleated mini skirt, shopping bags in hand,",
+      "pose": "walking, holding shopping bags, looking at viewer,",
+      "expression": "smiling,",
+      "custom_tags": "luxury shopping mall, indoor, modern interior, iconsiam, glass facade,",
+      "_note": "Day 3 아이콘시암 / Day 9 터미널21 쇼핑 — 쇼핑백 잔뜩"
+    },
+    {
+      "id": "daily-temple-modest-10",
+      "name": "사원 방문",
+      "outfit": "long white linen dress, shawl covering shoulders, sandals,",
+      "pose": "standing, hands clasped in front, looking at viewer,",
+      "expression": "gentle smile,",
+      "custom_tags": "thai temple, wat arun, stupa, ancient architecture, sunlight,",
+      "_note": "Day 2 왓아룬 사원 — 사원 방문용 단정한 차림 (drama 변주)"
+    }
+  ],
+
+  "outfit": [
+    {
+      "id": "outfit-deep-vneck-croptop-01",
+      "name": "딥브이넥 크롭탑",
+      "outfit": "deep v-neck crop top, micro miniskirt, high heels,",
+      "pose": "standing, hand on hip, looking at viewer, confident pose,",
+      "expression": "smug,",
+      "custom_tags": "studio backdrop, fashion shoot, ring light,",
+      "_note": "시아의 시그니처 의상 — SNS 프로필 사진 컨셉"
+    },
+    {
+      "id": "outfit-sheer-coverup-bikini-02",
+      "name": "시스루 커버업",
+      "outfit": "white bikini, sheer chiffon cover-up, see-through, gold bikini straps,",
+      "pose": "walking, looking back at viewer,",
+      "expression": "playful smile,",
+      "custom_tags": "poolside, palm trees, sunlight, beach umbrella,",
+      "_note": "비키니 위에 시스루 — 시아 콘텐츠의 주력 의상"
+    },
+    {
+      "id": "outfit-bodycon-dress-03",
+      "name": "바디콘 드레스",
+      "outfit": "tight black bodycon dress, short dress, side slit, high heels,",
+      "pose": "standing, hand in hair, looking at viewer,",
+      "expression": "sultry gaze,",
+      "custom_tags": "rooftop bar, night cityscape, neon lights, vertigo bangkok,",
+      "_note": "Day 2 루프탑바 Vertigo / Day 8 디너크루즈용 섹시 드레스"
+    },
+    {
+      "id": "outfit-linen-summer-dress-04",
+      "name": "린넨 원피스",
+      "outfit": "white linen sundress, off-shoulder, bare shoulders, sandals, sun hat in hand,",
+      "pose": "standing, walking, hair blowing in wind,",
+      "expression": "soft smile,",
+      "custom_tags": "old town street, vintage facade, golden hour, banglamphu,",
+      "_note": "Day 7 방람푸 감성 화보 — 평소와 다른 부드러운 분위기"
+    },
+    {
+      "id": "outfit-evening-gown-05",
+      "name": "이브닝 가운",
+      "outfit": "elegant evening gown, deep neckline, side slit, sleeveless, drop earrings, high heels,",
+      "pose": "standing, hand on waist, looking over shoulder,",
+      "expression": "elegant smile, dimples,",
+      "custom_tags": "luxury cruise deck, night cityscape, chao phraya river, chandelier,",
+      "_note": "Day 8 차오프라야 디너크루즈 — 가장 정장 차림"
+    },
+    {
+      "id": "outfit-sleepwear-camisole-06",
+      "name": "캐미솔 잠옷",
+      "outfit": "white silk camisole, short shorts, no bra, thin straps, bare midriff,",
+      "pose": "sitting on bed, legs folded, holding pillow,",
+      "expression": "sleepy smile,",
+      "custom_tags": "king size bed, dim bedroom lighting, night, soft sheets,",
+      "_note": "Phase 2 잠옷 — 어깨끈이 흘러내리는 갭모에 의상"
+    },
+    {
+      "id": "outfit-lingerie-black-lace-07",
+      "name": "란제리 - 블랙 레이스",
+      "outfit": "black lace bra, black lace panties, garter belt, sheer thigh-high stockings, high heels,",
+      "pose": "standing, hand on hip, looking at viewer over shoulder,",
+      "expression": "confident, sultry,",
+      "custom_tags": "luxury bedroom, mirror reflection, soft warm lighting, lingerie shoot,",
+      "_note": "도도/지배적 성격 반영 — 가장 시아다운 시크한 블랙 가터벨트 (4장 중 1)"
+    },
+    {
+      "id": "outfit-lingerie-red-silk-08",
+      "name": "란제리 - 레드 실크",
+      "outfit": "red silk lingerie set, satin bra, matching panties, lace trim,",
+      "pose": "lying on bed, on side, hand supporting head,",
+      "expression": "teasing smile,",
+      "custom_tags": "luxury bedroom, silk sheets, candlelight, rose petals,",
+      "_note": "성숙/세련 — 시아의 능동 리드형 성격에 맞는 강렬한 레드 (4장 중 2)"
+    },
+    {
+      "id": "outfit-lingerie-white-innocent-09",
+      "name": "란제리 - 화이트 슬립",
+      "outfit": "white slip dress, lace trim, thin straps, sheer fabric, no bra,",
+      "pose": "standing, arms crossed under breasts, looking down shyly,",
+      "expression": "shy blush, embarrassed,",
+      "custom_tags": "morning bedroom, soft sunlight, white curtains, sheer fabric,",
+      "_note": "당황모드 — 도발 후 정작 진심 반응에 부끄러워하는 갭모에 (4장 중 3)"
+    },
+    {
+      "id": "outfit-lingerie-burgundy-fitting-10",
+      "name": "란제리 - 부르고뉴 피팅",
+      "outfit": "burgundy bra, matching panties, lace details, choker,",
+      "pose": "standing in fitting room, hand on waist, looking at mirror,",
+      "expression": "serious, evaluating,",
+      "custom_tags": "boutique fitting room, full length mirror, soft pink lighting, lingerie store,",
+      "_note": "Day 3 아이콘시암 란제리 매장 피팅 이벤트 (4장 중 4)"
+    }
+  ],
+
+  "location": [
+    {
+      "id": "location-poolside-daytime-01",
+      "name": "풀사이드 (낮)",
+      "custom_tags": "private pool, sunbeds, palm trees, tropical plants, clear blue water, daylight, parasol, no humans,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "풀빌라 핵심 무대 - 6m x 3m 프라이빗 풀, 낮의 활기"
+    },
+    {
+      "id": "location-poolside-night-02",
+      "name": "풀사이드 (야간 조명)",
+      "custom_tags": "private pool at night, underwater LED lights, blue glow, palm tree silhouettes, lanterns, dim lighting, romantic atmosphere, no humans,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "Day 5 야간 수영 / Day 7 프라이빗 디너의 무대 - 수중 LED 분위기"
+    },
+    {
+      "id": "location-master-bedroom-03",
+      "name": "마스터 베드룸",
+      "custom_tags": "luxury bedroom, king size bed, white sheets, mosquito net canopy, wooden floor, tropical decor, soft lighting, no humans,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "킹사이즈 침대 1개 - 1베드룸 컨셉의 핵심 공간"
+    },
+    {
+      "id": "location-outdoor-bath-04",
+      "name": "아웃도어 바스",
+      "custom_tags": "outdoor bathtub, tropical flower petals on water, stone tiles, candles, high walls with greenery, evening light, steam, no humans,",
+      "aspect_ratio": "3:4",
+      "framing": "wide shot,",
+      "_note": "야외 욕조 + 꽃잎 - 담장으로 차단된 프라이빗 공간"
+    },
+    {
+      "id": "location-living-room-05",
+      "name": "리빙룸",
+      "custom_tags": "open plan living room, large sofa, big screen tv, tropical wood furniture, rattan chairs, glass sliding doors to pool, daylight, no humans,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "풀과 연결된 리빙룸 - 일상 공간"
+    },
+    {
+      "id": "location-wat-arun-temple-06",
+      "name": "왓아룬 사원",
+      "custom_tags": "wat arun temple, central prang, ornate stupa, chao phraya river, blue sky, golden hour, tourists in distance,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "Day 2 왓아룬 화보 촬영지"
+    },
+    {
+      "id": "location-rooftop-bar-07",
+      "name": "루프탑바 (Vertigo)",
+      "custom_tags": "rooftop bar, bangkok skyline at night, city lights, neon signs, glass railing, lounge seats, cocktails on table, no humans,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "Day 2 방나타워 61층 야경 무대"
+    },
+    {
+      "id": "location-floating-market-08",
+      "name": "수상시장",
+      "custom_tags": "damnoen saduak floating market, wooden boats, tropical fruits, vendors, narrow canal, sunlight, colorful umbrellas,",
+      "aspect_ratio": "16:9",
+      "framing": "wide shot,",
+      "_note": "Day 8 담넌사두악 수상시장 - 외부 무대 변주"
+    }
+  ],
+
+  "special": [
+    {
+      "id": "special-airport-first-meet-01",
+      "name": "공항 첫 합류",
+      "outfit": "black crop top, high-waisted wide-leg pants, sunglasses on head,",
+      "pose": "waving hand at viewer, standing next to suitcase, leaning forward slightly, cleavage emphasized,",
+      "expression": "bright smile, dimples,",
+      "custom_tags": "airport arrival gate, crowd, soft lighting, luggage, motion,",
+      "_note": "Day 1 first_mes 시그니처 - 9박 10일의 시작점"
+    },
+    {
+      "id": "special-pool-first-shoot-02",
+      "name": "첫 풀사이드 촬영",
+      "outfit": "white string bikini, sheer cover-up,",
+      "pose": "leaning on pool edge, half-submerged, looking at viewer, wet hair, water droplets,",
+      "expression": "playful smile,",
+      "custom_tags": "private pool, sunlight, wet skin, palm trees, golden hour,",
+      "_note": "Day 1 오후 첫 수영복 촬영 - 시아 콘텐츠 정체성의 정수"
+    },
+    {
+      "id": "special-rooftop-confession-tease-03",
+      "name": "루프탑바 속마음 노출",
+      "outfit": "black bodycon mini dress, drop earrings,",
+      "pose": "sitting at bar, holding cocktail glass, looking at viewer with serious gaze, legs crossed,",
+      "expression": "tipsy blush, vulnerable look,",
+      "custom_tags": "rooftop bar, bangkok night skyline, neon city lights, cocktail glasses, dim mood lighting,",
+      "_note": "Day 2 밤 - '야, 너 나 여자로 안 보이지?' 속마음 노출 결정 장면"
+    },
+    {
+      "id": "special-lingerie-fitting-04",
+      "name": "란제리 피팅룸",
+      "outfit": "black lace bra, matching panties, hook unfastened at back,",
+      "pose": "standing in fitting room, looking back over shoulder, one hand holding bra strap, looking at viewer,",
+      "expression": "embarrassed smile, blush,",
+      "custom_tags": "boutique fitting room, full length mirror, soft pink lighting, curtain half open,",
+      "_note": "Day 3 시그니처 '후크 좀 도와줘' 이벤트"
+    },
+    {
+      "id": "special-night-swim-cling-05",
+      "name": "야간 수영 밀착",
+      "outfit": "wet black bikini, wet hair, water droplets on skin,",
+      "pose": "in pool water up to chest, arms around viewer's neck, leaning close, looking up,",
+      "expression": "flushed, panting, gaze intense,",
+      "custom_tags": "private pool at night, underwater LED blue light, wet skin shine, water reflections, dim atmosphere,",
+      "_note": "Day 5 시그니처 - 야간수영에서 물속 밀착, Phase 2 본격 가속"
+    },
+    {
+      "id": "special-private-dinner-candlelight-06",
+      "name": "프라이빗 디너",
+      "outfit": "white silk slip dress, thin straps, no bra, bare shoulders,",
+      "pose": "sitting at dinner table, holding wine glass, leaning forward, looking at viewer,",
+      "expression": "soft tender gaze, slight blush,",
+      "custom_tags": "poolside dinner table, candlelight, wine glasses, flower petals, night, dim warm light, romantic,",
+      "_note": "Day 7 풀사이드 캔들 디너 - 감정 최고조 직전"
+    },
+    {
+      "id": "special-dinner-cruise-leaning-07",
+      "name": "디너크루즈 어깨 기대기",
+      "outfit": "elegant burgundy evening gown, drop earrings,",
+      "pose": "standing on deck, head resting on viewer's shoulder, pov, both looking at city lights,",
+      "expression": "wistful smile, gentle,",
+      "custom_tags": "chao phraya river cruise deck, night cityscape, illuminated bridges, river reflections, dim warm lights,",
+      "_note": "Day 8 디너크루즈 - '이런 시간이 계속됐으면 좋겠다' 명대사 장면"
+    },
+    {
+      "id": "special-last-night-attack-08",
+      "name": "마지막 밤 육탄돌격",
+      "outfit": "tiny red micro bikini, string ties, barely covering,",
+      "pose": "straddling viewer's lap, hands on viewer's chest, leaning forward, breasts emphasized,",
+      "expression": "determined, flushed, eyes intense, lips parted,",
+      "custom_tags": "bedroom, dim red light, candlelight, shadow, intimate atmosphere, sweat sheen,",
+      "_note": "Day 9 강제 전환 - '9일 동안 참았어' 직접 덮치는 장면"
+    },
+    {
+      "id": "special-morning-after-09",
+      "name": "관계 다음 날 아침",
+      "outfit": "wrapped in white bed sheet, bare shoulders, messy hair,",
+      "pose": "lying on bed, looking at viewer, hand reaching out, half covered by sheet,",
+      "expression": "shy smile, soft blush, peaceful,",
+      "custom_tags": "messy king bed, morning sunlight through curtains, white sheets, dust particles in light, soft warm lighting,",
+      "_note": "Day 10 연인 루트 - '꿈 아니지?' 행복한 아침"
+    },
+    {
+      "id": "special-confession-tears-10",
+      "name": "마지막 날 고백",
+      "outfit": "simple white t-shirt, denim shorts, no makeup, glasses,",
+      "pose": "standing close to viewer, hands gripping viewer's shirt, looking up,",
+      "expression": "teary eyes, swollen eyes, vulnerable, determined,",
+      "custom_tags": "villa entrance, morning light, packed suitcase in background, soft natural lighting,",
+      "_note": "Day 10 친구 루트 - '나 너 좋아해, 농담 아니야' 직접 고백"
+    }
+  ],
+
+  "interaction": [
+    {
+      "id": "interaction-sunscreen-back-01",
+      "name": "선크림 발라주기",
+      "outfit": "white bikini, bikini strap untied at back,",
+      "pose": "lying face down on sunbed, looking back over shoulder at viewer, bare back, pov hands applying sunscreen,",
+      "expression": "relaxed, slight smile,",
+      "custom_tags": "poolside sunbed, palm trees, sunlight, oiled skin shine, sunscreen bottle, pov,",
+      "_note": "풀빌라 시그니처 인터랙션 - '등이 안 닿아...아 거기 말고 더 아래' 명대사"
+    },
+    {
+      "id": "interaction-towel-drying-hair-02",
+      "name": "수건으로 머리 닦아주기",
+      "outfit": "wrapped in white towel, wet hair, bare shoulders, water droplets,",
+      "pose": "sitting on bed edge, pov hands holding towel over her head, looking up at viewer,",
+      "expression": "soft smile, dimples, slight blush,",
+      "custom_tags": "bedroom, after shower steam, dim warm lighting, wet skin glow, pov,",
+      "_note": "샤워/수영 후 풀빌라 케어 인터랙션 - 수건 노출 분위기"
+    },
+    {
+      "id": "interaction-tying-bikini-strap-03",
+      "name": "비키니 끈 묶어주기",
+      "outfit": "white bikini, bikini strap untied behind neck,",
+      "pose": "standing facing away, holding hair up, bare back exposed, pov hands tying bikini strap behind neck,",
+      "expression": "looking back over shoulder, playful smile,",
+      "custom_tags": "poolside, sunlight, palm trees, bare back focus, pov,",
+      "_note": "풀빌라 시그니처 인터랙션 - 수영복 끈 묶어주기 핑계"
+    },
+    {
+      "id": "interaction-camera-angle-assist-04",
+      "name": "촬영 각도 잡아주기",
+      "outfit": "string bikini, wet hair,",
+      "pose": "leaning back on pool edge, posing for camera, pov holding camera viewfinder, framing her,",
+      "expression": "professional pose, sultry gaze at camera,",
+      "custom_tags": "private pool, camera in pov, ring light, palm trees, golden hour, pov,",
+      "_note": "촬영 보조 컨셉의 핵심 - {{user}}가 카메라로 시아를 찍는 PoV"
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "_meta": {
+    "story": "today-with-whom",
+    "template_type": "modern",
+    "total_scenes": 36,
+    "breakdown": {
+      "scene_common": 10,
+      "character_daily": 10,
+      "character_signature": 10,
+      "nsfw_transition": 6
+    },
+    "notes": "공용 무대 10 + 캐릭터 일상 10 + 캐릭터 시그니처 10 + NSFW 변태 성향 발현 6 = 36. RAG 없이 NAI v4.5 + danbooru 기반 AI 지식으로 작성. base_prompt가 각 항목 prompt 앞에 자동 prepend 된다고 가정하지 않고, key에 캐릭터 자기 외형 핵심 키워드를 짧게 포함시켜 단독 생성 가능하게 설계. 공용 무대 10장은 1girl 없이 배경만(no humans)으로 작성하여 모든 캐릭터에 합성 활용 가능."
+  },
+
+  "customScenes": [
+
+    {
+      "key": "scene_office_5f",
+      "prompt": "no humans, indoor scenery, modern open-plan office, korean tech company, fifth floor, jeju island view through window, white desks, dual monitors, laptops, mechanical keyboards, ergonomic chairs, plants in corner, whiteboards with diagrams, post-it notes, morning sunlight, calm atmosphere, photorealistic, detailed background",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_meeting_room",
+      "prompt": "no humans, small meeting room, korean tech company, glass walls, long oval table, six office chairs, large monitor on wall, whiteboard with sticky notes, water bottles, laptops half-closed, dimmed warm lighting, late evening, blinds half-down, intimate atmosphere, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_hweshik_pojangmacha",
+      "prompt": "no humans, korean pojangmacha interior, late night, orange tarp ceiling, plastic tables, soju bottles, beer bottles, half-eaten anju, sundae, gopchang, condensation on glasses, neon sign reflection, blurred city lights outside, warm atmospheric lighting, jeju downtown, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry foreground, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_business_trip_hotel",
+      "prompt": "no humans, business hotel twin room, jeju, queen bed, white linen, bedside lamp on, partially open suitcase, hanging suit, laptop bag, half-drawn curtain, ocean view at night, room service tray with two glasses, neutral beige interior, calm intimate lighting, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_lunch_cafe_1f",
+      "prompt": "no humans, ground floor cafe interior, korean tech building, exposed concrete walls, wooden counter, espresso machine, glass pastry case, two iced americanos on round table, soft daylight through tall windows, plants, brunch atmosphere, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_elevator",
+      "prompt": "no humans, modern office elevator interior, mirror polished stainless steel walls, soft warm ceiling light, illuminated floor panel showing fifth floor, two paper coffee cups left on handrail, reflective floor, slight motion blur on edges, intimate enclosed space, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_rooftop_night",
+      "prompt": "no humans, rooftop of office building, jeju night, low concrete parapet, distant ocean line, harbor lights, cigarette butts in standing ashtray, vending machine glowing in corner, scattered city lights below, cool blue night sky, lonely intimate atmosphere, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_shepherd_apartment",
+      "prompt": "no humans, korean modern apartment interior, living room, beige sofa, low coffee table with two wine glasses, half-empty red wine bottle, large TV off, framed family photo turned face down, warm yellow lamp light, kitchen lights dim, vinyl record player, intimate adult atmosphere, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_carpool_interior",
+      "prompt": "no humans, korean sedan car interior at night, driver and passenger seat from rear view, leather seats, dashboard glow, street lights streaking through windshield, dangling air freshener, two coffee cups in cup holders, intimate enclosed space, rainy windshield, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "scene_workshop_poolvilla",
+      "prompt": "no humans, jeju poolvilla interior, large floor-to-ceiling windows, private infinity pool outside, palm trees, rattan loungers, low king bed with white linens, scattered swim towels, half-empty champagne bucket, soft afternoon sunlight, ocean horizon, vacation atmosphere, photorealistic",
+      "negative": "1girl, 1boy, people, person, blurry, low quality, watermark, cartoon"
+    },
+
+    {
+      "key": "heather_daily_office",
+      "prompt": "1girl, solo, korean female, dark brown hair, shoulder length hair, slight wave, semi-rimless glasses, beautiful black eyes, narrow eyes, fair skin, medium breasts, slim figure, mid-thirties, beige blouse, top button done, black pencil skirt, sitting at office desk, laptop open, hand on glasses bridge, looking at viewer with sharp focused gaze, professional confident expression, modern korean office background, dual monitor, morning daylight, from front, upper body, photorealistic, detailed face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, scars, blonde hair, red hair, blue eyes, nsfw, nude, exposed breasts"
+    },
+
+    {
+      "key": "heather_meetingroom_glasses_fog",
+      "prompt": "1girl, solo, korean female, dark brown hair, shoulder length hair, slight wave, semi-rimless glasses, glasses slipping down nose, fogged glasses, narrow eyes, fair skin, medium breasts, exposed breasts, light brown nipples, beige solid bra pulled down, white blouse half open buttons undone, sitting on meeting room table, legs spread, skirt hiked up, looking down at viewer over glasses with direct gaze, parted lips, slight smirk, sweat on collarbone, dimmed meeting room background, evening light through blinds, pov from below, photorealistic, detailed skin",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, scars, blonde hair, red hair, blue eyes, cartoon, illustration"
+    },
+
+    {
+      "key": "ellie_daily_pumping_room",
+      "prompt": "1girl, solo, korean female, black hair, very long hair, low ponytail, soft eyes, fair skin, huge breasts, heavy breasts, lactation, milk drip from nipples, plump body, soft belly, postpartum body, mid-thirties, nursing bra visible, pastel cardigan partly open, milk stain on shirt, sitting in office nursing room, breast pump on table, baby photo on phone screen, looking down with tired gentle smile, soft warm fluorescent light, beige room, from front, upper body, photorealistic, detailed",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, flat chest, small breasts, slim figure, blonde hair, red eyes, abs, muscular, tattoo, nsfw nude, fully nude"
+    },
+
+    {
+      "key": "ellie_breastmilk_facial_pov",
+      "prompt": "1girl, solo, korean female, black hair, very long hair, low ponytail spilling over shoulder, soft eyes half closed, fair skin, huge breasts presented up with both hands, heavy breasts, lactation, milk drip from dark areola, dark brown nipples, milk streaming, plump body, soft belly, postpartum body, kneeling on bed, looking up at viewer with calm content expression, parted lips, semen on chest, semen on breasts, cum on breasts, mixed milk and semen running between cleavage, beige sheets, warm bedroom lighting, pov from above, upper body close up, photorealistic, detailed skin texture",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, flat chest, small breasts, slim figure, blonde hair, red eyes, abs, muscular, tattoo, multiple girls, condom"
+    },
+
+    {
+      "key": "zoey_daily_meetingroom",
+      "prompt": "1girl, solo, korean female, brown hair, medium length hair, soft curls, big black eyes, fair skin, medium breasts, slim figure, wedding ring on left hand, mid-thirties, beige cardigan, white blouse buttoned up, navy pleated skirt, sitting at meeting room table, hand resting on laptop, ring clearly visible, slightly worried expression, gentle smile, glancing at viewer, late afternoon meeting room background, glass wall, soft natural light, from front, upper body, photorealistic, detailed face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, blonde hair, red eyes, very dark skin, nsfw, nude"
+    },
+
+    {
+      "key": "zoey_ring_removal_guilt",
+      "prompt": "1girl, solo, korean female, brown hair, medium length hair tousled, soft curls disheveled, big black eyes wet with tears, single tear streak, fair skin flushed, medium breasts, light pink lace bra half pulled down, light brown nipples exposed, white blouse open, slim figure, slim waist, wedding ring being pulled off by her own right hand, ring at fingertip, hand trembling, sitting on dimmed meeting room table, skirt hiked up, parted lips holding back voice, one hand covering own mouth, guilty conflicted expression, evening meeting room background, blinds half down, warm dim light, upper body, pov from front, photorealistic, detailed skin",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, blonde hair, red eyes, dark skin, multiple girls, smile"
+    },
+
+    {
+      "key": "jade_daily_rooftop_smoking",
+      "prompt": "1girl, solo, korean female, black hair, asymmetrical bob, wine red inner color, sharp eyes, narrow eyes, fair skin, small breasts, slim figure, very petite, very short stature, body tattoos partly visible on neck and wrist, navel piercing under crop top, edgy fashion, oversized black hoodie, ripped black jeans, doc martens, standing at rooftop railing, holding cigarette between fingers, exhaling smoke, looking sideways at viewer with blank expression, jeju night cityscape behind, cool blue lighting, from front, upper body, photorealistic, detailed",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, long hair, huge breasts, large breasts, plump body, tall female, blonde hair, blue eyes, smile, cute expression, nsfw"
+    },
+
+    {
+      "key": "jade_anal_doggystyle_tattoo",
+      "prompt": "1girl, solo, korean female, black hair, asymmetrical bob, wine red inner color, sharp eyes, fair skin, small breasts, slim figure, very petite body, very short stature, full back tattoo visible, intricate floral tattoo across back, thigh tattoo, hip tattoo, side tattoo, navel piercing, side piercing, all fours position, doggystyle pose, ass up presenting view, back arched, face turned sideways looking back at viewer, parted lips, light biting lower lip, brow furrowed in rough pleasure, sweat on small back, on rumpled dark bed, anal lubricant bottle on bedside, dim bedroom with red accent light, pov from behind looking down at her back, photorealistic, detailed tattoo, detailed skin",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, long hair, huge breasts, large breasts, plump body, tall female, blonde hair, blue eyes, multiple girls, no tattoo, clean skin"
+    },
+
+    {
+      "key": "hayley_daily_pantry",
+      "prompt": "1girl, solo, korean female, light brown hair, long hair past breasts, soft wavy hair, big eyes, fair skin, medium breasts, slim figure, short stature, petite, late twenties, oversized pastel pink knit sweater, plaid mini skirt, white sneakers, standing in office pantry, holding paper cup of coffee with both hands, leaning hip on counter, looking up at viewer with playful pouty smile, head slightly tilted, instagram cute pose, bright pantry background with snacks and coffee machine, warm overhead light, from front, upper body, photorealistic, detailed cute face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very short hair, short bob, huge breasts, flat chest, tall female, tattoo, blonde hair, red eyes, dark skin, mature face, nsfw"
+    },
+
+    {
+      "key": "hayley_aegyo_negotiation_cum_choice",
+      "prompt": "1girl, solo, korean female, light brown hair, long hair past breasts, soft wavy hair messy, big eyes wet and pleading, fair skin flushed pink, medium breasts, light pink lace bra unhooked falling, slim figure, short stature petite, kneeling on bed, lavender lace panties only, holding viewer's hand up to her own cheek with both small hands, pleading whining expression, glistening parted lips, slight tears in eyes, blush across cheeks, head tilted aegyo pose, cute begging pose, soft pastel bedroom, fairy lights string in background, pov from above, upper body, photorealistic, detailed cute face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very short hair, short bob, huge breasts, flat chest, tall female, tattoo, blonde hair, red eyes, dark skin, mature features, multiple girls, condom"
+    },
+
+    {
+      "key": "hannah_daily_hweshik",
+      "prompt": "1girl, solo, korean female, brown hair, shoulder length hair, straight magic straightened, small narrow eyes, laughing wide open mouth, fair skin slightly flushed, medium breasts, slim figure, late thirties, office white blouse half untucked, collar slightly crooked, cardigan slipping off one shoulder, sitting at pojangmacha plastic table, soju glass raised mid-cheer, leaning forward unbalanced, slightly tipsy goofy expression, mismatched smile, late night warm orange lighting, blurred bar background, soju bottles, anju plates, from front, upper body, photorealistic, detailed face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, big eyes, blonde hair, red eyes, tattoo, perfectly poised, mature elegant"
+    },
+
+    {
+      "key": "hannah_mismatched_underwear_collapse",
+      "prompt": "1girl, solo, korean female, brown hair, shoulder length hair messy, small narrow eyes, surprised goofy open mouth expression, fair skin, medium breasts, perky breasts, brown areola, natural pubic hair, slim figure, late thirties, mismatched underwear, pink polka dot bra one strap fallen, black striped panties pulled aside, white blouse fully open hanging off shoulders, sprawled face down across office desk, hips up, legs slightly spread, looking back over shoulder with oblivious surprised laugh, semen on cheek, semen splatter on hair, drunkenly clueless expression, dim office at night with single desk lamp, papers scattered, comedy tone composition, pov from behind, photorealistic, detailed",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, big eyes, blonde hair, red eyes, tattoo, sad expression, crying, serious"
+    },
+
+    {
+      "key": "amy_daily_gym_after",
+      "prompt": "1girl, solo, korean female, dark brown hair, short bob, jaw length, sharp eyes, fair skin, medium breasts, athletic body, toned body, defined abs, fit body, narrow waist, mid-thirties, black sports bra, gray loose tank top, black leggings, sweat on collarbone and abs, hair slightly damp, towel around neck, standing arms crossed under chest, looking straight at viewer with confident direct stare, slight smirk, jeju office gym background, gray padded floor, dumbbell rack, evening light through window, from front, upper body, photorealistic, detailed body",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, long hair, huge breasts, plump body, soft belly, blonde hair, red eyes, tattoo, shy expression, no abs"
+    },
+
+    {
+      "key": "amy_reverse_maso_blindfold_tied",
+      "prompt": "1girl, solo, korean female, dark brown hair, short bob jaw length, fair skin, medium breasts exposed, athletic body, defined abs, toned body, narrow waist, lying on back on hotel bed, white silk blindfold covering eyes, wrists tied above head with black necktie, arms stretched up, mouth slightly parted, jaw tight controlling breath, single tear at corner under blindfold, neck arched, body taut, sweat sheen on abs and collarbone, no clear voice expression, breath held expression, white hotel sheets, dim warm bedside lamp, pov from above looking down at her face and chest, upper body close up, photorealistic, detailed skin texture, detailed abs",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, long hair, huge breasts, plump body, soft belly, blonde hair, red eyes, tattoo, laughing, smiling wide, loud expression"
+    },
+
+    {
+      "key": "sherin_daily_pantry_shy",
+      "prompt": "1girl, solo, korean female, black hair, very long hair past waist, straight hair, big eyes, very pale skin, porcelain skin, small breasts, slim figure, narrow waist, mid-twenties, white knit cardigan buttoned high, beige long skirt, holding two paper coffee cups carefully, standing in elevator or pantry, looking down shyly with slight blush, head tilted slightly, innocent youthful face, soft fluorescent indoor light, from front, upper body, photorealistic, detailed pale skin, innocent expression",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, bob, huge breasts, plump body, tan skin, blonde hair, red eyes, tattoo, mature features, bold confident expression, nsfw"
+    },
+
+    {
+      "key": "sherin_neck_kiss_marks_porcelain",
+      "prompt": "1girl, solo, korean female, black hair, very long hair tousled across pillow, big trembling eyes wet with light tears, very pale skin, porcelain skin, multiple pink kiss marks on neck and collarbone, fresh hickey marks on pale neck, small breasts, very light pink small nipples slightly exposed, slim figure, mid-twenties, white school uniform style blouse fully unbuttoned hanging open, head tilted back exposing long pale neck, lips slightly parted, faint blush spreading from cheek down to chest, tear at corner of eye, fragile vulnerable expression, on white bed sheets, soft warm bedside light, upper body close up, pov from above, photorealistic, detailed skin texture, detailed kiss marks",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, bob, huge breasts, plump body, tan skin, blonde hair, red eyes, tattoo, mature features, bold smirk, multiple girls"
+    },
+
+    {
+      "key": "elena_daily_cafe_1f",
+      "prompt": "1girl, solo, korean female, ash brown hair, shoulder length hair, inner curls, elegant hair, calm narrow eyes, fair skin, medium breasts, mature figure, early forties, beige cashmere turtleneck, camel long coat draped on chair back, sitting alone at ground floor cafe, hands wrapped around white espresso cup, single thin gold watch on wrist, perfect upright posture, looking out window with calm composed expression, no smile, mature elegant beauty, soft daylight, blurred cafe background, from side, upper body, photorealistic, detailed mature face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, blonde hair, red eyes, tattoo, youthful face, baby face, exaggerated expression, nsfw"
+    },
+
+    {
+      "key": "elena_wine_slip_silk_calm",
+      "prompt": "1girl, solo, korean female, ash brown hair, shoulder length hair, elegant inner curls, calm narrow eyes half lidded, fair skin flushed faintly, medium breasts, slight cleavage visible, mature figure, early forties, deep wine red silk slip dress thin straps, one strap slipping off shoulder, slip dress hem riding mid thigh, sitting upright on edge of bed with crossed legs, hands resting calmly on lap, expression perfectly composed neutral, slight tilt of head 1 degree, no smile no surprise, single bedroom warm lamp, ash brown hair brushed back, half-empty wine glass on bedside table, refined adult atmosphere, from front, upper body, photorealistic, detailed silk texture, detailed mature beauty",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, blonde hair, red eyes, tattoo, youthful face, baby face, wide smile, dramatic expression, loud, multiple girls"
+    },
+
+    {
+      "key": "sophie_daily_rooftop_busan",
+      "prompt": "1girl, solo, korean female, light brown hair, short bob, shoulder length bob, big eyes, fair skin, huge breasts, large breasts, narrow waist, hourglass figure, short stature, late twenties, white ribbed crop top emphasizing cleavage, high waisted denim shorts, gold layered necklaces, holding iced americano with straw to lips, standing on jeju rooftop, sea breeze in hair, golden hour sunlight, looking at viewer with bright cheerful smile, slight pose camera awareness, instagram influencer pose, jeju ocean background, from front, upper body, photorealistic, detailed cute face, busan influencer vibe",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, very short hair, flat chest, small breasts, tall female, blonde hair, red eyes, tattoo, plump body, soft belly, shy expression"
+    },
+
+    {
+      "key": "sophie_paizuri_F_cup_exhibitionism",
+      "prompt": "1girl, solo, korean female, light brown hair, short bob, big eyes looking up at viewer mischievously, fair skin slightly flushed, huge breasts, large breasts F cup, very large breasts squeezed together with both hands, paizuri pose, breast pressing job, narrow waist, hourglass figure, short stature, no pubic hair, kneeling between viewer's legs, presenting cleavage with knowing playful grin, tongue slightly out, parted lips, semen on tongue, semen between cleavage, sweat on chest, light pink large areola peeking, knowing exhibitionist gaze, on poolvilla floor with floor-to-ceiling windows showing palm trees and ocean behind her, partly visible window with distant figure suggestion, golden afternoon light, pov from above, upper body close up, photorealistic, detailed large breasts, detailed skin",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, very short hair, flat chest, small breasts, tall female, blonde hair, red eyes, tattoo, plump body, soft belly, multiple girls, condom, shy expression"
+    },
+
+    {
+      "key": "heather_dirty_talk_reporting",
+      "prompt": "1girl, solo, korean female, dark brown hair, shoulder length hair slight wave, semi-rimless glasses slipping down nose, glasses partially fogged, beautiful black eyes locked on viewer directly, fair skin flushed with sweat, medium breasts bouncing, perky breasts, light brown nipples erect, narrow waist, slim figure, mid-thirties, completely nude, missionary position lying on back on meeting room table, legs spread wide and lifted, papers scattered around, looking straight at viewer with composed sharp gaze despite being penetrated, mouth open mid-sentence reporting, drool at corner of mouth, sweat between cleavage, dimmed meeting room background, evening overhead light, pov from above between her spread legs, upper body, photorealistic, detailed face, detailed skin texture",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, scars, blonde hair, red hair, blue eyes, multiple girls, embarrassed shy expression, crying"
+    },
+
+    {
+      "key": "sophie_exhibitionism_rooftop_dusk",
+      "prompt": "1girl, solo, korean female, light brown hair, short bob disheveled, big eyes wide and excited, fair skin flushed pink, huge breasts F cup fully exposed bouncing, large pink areola, narrow waist, hourglass figure, short stature, no pubic hair, white crop top pushed up over breasts, denim shorts pulled down to thighs, standing bent forward against rooftop concrete parapet, looking back over shoulder with thrilled mischievous grin, biting lower lip excitedly, sweat sheen, dusk sky behind with distant office building windows lit up in background, voyeuristic suggestion, jeju night cityscape, dim blue dusk lighting with orange building lights, pov from behind, photorealistic, detailed body, exhibitionist atmosphere",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, very short hair, flat chest, small breasts, tall female, blonde hair, red eyes, tattoo, plump body, soft belly, shy embarrassed, multiple girls, fully clothed"
+    },
+
+    {
+      "key": "amy_reverse_maso_submission_kneel",
+      "prompt": "1girl, solo, korean female, dark brown hair, short bob jaw length, sharp eyes lowered submissively, fair skin, medium breasts, athletic body, defined abs, toned body, narrow waist, fully nude, kneeling on hotel floor, knees together, hands resting palm up on thighs, head bowed slightly, hair fallen forward partially covering face, chest rising and falling with controlled breath, no makeup smudged, single tear sliding down cheek, completely silent submissive expression, mouth in calm straight line, slight tremor in shoulders, dim hotel suite lighting from one bedside lamp, white carpet floor, blurred bed in background with disheveled sheets, pov from above looking down at her kneeling figure, photorealistic, detailed body, detailed skin",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, long hair, huge breasts, plump body, soft belly, blonde hair, red eyes, tattoo, laughing, smiling, loud expression, multiple girls"
+    },
+
+    {
+      "key": "sherin_maso_collar_grab_facefuck",
+      "prompt": "1girl, solo, korean female, black hair, very long hair gripped in viewer's fist from above, big watery trembling eyes looking up directly at viewer pleading, very pale skin, porcelain skin, faint pink blush spreading from cheek down to chest, fresh pink hickey on pale neck, small breasts, slim figure, mid-twenties, kneeling on dim bedroom floor between viewer's legs, mouth wide open, lips stretched, tongue out, drool trailing from corner of mouth to chin, hand on viewer's thigh trembling, single tear streaking down cheek, fragile submissive expression with masochistic acceptance, head being held by hair from pov, dim warm bedside lamp, white sheets blurred behind her, pov from above looking down at her face, upper body close up, photorealistic, detailed pale skin, detailed innocent face",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, bob, huge breasts, plump body, tan skin, blonde hair, red eyes, tattoo, mature features, smirk, dominant expression, multiple girls"
+    },
+
+    {
+      "key": "jade_anal_petite_handheld",
+      "prompt": "1girl, solo, korean female, black hair, asymmetrical bob, wine red inner color, sharp eyes half closed, fair skin, small breasts, slim figure, very petite, very short stature 150cm, full body tattoos visible, back tattoo, thigh tattoo, side tattoo, hip tattoo, navel piercing, side piercing, being held up entirely by viewer's hands under thighs, suspended position, legs spread wide held open, anal sex position from behind, body small enough to be fully cradled, head tilted back against viewer's shoulder, mouth open exhaling rough sound, biting lower lip, sweat on small body, brow furrowed, blushed cheeks contrasting with tough makeup, dim bedroom red accent lighting, pov from front mirror perspective showing her petite body suspended, full body composition, photorealistic, detailed tattoo work, detailed petite body",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, long hair, huge breasts, large breasts, plump body, tall female, blonde hair, blue eyes, multiple girls, no tattoo, large body"
+    },
+
+    {
+      "key": "elena_calm_dirty_talk_report",
+      "prompt": "1girl, solo, korean female, ash brown hair, shoulder length hair elegant inner curls slightly mussed, calm narrow eyes half lidded but composed, fair skin lightly flushed, medium breasts, slight sheen of sweat between breasts, mature figure, early forties, completely nude, lying on back on luxury hotel bed, white silk sheets, one leg bent up other extended, hands resting calmly above head on pillow, posture controlled and elegant even mid-act, lips slightly parted speaking softly with composed expression, no exaggerated emotion, faint breath only, mid-sentence reporting calm dirty talk, ash brown hair fanned across pillow, dim warm bedside lamp, half-empty wine glass and gold watch on bedside, pov from above between her legs, upper body emphasized, photorealistic, detailed mature beauty, refined erotic atmosphere",
+      "negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, blonde hair, red eyes, tattoo, youthful face, baby face, exaggerated moan, wide open mouth scream, multiple girls, condom"
+    }
+
+  ]
+}

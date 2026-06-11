@@ -1,0 +1,12 @@
+{
+  "daily": [
+    { "id": "daily-test-01", "name": "테스트씬1", "outfit": "casual clothes,", "pose": "standing," },
+    { "id": "daily-test-02", "name": "테스트씬2", "outfit": "office clothes,", "pose": "sitting," }
+  ],
+  "outfit": [
+    { "id": "outfit-test-01", "name": "옷테스트", "outfit": "white dress," }
+  ],
+  "location": [],
+  "special": [],
+  "interaction": []
+}

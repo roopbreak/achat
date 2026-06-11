@@ -1,0 +1,78 @@
+{
+  "characters": {
+    "heather": {
+      "name": "헤더",
+      "korean_name": "김다혜",
+      "base_prompt": "1girl, solo, korean female, dark brown hair, shoulder length hair, slight wave, glasses, semi-rimless glasses, beautiful black eyes, narrow eyes, fair skin, medium breasts, perky breasts, narrow waist, slim figure, mid-thirties, dark brown pubic hair, light brown areola, collarbone, detailed skin texture",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, scars, blonde hair, red hair, blue eyes"
+    },
+    "ellie": {
+      "name": "엘리",
+      "korean_name": "오소정",
+      "base_prompt": "1girl, solo, korean female, black hair, very long hair, low ponytail, hair past waist, soft eyes, fair skin, huge breasts, sagging breasts, heavy breasts, lactation, milk drip from nipples, dark areola, dark brown areola, plump body, soft belly, wide hips, thick thighs, postpartum body, mid-thirties, black pubic hair, natural pubic hair, collarbone",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, flat chest, small breasts, slim figure, blonde hair, red eyes, abs, muscular, tattoo, six pack"
+    },
+    "zoey": {
+      "name": "조이",
+      "korean_name": "홍기쁨",
+      "base_prompt": "1girl, solo, korean female, brown hair, medium length hair, wavy hair, soft curls, big black eyes, fair skin, medium breasts, perky breasts, narrow waist, slim figure, wedding ring, mid-thirties, brown pubic hair, light brown areola, trimmed pubic hair, collarbone, detailed skin texture",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, tattoo, blonde hair, red eyes, very dark skin"
+    },
+    "jade": {
+      "name": "제드",
+      "korean_name": "조재인",
+      "base_prompt": "1girl, solo, korean female, black hair, asymmetrical bob, short hair, wine red inner color, undercut, sharp eyes, narrow eyes, fair skin, small breasts, slim figure, very petite, very short stature, slim body, body tattoos, back tattoo, thigh tattoo, side tattoo, hip tattoo, navel piercing, side piercing, shaved pubic hair, no pubic hair, light brown areola, small pink lips, edgy fashion",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, long hair, huge breasts, large breasts, plump body, tall female, blonde hair, blue eyes"
+    },
+    "hayley": {
+      "name": "헤일리",
+      "korean_name": "고혜리",
+      "base_prompt": "1girl, solo, korean female, light brown hair, long hair, hair past breasts, soft wavy hair, big eyes, fair skin, medium breasts, narrow waist, slim figure, short stature, petite, late twenties, light brown pubic hair, trimmed pubic hair, light pink areola, collarbone, cute face",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very short hair, short bob, huge breasts, flat chest, tall female, tattoo, blonde hair, red eyes, dark skin"
+    },
+    "hannah": {
+      "name": "한나",
+      "korean_name": "이나현",
+      "base_prompt": "1girl, solo, korean female, brown hair, shoulder length hair, straight hair, magic straightened, small eyes, narrow eyes, fair skin, medium breasts, perky breasts, narrow waist, slim figure, late thirties, brown pubic hair, natural pubic hair, brown areola, collarbone",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, big eyes, blonde hair, red eyes, tattoo"
+    },
+    "amy": {
+      "name": "에이미",
+      "korean_name": "김은지",
+      "base_prompt": "1girl, solo, korean female, dark brown hair, short bob, jaw length hair, sharp eyes, fair skin, medium breasts, athletic body, toned body, abs, fit body, narrow waist, mid-thirties, dark brown pubic hair, trimmed pubic hair, brown areola, defined collarbone, muscle definition",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, long hair, huge breasts, plump body, soft belly, blonde hair, red eyes, tattoo"
+    },
+    "sherin": {
+      "name": "셰린",
+      "korean_name": "안예원",
+      "base_prompt": "1girl, solo, korean female, black hair, very long hair, straight hair, hair past waist, big eyes, very pale skin, porcelain skin, small breasts, perky breasts, slim figure, narrow waist, mid-twenties, black pubic hair, neatly trimmed pubic hair, very light pink areola, small pink lips, collarbone, youthful face, innocent expression",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, short hair, bob, huge breasts, plump body, tan skin, blonde hair, red eyes, tattoo, mature features"
+    },
+    "elena": {
+      "name": "엘레나",
+      "korean_name": "강민아",
+      "base_prompt": "1girl, solo, korean female, ash brown hair, shoulder length hair, inner curls, elegant hair, calm eyes, narrow eyes, fair skin, medium breasts, narrow waist, mature figure, early forties, ash brown pubic hair, trimmed pubic hair, brown areola, defined collarbone, mature beauty, elegant posture",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, short hair, huge breasts, flat chest, blonde hair, red eyes, tattoo, youthful face, baby face"
+    },
+    "sophie": {
+      "name": "소피",
+      "korean_name": "안아랑",
+      "base_prompt": "1girl, solo, korean female, light brown hair, short bob, shoulder length bob, straight bob, big eyes, fair skin, huge breasts, large breasts, narrow waist, hourglass figure, short stature, late twenties, light brown pubic hair, shaved pubic hair, no pubic hair, light pink areola, large areola, defined collarbone, influencer style",
+      "base_negative": "pointy ears, animal ears, tail, wings, horns, elf, very long hair, very short hair, flat chest, small breasts, tall female, blonde hair, red eyes, tattoo, plump body, soft belly"
+    }
+  },
+  "defaults": {
+    "model": "nai-diffusion-4-5-full",
+    "aspect_ratio": "3:4",
+    "steps": 28,
+    "scale": 8,
+    "rescale": 0,
+    "sampler": "k_euler_ancestral"
+  },
+  "notes": {
+    "story_type": "multi_character",
+    "character_count": 10,
+    "common_setting": "korean female, modern, office worker, jeju office",
+    "custom_scenes_target": "36 (공용 무대 10 + 캐릭터 대표 20 + NSFW 전환 6)"
+  }
+}
