@@ -141,7 +141,12 @@ export function useStoryEditForm(editName: string | null): StoryEditForm {
           ? (story.commands as Command[]).map(c => newCmdRow(c.cmd, c.desc, c.group ?? ''))
           : []
       )
-      try { setTags(story.tags ? JSON.parse(story.tags as string) : []) } catch { setTags([]) }
+      // tags 컬럼에 'null' 문자열 등 비배열 JSON 이 들어간 레거시 row 방어 —
+      // JSON.parse('null')=null 은 예외 없이 통과해 tags.length 렌더 크래시(블랭크 화면)
+      try {
+        const parsedTags = story.tags ? JSON.parse(story.tags as string) : []
+        setTags(Array.isArray(parsedTags) ? parsedTags.filter(t => typeof t === 'string') : [])
+      } catch { setTags([]) }
       setStatusMode((story.status_mode as string) ?? 'bottom')
       setChoicesMode((story.choices_mode as string) ?? 'on')
       setOutputTarget((story.output_target as string) ?? '')
