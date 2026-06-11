@@ -1,12 +1,24 @@
 # HANDOFF: 상태창 본문 분리 (Status Block Separation)
 
 > 참조 플랜: docs/plan/status-block-separation_2026-06-11.md
-> 상태: 활성 | 마지막 업데이트: 2026-06-11
+> 상태: 활성 (P1~P4 배포 완료, P5만 남음) | 마지막 업데이트: 2026-06-11
 
 ## 현재 상태
 
-상태창을 본문과 분리하는 v2 설계. plan 확정(센티넬 / P1~P5 / 화면 고정 HUD),
-Codex 설계 적대적 리뷰 진행 중. 리뷰 반영 후 P1부터 구현 착수.
+**P1~P4 배포 완료** (b6c0cf2, master/원격 반영, 마이그레이션 009 적용).
+- 센티넬(⟦STATUS⟧) 분리 + DB dual-write(content 합본/status 분리) + 무결성 경로
+- 컨텍스트 최적화(body만 + 최신 status dynamic 주입, 토큰 예산 body 기준)
+- auto-continue 센티넬 기반(status 마지막 세그먼트 — stale 차단)
+- 프론트 splitBodyStatus + 화면 고정 StatusHUD + 메시지별 status 펼치기
+- Codex 설계리뷰(critical 4) + 코드리뷰(critical 1·high 1·medium 1) 반영
+- 테스트 20/20, 로컬 1턴 검증, 원격 헬스체크(status 컬럼·200·에러0)
+
+**남은 것**:
+- P5(스트리밍 라이브 분리) — 현재 프론트 splitBodyStatus가 누적 텍스트를 실시간
+  분리해 대부분 해결됨. auto-continue 발동 턴의 라이브 중간 상태창만 완료 시
+  finalText 교체로 정리(잠깐 어긋남). 완벽한 저수준 채널 전환은 관측 후 판단.
+- Codex 코드리뷰 보류 1건: regen 실패 시 화면(실패 본문+이전 상태창) vs 서버
+  복원(이전 본문+이전 상태창) 불일치. 드문 엣지 + 새로고침 자동교정이라 보류.
 
 선행 맥락: auto-continue 멀티턴 폭주 핫픽스(758d59e 배포 완료)는 저장본은 깔끔하게
 만들었으나, 사용자가 "스트리밍 중 읽는데 중간 상태창이 끼어 흐름이 깨진다"고 지적 →
