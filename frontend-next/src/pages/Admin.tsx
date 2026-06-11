@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 
@@ -27,30 +27,6 @@ interface Persona {
   name: string
   content: string
   is_default?: boolean
-}
-
-interface EtlRow {
-  storyId: number
-  slug: string
-  title: string
-  charName: string
-  status: string
-  charCount: number
-  confidence: string
-  isV2: boolean
-  irrecoverableCount: number
-  unresolvedCount: number
-  autoApprovable: boolean
-}
-
-interface EtlDetail {
-  status: string
-  charCount: number
-  confidence: string
-  irrecoverableFields: unknown[]
-  unresolvedBindings: unknown[]
-  proposedPayload: { characters?: unknown[] }
-  autoApprovable: boolean
 }
 
 interface LorePackRow {
@@ -130,77 +106,6 @@ export default function Admin() {
   // 스토리 관리
   const [storyFilter, setStoryFilter] = useState('')
   const [deletingStory, setDeletingStory] = useState<string | null>(null)
-
-  // v2 마이그레이션 (ETL 검토 큐)
-  const [etlQueue, setEtlQueue] = useState<EtlRow[]>([])
-  const [etlSummary, setEtlSummary] = useState<string>('')
-  const [etlBusy, setEtlBusy] = useState(false)
-  const [etlDetail, setEtlDetail] = useState<Record<string, EtlDetail>>({})
-  const [etlPayloadDraft, setEtlPayloadDraft] = useState<Record<string, string>>({})
-  const [etlMsg, setEtlMsg] = useState('')
-
-  const loadEtlQueue = useCallback(async () => {
-    const list = await api<EtlRow[]>('/api/admin/etl/queue')
-    setEtlQueue(list)
-  }, [])
-
-  const scanEtl = async () => {
-    setEtlBusy(true); setEtlMsg('')
-    try {
-      const r = await api<{ summary: Record<string, number> }>('/api/admin/etl/scan', { method: 'POST' })
-      const s = r.summary
-      setEtlSummary(`전체 ${s.total} · 단일 ${s.single} · 다중 ${s.multi} · 신규적재 ${s.enqueued} · v2전환됨 ${s.skippedV2}`)
-      await loadEtlQueue()
-    } finally { setEtlBusy(false) }
-  }
-
-  const approveAuto = async () => {
-    if (!confirm('단일 캐릭터 + 무결 항목을 일괄 v2 승인합니다. 진행할까요?')) return
-    setEtlBusy(true); setEtlMsg('')
-    try {
-      const r = await api<{ candidates: number; approved: number; failed: unknown[] }>('/api/admin/etl/approve-auto', { method: 'POST' })
-      setEtlMsg(`일괄 승인: 후보 ${r.candidates} · 승인 ${r.approved} · 실패 ${r.failed.length}`)
-      await loadEtlQueue()
-    } finally { setEtlBusy(false) }
-  }
-
-  const approveOne = async (slug: string) => {
-    setEtlBusy(true); setEtlMsg('')
-    try {
-      const r = await api<{ ok?: boolean; action?: string; reason?: string; error?: string }>(`/api/admin/etl/queue/${encodeURIComponent(slug)}/approve`, { method: 'POST' })
-      setEtlMsg(r.ok ? `${slug} 승인됨 (${r.action})` : `${slug} 승인 실패: ${r.reason || r.error}`)
-      await loadEtlQueue()
-    } finally { setEtlBusy(false) }
-  }
-
-  const openEtlDetail = async (slug: string) => {
-    if (etlDetail[slug]) { const cp = { ...etlDetail }; delete cp[slug]; setEtlDetail(cp); return }
-    const d = await api<EtlDetail>(`/api/admin/etl/queue/${encodeURIComponent(slug)}`)
-    setEtlDetail(p => ({ ...p, [slug]: d }))
-    setEtlPayloadDraft(p => ({ ...p, [slug]: JSON.stringify(d.proposedPayload, null, 2) }))
-  }
-
-  const saveCorrection = async (slug: string) => {
-    let payload: unknown
-    try { payload = JSON.parse(etlPayloadDraft[slug]) } catch { setEtlMsg(`${slug}: JSON 파싱 오류`); return }
-    setEtlBusy(true); setEtlMsg('')
-    try {
-      // 교정 저장 = proposal 갱신 + 미해결/소실 플래그 비움(검토자가 해소했다고 단언)
-      await api(`/api/admin/etl/queue/${encodeURIComponent(slug)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ proposed_payload: payload, irrecoverable_fields: [], unresolved_bindings: [], confidence: 'high' }),
-      })
-      setEtlMsg(`${slug} 교정 저장 (플래그 해소) — 이제 승인 가능`)
-      const cp = { ...etlDetail }; delete cp[slug]; setEtlDetail(cp)
-      await loadEtlQueue()
-    } finally { setEtlBusy(false) }
-  }
-
-  const rejectOne = async (slug: string) => {
-    if (!confirm(`${slug} 검토 항목을 반려할까요?`)) return
-    await api(`/api/admin/etl/queue/${encodeURIComponent(slug)}/reject`, { method: 'POST', body: JSON.stringify({}) })
-    await loadEtlQueue()
-  }
 
   // ── 배우 캐스팅 (WS-I P3b-4 린 UI) ──
   const [actors, setActors] = useState<ActorRow[]>([])
@@ -509,7 +414,7 @@ export default function Admin() {
     finally { setPresetBusy(false) }
   }
 
-  useEffect(() => { loadStories(); loadPersonas(); loadEtlQueue(); loadActors(); loadLorePacks(); loadPresets() }, [loadStories, loadPersonas, loadEtlQueue, loadActors, loadLorePacks, loadPresets])
+  useEffect(() => { loadStories(); loadPersonas(); loadActors(); loadLorePacks(); loadPresets() }, [loadStories, loadPersonas, loadActors, loadLorePacks, loadPresets])
 
   // ── 페르소나 ──
   const savePersona = async () => {
@@ -731,96 +636,6 @@ export default function Admin() {
           )}
         </div>
 
-        {/* v2 마이그레이션 (ETL 검토 큐) */}
-        <div className="admin-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>v2 마이그레이션 (ETL)</h2>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={scanEtl} disabled={etlBusy}>스캔/갱신</button>
-              <button className="btn" style={{ fontSize: 12 }} onClick={approveAuto} disabled={etlBusy}>자동승인 일괄</button>
-            </div>
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
-            구 flat 스토리 → 신 모델(characters) 전환. 단일 캐릭터+무결은 일괄 자동승인, 다중/미해결은 교정 후 개별 승인. 승인 시 v2 release 생성(기존 세션은 legacy 유지).
-          </div>
-          {etlSummary && <div style={{ fontSize: 12, marginBottom: 6 }}>{etlSummary}</div>}
-          {etlMsg && <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--primary)' }}>{etlMsg}</div>}
-          {etlQueue.length === 0 ? (
-            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>큐가 비어있습니다. [스캔/갱신]을 누르세요.</div>
-          ) : (
-            <div className="story-table-wrap">
-              <table className="story-table">
-                <thead>
-                  <tr>
-                    <th>스토리</th>
-                    <th style={{ textAlign: 'center' }}>캐릭터</th>
-                    <th style={{ textAlign: 'center' }}>상태</th>
-                    <th style={{ textAlign: 'center' }}>플래그</th>
-                    <th style={{ width: 1 }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {etlQueue.map(r => {
-                    const open = !!etlDetail[r.slug]
-                    const blocked = r.irrecoverableCount > 0 || r.unresolvedCount > 0
-                    return (
-                      <Fragment key={r.slug}>
-                        <tr>
-                          <td style={{ fontSize: 13 }}>
-                            <div>{r.title}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{r.slug}</div>
-                          </td>
-                          <td style={{ textAlign: 'center', fontSize: 13 }}>{r.charCount}{r.charCount === 1 ? '' : '⚠'}</td>
-                          <td style={{ textAlign: 'center', fontSize: 12 }}>
-                            {r.isV2 ? <span style={{ color: '#5c8' }}>v2</span>
-                              : r.status === 'approved' ? 'approved'
-                              : r.status === 'rejected' ? <span style={{ color: 'var(--text-dim)' }}>반려</span>
-                              : r.autoApprovable ? <span style={{ color: '#5c8' }}>자동가능</span>
-                              : <span style={{ color: '#e88' }}>검토필요</span>}
-                          </td>
-                          <td style={{ textAlign: 'center', fontSize: 11, color: blocked ? '#e88' : 'var(--text-dim)' }}>
-                            {blocked ? `소실 ${r.irrecoverableCount} / 미상 ${r.unresolvedCount}` : '-'}
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              {!r.isV2 && <button className="btn btn-secondary" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => openEtlDetail(r.slug)} disabled={etlBusy}>{open ? '닫기' : '상세'}</button>}
-                              {!r.isV2 && r.status !== 'rejected' && (
-                                <button className="btn" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => approveOne(r.slug)} disabled={etlBusy || blocked} title={blocked ? '미해결 항목 해소 후 승인 가능' : '승인'}>승인</button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        {open && etlDetail[r.slug] && (
-                          <tr>
-                            <td colSpan={5} style={{ background: 'var(--bg-elev, #1a1a1a)', padding: 12 }}>
-                              {etlDetail[r.slug].irrecoverableFields.length > 0 && (
-                                <div style={{ fontSize: 11, color: '#e88', marginBottom: 4 }}>소실(복원불가): {JSON.stringify(etlDetail[r.slug].irrecoverableFields)}</div>
-                              )}
-                              {etlDetail[r.slug].unresolvedBindings.length > 0 && (
-                                <div style={{ fontSize: 11, color: '#eb8', marginBottom: 6 }}>미상(검토 필요): {JSON.stringify(etlDetail[r.slug].unresolvedBindings)}</div>
-                              )}
-                              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>proposed_payload (교정 후 저장하면 플래그 해소 → 승인 가능):</div>
-                              <textarea
-                                value={etlPayloadDraft[r.slug] ?? ''}
-                                onChange={e => setEtlPayloadDraft(p => ({ ...p, [r.slug]: e.target.value }))}
-                                style={{ width: '100%', minHeight: 180, fontFamily: 'monospace', fontSize: 11 }}
-                              />
-                              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                                <button className="btn" style={{ fontSize: 11 }} onClick={() => saveCorrection(r.slug)} disabled={etlBusy}>교정 저장(플래그 해소)</button>
-                                <button className="btn btn-danger" style={{ fontSize: 11 }} onClick={() => rejectOne(r.slug)} disabled={etlBusy}>반려</button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
         {/* 배우 캐스팅 (WS-I) */}
         <div className="admin-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10, flexWrap: 'wrap' }}>
@@ -876,7 +691,7 @@ export default function Admin() {
           {casting && (
             <>
               {casting.characters.length === 0 ? (
-                <div style={{ fontSize: 12, color: '#e88', marginBottom: 8 }}>배역(story_characters) 없음 — 먼저 ETL 에서 캐릭터 승인(P3a)이 필요합니다.</div>
+                <div style={{ fontSize: 12, color: '#e88', marginBottom: 8 }}>배역(story_characters) 없음 — 이 스토리에 캐스팅 가능한 배역이 아직 없습니다.</div>
               ) : (
                 <div style={{ fontSize: 12, marginBottom: 8 }}>
                   {casting.characters.map(ch => (
