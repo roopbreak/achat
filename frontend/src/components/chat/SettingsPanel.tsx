@@ -14,7 +14,7 @@ interface Persona {
   is_default?: boolean
 }
 
-import type { OutputBand, StatusDisplay } from '@/hooks/useSettings'
+import type { OutputBand, StatusDisplay, CacheTtl } from '@/hooks/useSettings'
 
 interface Props {
   open: boolean
@@ -25,6 +25,7 @@ interface Props {
   statusDisplay: StatusDisplay
   imagesEnabled: boolean
   loreDebug: boolean
+  cacheTtl: CacheTtl
   personas: Persona[]
   selectedPersonaId: number | null
   onChangeFontSize: (delta: number) => void
@@ -34,6 +35,7 @@ interface Props {
   onChangeStatusDisplay: (mode: StatusDisplay) => void
   onToggleImages: () => void
   onToggleLoreDebug: () => void
+  onChangeCacheTtl: (ttl: CacheTtl) => void
   onChangePersona: (id: number) => void
   onClose: () => void
 }
@@ -61,10 +63,10 @@ const OUTPUT_BANDS = [
 ] as const
 
 export default function SettingsPanel({
-  open, fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug,
+  open, fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug, cacheTtl,
   personas, selectedPersonaId,
   onChangeFontSize, onChangeModel, onChangeOutputTarget, onToggleAutoContinue, onChangeStatusDisplay,
-  onToggleImages, onToggleLoreDebug, onChangePersona, onClose,
+  onToggleImages, onToggleLoreDebug, onChangeCacheTtl, onChangePersona, onClose,
 }: Props) {
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
@@ -135,6 +137,17 @@ export default function SettingsPanel({
                 {MODELS.map(([v, label]) => (
                   <SelectItem key={v} value={v}>{label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-muted-foreground">캐시 유지 (Claude)</Label>
+            <Select value={cacheTtl} onValueChange={(v) => onChangeCacheTtl(v as CacheTtl)}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5m">5분 — 연속 플레이</SelectItem>
+                <SelectItem value="1h">1시간 — 띄엄띄엄 플레이 (재개 비용 절감)</SelectItem>
               </SelectContent>
             </Select>
           </div>

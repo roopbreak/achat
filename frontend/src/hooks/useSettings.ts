@@ -31,6 +31,9 @@ function readOutputTarget(): OutputBand {
 /** 상태창 표시 방식 — inline=본문 말풍선에 녹임(모바일 가독성), hud=화면 하단 고정 */
 export type StatusDisplay = 'inline' | 'hud'
 
+/** 대화 캐시 TTL — '1h'=띄엄띄엄 플레이 시 재개 비용 절감(쓰기 2×·1시간 유지), '5m'=연속 플레이 기본 */
+export type CacheTtl = '5m' | '1h'
+
 export interface Settings {
   fontSize: number
   model: string
@@ -39,6 +42,7 @@ export interface Settings {
   statusDisplay: StatusDisplay
   imagesEnabled: boolean
   loreDebug: boolean
+  cacheTtl: CacheTtl
 }
 
 export function useSettings() {
@@ -51,6 +55,8 @@ export function useSettings() {
   const [statusDisplay, setStatusDisplay] = useState<StatusDisplay>(() => read('chat_status_display', 'inline') === 'hud' ? 'hud' : 'inline')
   const [imagesEnabled, setImagesEnabled] = useState(() => read('chat_images', 'on') !== 'off')
   const [loreDebug, setLoreDebug] = useState(() => read('chat_lore_debug', 'off') === 'on')
+  // 대화 캐시 TTL: 기본 5m(현행). 1h는 5분~1시간 간격 재개가 잦은 플레이 패턴용.
+  const [cacheTtl, setCacheTtl] = useState<CacheTtl>(() => read('chat_cache_ttl', '5m') === '1h' ? '1h' : '5m')
 
   const changeFontSize = useCallback((delta: number) => {
     setFontSize(prev => {
@@ -99,8 +105,13 @@ export function useSettings() {
     })
   }, [])
 
+  const changeCacheTtl = useCallback((ttl: CacheTtl) => {
+    setCacheTtl(ttl)
+    localStorage.setItem('chat_cache_ttl', ttl)
+  }, [])
+
   return {
-    fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug,
-    changeFontSize, changeModel, changeOutputTarget, toggleAutoContinue, changeStatusDisplay, toggleImages, toggleLoreDebug,
+    fontSize, model, outputTarget, autoContinue, statusDisplay, imagesEnabled, loreDebug, cacheTtl,
+    changeFontSize, changeModel, changeOutputTarget, toggleAutoContinue, changeStatusDisplay, toggleImages, toggleLoreDebug, changeCacheTtl,
   }
 }

@@ -187,7 +187,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: text, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
+        { message: text, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug, cacheTtl: settings.cacheTtl },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -219,7 +219,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, settings.cacheTtl, renderStream])
 
   // ── `!`-시스템 명령어 실행 (kind 분기 — §3-2) ──
   const runCommand = useCallback(async (cmd: SystemCommand) => {
@@ -298,7 +298,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/regen`,
-        { sessionId: session.sessionId, feedback, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
+        { sessionId: session.sessionId, feedback, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug, cacheTtl: settings.cacheTtl },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -328,7 +328,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
+  }, [session, stream, slug, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, settings.cacheTtl, renderStream])
 
   // ── 수정 (messageId 좌표 — WS-M P4a) ──
   const handleEdit = useCallback(async (message: Message, newContent: string) => {
@@ -362,7 +362,7 @@ export default function Chat() {
     try {
       await stream(
         `/api/stories/${encodeURIComponent(slug)}/chat`,
-        { message: newContent, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug },
+        { message: newContent, sessionId: session.sessionId, model: settings.model, outputTarget: settings.outputTarget === 'story' ? undefined : settings.outputTarget, autoContinue: settings.autoContinue, loreDebug: settings.loreDebug, cacheTtl: settings.cacheTtl },
         {
           onToken: (_token, fullText) => {
             partialRef.current = fullText
@@ -390,7 +390,7 @@ export default function Chat() {
       setStreamingExchange(null)
       setContinueSeg(null)
     }
-  }, [session, slug, stream, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, renderStream])
+  }, [session, slug, stream, settings.model, settings.outputTarget, settings.autoContinue, settings.loreDebug, settings.cacheTtl, renderStream])
 
   // ── 분기 ──
   const handleFork = useCallback(async (exchangeNumber: number) => {
@@ -511,6 +511,7 @@ export default function Chat() {
         statusDisplay={settings.statusDisplay}
         imagesEnabled={settings.imagesEnabled}
         loreDebug={settings.loreDebug}
+        cacheTtl={settings.cacheTtl}
         personas={personas}
         selectedPersonaId={selectedPersonaId}
         onChangeFontSize={settings.changeFontSize}
@@ -520,6 +521,7 @@ export default function Chat() {
         onChangeStatusDisplay={settings.changeStatusDisplay}
         onToggleImages={settings.toggleImages}
         onToggleLoreDebug={settings.toggleLoreDebug}
+        onChangeCacheTtl={settings.changeCacheTtl}
         onChangePersona={changePersona}
         onClose={() => setSettingsOpen(false)}
       />

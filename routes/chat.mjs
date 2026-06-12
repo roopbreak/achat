@@ -92,7 +92,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: '잘못된 요청', reason: zodReason(parsed.error) });
   }
-  const { message, sessionId: reqSessionId, model, maxTokens, outputTarget, autoContinue, loreDebug } = parsed.data;
+  const { message, sessionId: reqSessionId, model, maxTokens, outputTarget, autoContinue, loreDebug, cacheTtl } = parsed.data;
 
   const story = resolveStory(req, res);
   if (!story) return;
@@ -135,7 +135,7 @@ router.post('/:slug/chat', chatLimiter, async (req, res) => {
       writeSSE(res, 'lore', { entries });
     }
 
-    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band, autoContinue: autoContinue !== false });
+    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band, autoContinue: autoContinue !== false, cacheTtl });
     assistantText = genResult.finalText;
   } catch (err) {
     if (!res.writableEnded) {
@@ -221,7 +221,7 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
   if (!parsedRegen.success) {
     return res.status(400).json({ error: '잘못된 요청', reason: zodReason(parsedRegen.error) });
   }
-  const { sessionId, feedback, model, maxTokens, outputTarget, autoContinue, loreDebug } = parsedRegen.data;
+  const { sessionId, feedback, model, maxTokens, outputTarget, autoContinue, loreDebug, cacheTtl } = parsedRegen.data;
 
   const session = getSession(sessionId);
   if (!session) return res.status(404).json({ error: '세션 없음' });
@@ -271,7 +271,7 @@ router.post('/:slug/regen', chatLimiter, async (req, res) => {
       writeSSE(res, 'lore', { entries });
     }
 
-    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band, autoContinue: autoContinue !== false });
+    genResult = await streamWithContinuation({ systemBlocks, messages, res, model, maxTokens: effectiveMaxTokens, band, autoContinue: autoContinue !== false, cacheTtl });
     assistantText = genResult.finalText;
   } catch (err) {
     if (prevAssistant) {

@@ -8,6 +8,10 @@ import { z } from 'zod'
 export const OutputBandSchema = z.enum(['short', 'light', 'medium', 'full', 'epic'])
 export type OutputBand = z.infer<typeof OutputBandSchema>
 
+/** 대화 캐시 TTL — '1h'=쓰기 2×·1시간 유지(띄엄띄엄 플레이), 생략/'5m'=현행 5분. Claude 전용(Gemini 무시). */
+export const CacheTtlSchema = z.enum(['5m', '1h'])
+export type CacheTtl = z.infer<typeof CacheTtlSchema>
+
 export const ChatRequestBodySchema = z.object({
   message: z.string().trim().min(1),
   sessionId: z.string().nullish(),
@@ -19,6 +23,7 @@ export const ChatRequestBodySchema = z.object({
   /** 자동 이어쓰기(분량 미달 시 백스톱). false=1회 생성만(사용자 토글). 생략=on(현행). */
   autoContinue: z.boolean().nullish(),
   loreDebug: z.boolean().nullish(),
+  cacheTtl: CacheTtlSchema.nullish(),
 })
 export type ChatRequestBody = z.infer<typeof ChatRequestBodySchema>
 
@@ -32,6 +37,7 @@ export const RegenRequestBodySchema = z.object({
   maxTokens: z.number().int().positive().nullish(),
   autoContinue: z.boolean().nullish(),
   loreDebug: z.boolean().nullish(),
+  cacheTtl: CacheTtlSchema.nullish(),
 })
 export type RegenRequestBody = z.infer<typeof RegenRequestBodySchema>
 
