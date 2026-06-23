@@ -109,7 +109,8 @@ description: "베이비챗(babechat.ai) 캐릭터 링크를 받아 공개 컨셉
    - ⚠️ 첫 인자는 **`docs/stories/` 하위 디렉토리명만** 넘긴다 — 스크립트가 내부에서 `docs/stories/`를 붙이므로 경로 전체를 주면 `docs/stories/docs/stories/...`를 찾다 실패한다
    - ⚠️ `POST /api/admin/import/card`·`import/zip` 경로는 쓰지 않는다 — `import/card`는 임포트 성공 시 항상 NAI 자동 생성을 트리거하고, `import/zip`은 zip에 저장된 이미지가 있을 때(`imagesSaved > 0`)만 생성을 스킵한다 (`register-from-md` + `import/images` 조합은 트리거 없음)
 2. 이미지 파일명 변환: `batch_{sceneKey}_1.png|jpg|webp` 형식으로 리네임 — `POST /api/admin/import/images`가 파일명 패턴 `^batch_(.+)_\d+\.(png|jpg|webp)$`에서 scene_key를 추출한다. **`jpeg`/`gif` 등 다른 확장자는 조용히 skip**되므로 jpg로 리네임(또는 변환) 후 전수 확인
-3. 업로드: `POST /api/admin/import/images` (multipart: `slug`, `images[]` 최대 500) → `story_images` 행 생성. 응답의 `saved`/`skipped`가 기대 장수와 일치하는지 확인
+3. 업로드: `POST /api/admin/import/images` (multipart: `slug`, **파일 필드명은 `images`** — `upload.array('images', 500)`이라 `images[]`로 보내면 multer Unexpected field → **HTTP 500**, 2026-06-10 검증) → `story_images` 행 생성. 응답의 `saved`/`skipped`가 기대 장수와 일치하는지 확인
+   - ⚠️ **요청 본문 크기 한계(413)**: 서버 body size 제한으로 대용량 일괄 업로드는 413. **80장/배치(~25MB) 단위로 분할**한다. 1MB+ PNG 원본은 `sips -s format jpeg -s formatOptions 82 in.png --out batch_{key}_1.jpg`로 변환하면 용량 1/10 + 서빙 개선(alpha는 풀 일러스트라 무방). webp 원본은 그대로 80~100장/배치
    - ⚠️ **재업로드는 교체가 아니다**: 서버는 같은 scene_key라도 행을 추가(append)할 뿐이며, 채팅 서빙(`getRandomImage`)은 중복 행 중 무작위 1장을 고른다. 이미지를 교체하려면 **먼저 `DELETE /api/admin/stories/{slug}/images/{sceneKey}`로 기존 행을 지운 뒤** 업로드한다
 
 ### 단계 5: 검증

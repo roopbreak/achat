@@ -54,7 +54,7 @@ Agent(
 | A | AI 채팅 작가 | `persona-chat-writer` | 인터랙티브 구조·진입·분기·페이즈 |
 | E | 엔진 QA 검수자 | `persona-engine-qa` | 엔진 호환·캐싱·로어북·토큰. 적대적 검수 전담 |
 | N | NSFW 전문 작가 | `persona-nsfw-writer` | 성인 묘사·욕망 차별화·용어 로어 |
-| P | 캐릭터 심리학자 | `persona-psychologist` | 성격·관계·모순·균열점 |
+| P | 캐릭터 매력 설계자 | `persona-psychologist` | 욕망·태도·말투 선명함·행동 일관성·차별화 |
 | K | 컬처 컨설턴트 | `persona-culture` | 도메인 디테일·호칭·말투·외부변수 |
 
 다른 도메인(시스템 설계·코드 리뷰·플랜)은 catalog의 도메인 2~5 참조 — 그 경우 페르소나를 프롬프트 인라인으로 운용한다.
