@@ -97,7 +97,7 @@ APP_SECRET          # 앱 접속 코드 (빈 값 = 인증 없음)
 ## 배포
 
 - 원격 서버: `58.232.136.138` (SSH: `shepard@58.232.136.138`, 키: `~/.ssh/id_github_external`)
-- **외부 접속 도메인**: `https://risu.ddsmdy.com/` (배포 후 검증은 이 주소에서 수행)
+- **외부 접속 도메인**: `https://achat.ddsmdy.com/` (배포 후 검증은 이 주소에서 수행. 맥미니 self-host + Cloudflare Tunnel 경유. 구 `risu.ddsmdy.com`은 폐기)
 - 배포 명령: `bash deploy.sh` (서버에서 `git pull` → 빌드 → restart 구조이므로 로컬 변경은 먼저 commit + push 필요)
 - 서버 포트: 8080 (내부, 외부 직접 접근 차단됨 — 도메인으로만 접근)
 - API 호출 시: `Authorization: Bearer {APP_SECRET}` 헤더 필수
