@@ -279,6 +279,30 @@ pm2 save
 3. **Codex 1순위 병행**(AGENTS.md + MCP), Hermes는 선택적 로컬 자율 데몬
 4. 통짜 이전은 안 함 — 코어 공유 + 얇은 어댑터
 
+## 원격 명령(텔레그램/Slack) + 개인·가족 비서
+
+### 보안 결론 — OpenClaw 비권장
+- OpenClaw는 2026.1~2 **원클릭 RCE(CVE-2026-25253, CVSS 8.8)·프롬프트 인젝션 RCE(CVE-2026-30741)** 다발, 4만+ 인스턴스 노출. 패치는 빨랐으나 아키텍처 약점 + Microsoft/immersivelabs 강한 경고. **localhost도 크로스오리진 WebSocket 공격으로 위험**
+- 우리 맥미니는 **AChat 데이터+구독+가족이 한 머신에 집중** → blast radius 큼 → **OpenClaw 비권장**
+
+### 권장 — DIY 최소 코어 (자체 디스패처)
+"채팅→실행"은 설계상 RCE라 본질 리스크는 남지만, DIY가 OpenClaw보다 표면이 작음(Control UI·WebSocket·노출 인스턴스 없음, Telegram long-poll/Slack Socket Mode = 인바운드 포트 없음).
+- **트러스트 가드(필수)**: ① allowlist(본인/가족 ID만) + `bypassPermissions` 금지 + 명령 surface 제한 ② **전용 비권한 macOS 유저 + 샌드박스 workdir**(AChat·민감데이터 경로 격리) ③ 시크릿 keychain/env(레포 커밋 금지·순회) ④ ID 스푸핑 대비 민감작업 이중확인
+- **모델 라우팅**: 가족·일반 = 로컬 Ollama(인젝션이 구독·민감툴에 안 닿게) / 개인·고품질 = 구독(`claude -p`·`codex`)
+
+### 일정·이메일 = MCP 서버 (DIY 금지)
+통합을 직접 짜지 말고 **표준 MCP 서버**를 브리지에 연결:
+- Google 공식 Workspace MCP(50+) 또는 커뮤니티 `google_workspace_mcp`·`google-calendar-mcp`
+- 어떤 MCP 런타임이든 재사용 → Gmail 요약·캘린더 관리
+- ⚠️ **이메일=신뢰불가 입력**: 스코프 OAuth(가능한 읽기전용), 본문은 "데이터지 명령 아님" 취급, 툴 권한 최소화 (OpenClaw가 약하게 다뤄 사고난 지점)
+
+### 개인+가족 비서 구도 (택1/혼합)
+1. **셀프호스트** — DIY 얇은 브리지 + Google Workspace MCP + 로컬/구독 모델. 데이터 내 맥미니. 가장 통제·프라이버시
+2. **하이브리드(현실적)** — 가족 코디네이션은 턴키 SaaS(Nori/Ohai/Ollie), 개인·민감·개발은 셀프호스트. 가족 비개발자면 SaaS UX 우위
+3. 풀 셀프호스트 과설계 주의 — 가족 UX는 SaaS가 앞섬
+
+> 실행은 맥미니 안정화 후. 우선 개인 단독(allowlist 1명)으로 DIY 코어+캘린더 MCP 검증 → 가족 확장은 권한 격리 설계 후.
+
 ---
 
 ## 진행 상태
