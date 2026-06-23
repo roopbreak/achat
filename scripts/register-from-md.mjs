@@ -15,12 +15,14 @@ const args = process.argv.slice(2);
 let storyDir = null;
 let slug = null;
 let dryRun = false;
+let update = false;
 let server = 'https://risu.ddsmdy.com';
 let secret = 'achat2026';
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--dry-run') dryRun = true;
+  else if (a === '--update') update = true;
   else if (a === '--server') server = args[++i];
   else if (a === '--secret') secret = args[++i];
   else if (a === '--slug') slug = args[++i];
@@ -238,8 +240,10 @@ const headers = {
   'Authorization': `Bearer ${secret}`,
 };
 
-async function postJson(url, body) {
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+async function reqJson(method, url, body) {
+  const opt = { method, headers };
+  if (body !== undefined) opt.body = JSON.stringify(body);
+  const res = await fetch(url, opt);
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch { data = text; }
@@ -248,8 +252,46 @@ async function postJson(url, body) {
   }
   return data;
 }
+const postJson = (url, body) => reqJson('POST', url, body);
+
+async function updateMain() {
+  const fields = { title, char_name, description, personality, scenario, first_mes, post_history_instructions, category };
+  console.log(`\n[1/4] 스토리 필드 업데이트 → PUT ${server}/api/admin/stories/${slug}`);
+  await reqJson('PUT', `${server}/api/admin/stories/${slug}`, fields);
+  console.log('   ✓ 필드 업데이트 완료');
+
+  console.log(`\n[2/4] 기존 로어 조회·삭제 → GET/DELETE /lore`);
+  const existing = await reqJson('GET', `${server}/api/admin/stories/${slug}/lore`);
+  const arr = Array.isArray(existing) ? existing : (existing.lore || existing.entries || []);
+  let del = 0;
+  for (const e of arr) {
+    const id = e.id ?? e.lore_id;
+    if (id == null) continue;
+    await reqJson('DELETE', `${server}/api/admin/stories/${slug}/lore/${id}`);
+    del++; process.stdout.write('x');
+  }
+  console.log(`\n   기존 로어 ${del}개 삭제`);
+
+  const loreUrl = `${server}/api/admin/stories/${slug}/lore`;
+  let ok = 0, fail = 0;
+  console.log(`\n[3/4] 상시 로어 ${constant.length}개 재등록`);
+  for (const lore of constant) {
+    try { await postJson(loreUrl, lore); ok++; process.stdout.write('.'); }
+    catch (err) { fail++; console.error(`\n   ✗ ${lore.name}: ${err.message}`); }
+  }
+  console.log(`\n   상시: 성공 ${ok}, 실패 ${fail}`);
+  ok = 0; fail = 0;
+  console.log(`\n[4/4] 키워드 로어 ${keyword.length}개 재등록`);
+  for (const lore of keyword) {
+    try { await postJson(loreUrl, lore); ok++; process.stdout.write('.'); }
+    catch (err) { fail++; console.error(`\n   ✗ ${lore.name}: ${err.message}`); }
+  }
+  console.log(`\n   키워드: 성공 ${ok}, 실패 ${fail}`);
+  console.log(`\n✅ ${slug} 업데이트 완료 (로어 전체 교체)`);
+}
 
 async function main() {
+  if (update) return updateMain();
   console.log(`\n[1/3] 스토리 생성 → POST ${server}/api/admin/stories`);
   try {
     const result = await postJson(`${server}/api/admin/stories`, {
@@ -295,7 +337,7 @@ async function main() {
   }
   console.log(`\n   키워드 로어: 성공 ${okCount}, 실패 ${failCount}`);
 
-  console.log(`\n✅ ${name} 등록 완료`);
+  console.log(`\n✅ ${slug} 등록 완료`);
 }
 
 main().catch(err => { console.error('등록 실패:', err.message); process.exit(1); });
