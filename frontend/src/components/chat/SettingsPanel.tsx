@@ -41,6 +41,10 @@ interface Props {
 }
 
 const MODELS = [
+  // 구독(Claude Code) 라우팅 — cc: 센티넬. 로컬/맥미니 개인 인스턴스에서 local-cc-bridge.mjs 가 가로챔.
+  ['cc:claude-opus-4-8', 'Claude Code · Opus 4.8 (구독)'],
+  ['cc:claude-sonnet-4-6', 'Claude Code · Sonnet 4.6 (구독)'],
+  // 실제 API (기존)
   ['claude-sonnet-4-6', 'Sonnet 4.6'],
   ['claude-opus-4-6', 'Opus 4.6'],
   ['claude-haiku-4-5-20251001', 'Haiku 4.5'],

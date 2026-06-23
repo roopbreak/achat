@@ -1,6 +1,8 @@
 | 작업 | 상태 | 핸드오프 | 마지막 업데이트 |
 |------|------|---------|----------------|
-| 캐릭터 작성 파이프라인 가벼운 웹소설 디폴트 전환 | 활성 | docs/handoff/persona-vulgar-default.md | 2026-06-11 |
+| 개인 맥미니 Claude Code 구독 채팅 라우팅 | 활성 | docs/handoff/local-subscription-multiprovider.md | 2026-06-23 |
+| 캐릭터 정체성 복구 + 카드 포맷 통일 (26개 재작성) | 활성 | docs/handoff/character-identity-restoration.md | 2026-06-11 |
+| └ 선행: 페르소나 가벼운 웹소설 디폴트 전환 | 흡수 | docs/handoff/persona-vulgar-default.md | 2026-06-11 |
 | 서술부/info부/선택지부 3분할 개편 | 활성 | docs/handoff/three-part-separation.md | 2026-06-11 |
 | 상태창 본문 분리 (센티넬+HUD, P1~P4 배포·P5 보류) | 활성 | docs/handoff/status-block-separation.md | 2026-06-11 |
 | 배포 방식 전환 (Docker → git pull) | 완료 | docs/handoff/deploy-git-pull.md | 2026-05-08 |
