@@ -4,6 +4,15 @@
 module.exports = {
   apps: [
     {
+      // MariaDB — yetend DB (맥미니 로컬). my.cnf: buffer_pool 64M, bind 127.0.0.1(LAN 차단)
+      name: 'mariadb',
+      script: '/opt/homebrew/opt/mariadb/bin/mariadbd',
+      args: '--datadir=/opt/homebrew/var/mysql',
+      interpreter: 'none',
+      autorestart: true,
+      max_restarts: 10,
+    },
+    {
       name: 'achat',
       script: 'index.mjs',
       cwd: '/Users/jeong/Workspace/achat',
@@ -23,6 +32,16 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
     },
-    // 트랙 1-Y yetend는 이관 후 여기에 추가 (port 3000)
+    {
+      // yetend (Next.js) — port 3000. DB는 맥미니 로컬 MariaDB(127.0.0.1:3306). .env/.env.local은 next가 자동 로드
+      name: 'yetend',
+      script: 'npm',
+      args: 'start',
+      cwd: '/Users/jeong/Workspace/yetend',
+      interpreter: 'none',
+      autorestart: true,
+      max_restarts: 10,
+      max_memory_restart: '1G',
+    },
   ],
 };
