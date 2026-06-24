@@ -118,6 +118,7 @@ function bridgeToClaudeCode(body, signal) {
     '--model', model,
     '--setting-sources', '',                 // CLAUDE.md/스킬/훅 로딩 차단 (오염 방지)
     '--tools', '',                           // 도구 스키마 전부 제거 → 하네스 컨텍스트 ~14k 절감(prefill·rate limit ↓)
+    '--strict-mcp-config',                   // MCP 서버 연결 시도 차단 — 기동 시 connecting/timeout 대기 제거(TTFT ↓)
   ];
   if (sysFile) args.push('--system-prompt-file', sysFile);
 
@@ -125,6 +126,8 @@ function bridgeToClaudeCode(body, signal) {
   delete env.ANTHROPIC_API_KEY;              // 구독(OAuth) 인증 강제 → API 과금 회피
   delete env.ANTHROPIC_AUTH_TOKEN;
   env.MAX_THINKING_TOKENS = '0';             // 서술엔 추론 불필요 — thinking 토큰/지연 제거
+  env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';  // 기동 네트워크(autoupdate/telemetry/error) 차단 → TTFT ↓
+  env.DISABLE_AUTOUPDATER = '1';             // 자동 업데이트 체크 차단(기동 지연 제거)
   if (body.max_tokens) env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = String(body.max_tokens);
 
   const stream = new ReadableStream({
