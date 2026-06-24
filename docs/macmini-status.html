@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>맥미니 통합 셋업 현황 (2026-06-24)</title>
+<style>
+  :root{--bg:#0f1117;--card:#1a1d27;--card2:#222633;--bd:#2e3344;--tx:#e6e9f0;--mut:#9aa3b8;--ac:#7c5cff;--ok:#3ecf8e;--warn:#f5b94d;--err:#ff6b6b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;padding:32px 20px;max-width:1100px;margin:0 auto}
+  h1{font-size:26px;margin-bottom:4px}
+  h2{font-size:19px;margin:32px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--bd);color:#fff}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+  .card h3{font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .card p{font-size:13px;color:var(--mut);margin:2px 0}
+  .b{color:var(--tx);font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .on{background:var(--ok)} .pulse{background:var(--ok);box-shadow:0 0 0 0 rgba(62,207,142,.6);animation:p 2s infinite}
+  @keyframes p{70%{box-shadow:0 0 0 8px rgba(62,207,142,0)}}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+  .pill.ok{color:var(--ok);border-color:#2a5c46} .pill.ac{color:#b9a6ff;border-color:#463a7a}
+  code{background:#0b0d13;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#c8d0e0}
+  .diagram{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:22px;overflow-x:auto}
+  .flow{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:520px}
+  .node{background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;text-align:center;font-size:13px}
+  .node.cf{border-color:#5a4a9a;background:#241f3a}
+  .node.mac{border-color:#2a5c46;background:#16271f}
+  .arrow{color:var(--mut);font-size:18px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd)}
+  th{color:var(--mut);font-weight:600;font-size:12px}
+  .mut{color:var(--mut)} .ok{color:var(--ok)} .warn{color:var(--warn)}
+  .note{background:#16271f;border:1px solid #2a5c46;border-radius:10px;padding:12px 16px;font-size:13px;margin-top:10px}
+  .note.w{background:#2a2417;border-color:#5c4a2a}
+  footer{margin-top:40px;color:var(--mut);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>🖥️ 맥미니 통합 셋업 현황</h1>
+<div class="sub">Apple M4 Pro · 48GB · 460GB SSD (329GB 여유) · 사용자 <code>jeong@Mac-mini</code> · 갱신 2026-06-24</div>
+<div class="sub">집에서 self-host하는 AI 채팅 서비스 2개 + 이미지 생성 도구가 한 대에 통합 운영 중</div>
+
+<h2>📊 한눈에 — 지금 돌고 있는 것</h2>
+<div class="grid">
+  <div class="card"><h3><span class="dot pulse"></span> AChat</h3>
+    <p><span class="b">스토리 채팅 엔진</span> (메인 서비스)</p>
+    <p>외부주소 <span class="b">achat.ddsmdy.com</span> <span class="pill ok">HTTP 200</span></p>
+    <p>포트 8080 · 메모리 108MB</p>
+    <p><span class="pill ac">구독 라우팅 cc:</span> 모델 선택 시 과금 0</p>
+  </div>
+  <div class="card"><h3><span class="dot pulse"></span> yetend</h3>
+    <p><span class="b">동화 생성 앱</span> (Next.js)</p>
+    <p>외부주소 <span class="b">yetend.ddsmdy.com</span> <span class="pill ok">HTTP 307</span></p>
+    <p>포트 3000 · 메모리 70MB</p>
+    <p class="mut">로그인 페이지로 정상 리다이렉트</p>
+  </div>
+  <div class="card"><h3><span class="dot pulse"></span> MariaDB</h3>
+    <p><span class="b">yetend 데이터베이스</span> (로컬)</p>
+    <p>포트 3306 · 메모리 112MB</p>
+    <p><span class="pill ok">127.0.0.1 전용</span> 외부차단</p>
+    <p class="mut">메모리 절약 설정(64MB)</p>
+  </div>
+  <div class="card"><h3><span class="dot pulse"></span> cloudflared</h3>
+    <p><span class="b">외부 연결 터널</span></p>
+    <p>메모리 48MB</p>
+    <p class="mut">공인 IP 숨김, 포트포워딩 불필요</p>
+    <p>두 도메인을 맥미니로 연결</p>
+  </div>
+</div>
+<div class="note">✅ 네 서비스 모두 <span class="ok">online</span> · pm2가 관리하며 <span class="b">재부팅돼도 자동으로 다시 켜짐</span> (launchd + pm2 resurrect) · 맥미니 슬립 차단됨</div>
+
+<h2>🌐 외부에서 접속하면 이렇게 연결됩니다</h2>
+<div class="diagram">
+  <div class="flow">
+    <div class="node">📱 휴대폰 / PC (외부 인터넷)</div>
+    <div class="arrow">▼ https</div>
+    <div class="node cf">☁️ Cloudflare (TLS 암호화 종단 + 도메인 라우팅)</div>
+    <div class="arrow">▼ 암호화 터널 (집 공인 IP 숨김)</div>
+    <div class="node cf">🔌 cloudflared 터널 <span class="mut">(achat-home)</span></div>
+    <div class="arrow">▼ localhost</div>
+    <div class="node mac">🖥️ 맥미니 (집)</div>
+    <div class="arrow">▼</div>
+    <div class="row">
+      <div class="node mac">AChat :8080<br><span class="mut">achat.ddsmdy.com</span></div>
+      <div class="node mac">yetend :3000<br><span class="mut">yetend.ddsmdy.com</span></div>
+    </div>
+    <div class="arrow">▼ yetend → DB</div>
+    <div class="node mac">MariaDB :3306 <span class="mut">(127.0.0.1 전용)</span></div>
+  </div>
+</div>
+<div class="note">옛날 리눅스 서버(58.232.136.138)가 하던 일을 전부 맥미니로 옮겼습니다. 구 주소 <code>risu.ddsmdy.com</code>은 제거됨.</div>
+
+<h2>🟣 AChat — 스토리 채팅 엔진</h2>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>코드 위치</td><td><code>~/Workspace/achat</code> · 브랜치 <span class="b">v2</span> (운영)</td></tr>
+  <tr><td>구동</td><td>pm2 <code>node --import local-cc-bridge.mjs index.mjs</code></td></tr>
+  <tr><td class="b">구독 라우팅</td><td>모델명 앞에 <code>cc:</code> 붙이면 → Claude Code 구독으로 처리 = <span class="ok">API 과금 0</span>. <code>cc:</code> 없으면 일반 API</td></tr>
+  <tr><td>데이터</td><td><code>~/achat-data</code> · 이미지 <span class="b">5.1GB / 18,198개</span> · DB 20MB</td></tr>
+  <tr><td>데이터 출처</td><td>옛 서버에서 직접 rsync로 이전 (무결성 검증 완료)</td></tr>
+</table>
+
+<h2>🟢 yetend — 동화 생성 앱</h2>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>코드 위치</td><td><code>~/Workspace/yetend</code> · 브랜치 main · Next.js</td></tr>
+  <tr><td>로그인 계정</td><td><span class="b">미니 / 미키 / admin</span> (PIN 방식)</td></tr>
+  <tr><td class="b">DB 이전</td><td>원래 옛 서버 로컬 MySQL이었음 → <span class="ok">맥미니 로컬 MariaDB로 이전</span> (9테이블). 이제 옛 서버 없어도 동작</td></tr>
+  <tr><td>업로드 파일</td><td><code>public/uploads</code> 93개 이전 완료</td></tr>
+</table>
+
+<h2>🎨 트랙2 — 로컬 이미지 생성 (ComfyUI)</h2>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>위치</td><td><code>~/Workspace/ComfyUI</code> · PyTorch 2.12 + <span class="b">MPS(Apple GPU)</span></td></tr>
+  <tr><td>모델</td><td>WAI Illustrious + Zeniji K-Webtoon (한국 웹툰 화풍)</td></tr>
+  <tr><td>LoRA</td><td>DMD2(속도) + manhwa-style(웹툰)</td></tr>
+  <tr><td>상태</td><td><span class="warn">설치 완료, 평소엔 꺼둠</span> (필요시 수동 기동, idle 686MB)</td></tr>
+</table>
+
+<h2>🔑 접속 정보</h2>
+<table>
+  <tr><th>서비스</th><th>주소</th><th>인증</th></tr>
+  <tr><td>AChat</td><td><code>https://achat.ddsmdy.com</code></td><td>접속코드 <code>achat2026</code></td></tr>
+  <tr><td>yetend</td><td><code>https://yetend.ddsmdy.com</code></td><td>로그인(미니/미키/admin + PIN)</td></tr>
+</table>
+<div class="note w">⚠️ 접속코드 <code>achat2026</code>는 외부 공유 금지(개인 시크릿)</div>
+
+<h2>🔭 다음 단계 (계획)</h2>
+<table>
+  <tr><th>트랙</th><th>상태</th></tr>
+  <tr><td>트랙1 AChat 이관</td><td class="ok">✅ 완료</td></tr>
+  <tr><td>트랙1-Y yetend 이관</td><td class="ok">✅ 완료</td></tr>
+  <tr><td>트랙2 이미지 생성(ComfyUI)</td><td class="warn">셋업 완료 · 생성 검증만 남음</td></tr>
+  <tr><td>트랙3 개인비서 + 지식저장소(PKM/RAG)</td><td class="mut">설계 완료 · 구현 예정 (런타임 중립 — Claude 종속 안 함)</td></tr>
+  <tr><td>옛 리눅스 서버</td><td class="mut">프로세스 중단 완료 · 물리 종료는 직접</td></tr>
+</table>
+<div class="note">트랙3 설계: 텔레그램 → 자체 디스패처(claude/codex/로컬 교체 가능) → MCP 도구(Obsidian·캘린더) → 로컬 RAG. 상세: <code>docs/plan/personal-assistant-design_2026-06-24.md</code></div>
+
+<footer>맥미니 통합 셋업 — achat repo · 자동 생성 문서 · 2026-06-24</footer>
+</body>
+</html>
