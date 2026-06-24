@@ -23,3 +23,6 @@ docs/rag/tips/
 export/
 .playdata/
 public/dist-next/
+.codex/
+.agents/
+.vscode/

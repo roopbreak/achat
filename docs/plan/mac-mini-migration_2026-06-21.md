@@ -392,5 +392,5 @@ pm2 save
 - [ ] **외부 모바일 검증** — `achat.ddsmdy.com` cc: 모델 / `yetend.ddsmdy.com` 로그인 (직접)
 - [ ] 송이안 시드 트랙2 생성 검증 (위 IG-D)
 - [ ] `achat.db`(92K) 레거시 용도 — 맥미니 실사용 여부
-- [ ] 트랙3(멀티런타임·원격명령·가족비서) — 검토만, 안정화 후
+- [x] 트랙3(멀티런타임·원격명령·가족비서·PKM) — 리서치+설계 완료 → **`jarvis` 레포로 분리**(2026-06-24, `~/Workspace/jarvis`, achat와 독립 프로젝트). 구현은 jarvis에서
 - [ ] (검토완료·비권장) yetend 서술 구독 라우팅 — `tool_choice` 구조화 출력이라 claude -p 부적합, 비용 대비 작업·리스크 큼 → API 유지
