@@ -28,10 +28,6 @@ const MSG_URL       = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = process.env.LOCAL_CC_MODEL || 'claude-sonnet-4-6';
 const CLAUDE_BIN    = process.env.LOCAL_CC_BIN || 'claude';
 
-// 서술 중 파일/웹/에이전트 도구 접근 차단 (--max-turns 1 과 병행)
-const DISALLOWED_TOOLS =
-  'Bash Read Edit Write MultiEdit Glob Grep WebFetch WebSearch Task NotebookEdit';
-
 let sysFileSeq = 0;
 
 console.log(
@@ -121,13 +117,14 @@ function bridgeToClaudeCode(body, signal) {
     '--max-turns', '1',
     '--model', model,
     '--setting-sources', '',                 // CLAUDE.md/스킬/훅 로딩 차단 (오염 방지)
-    '--disallowedTools', DISALLOWED_TOOLS,
+    '--tools', '',                           // 도구 스키마 전부 제거 → 하네스 컨텍스트 ~14k 절감(prefill·rate limit ↓)
   ];
   if (sysFile) args.push('--system-prompt-file', sysFile);
 
   const env = { ...process.env };
   delete env.ANTHROPIC_API_KEY;              // 구독(OAuth) 인증 강제 → API 과금 회피
   delete env.ANTHROPIC_AUTH_TOKEN;
+  env.MAX_THINKING_TOKENS = '0';             // 서술엔 추론 불필요 — thinking 토큰/지연 제거
   if (body.max_tokens) env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = String(body.max_tokens);
 
   const stream = new ReadableStream({
