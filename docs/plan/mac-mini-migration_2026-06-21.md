@@ -360,24 +360,37 @@ pm2 save
 
 ## 진행 상태
 
-**트랙 1 — AChat 이관**
-- [x] **Phase C — 원격 → 맥북 이전 완료** (2026-06-21): DB 스냅샷 20M + 이미지 5.1G/18,239개, 검증 통과. 스테이징 `~/achat-migration/achat-data/`
-- [ ] Phase C-3 — 맥북 → 맥미니 아이클라우드 동기화 (맥미니 셋업 시)
-- [ ] Phase A/B/D/E — 맥미니 코드·환경·구동
-- [ ] Phase F/G — pm2·터널·기존 서버 정리
+> **2026-06-24 대규모 진척** — 트랙1·트랙1-Y 완료, 트랙2 셋업 완료(검증만 남음). 운영 머신=`jeong@Mac-mini`(plan의 shepard 가정과 다름), achat 운영 브랜치=**v2**(master 아님 — 구독 라우팅 `local-cc-bridge`가 v2 전용).
 
-**트랙 2 — babechat-studio 로컬 이미지 생성**
-- [x] **iCloud `babechat-sync/` 업로드(로컬 복사) 완료** (2026-06-21): downloads 12G/13,950개 + style-lora-dataset 85M + mosaic-upload, ditto 검증 통과
-- [x] babechat-studio 레포 커밋·푸시(origin/pixai-base2) + 맥 로컬 가이드 작성
-- [ ] iCloud 클라우드 업로드 완료 대기(☁️ 확인) → 맥미니에서 ditto 복원
-- [ ] Phase IG-A/B/C/D — Draw Things 설치·모델/LoRA·송이안 검증
+**트랙 1 — AChat 이관 ✅ 완료**
+- [x] **Phase C** (2026-06-21): 원격 → 맥북 DB 스냅샷 + 이미지 5.1G/18,239개
+- [x] **Phase A/B** (2026-06-23): Node v26.3.1·CLT·git clone·npm install·빌드(better-sqlite3 v26 동작)
+- [x] **Phase C-3 데이터 수신** (2026-06-24): iCloud 경로 0.2~0.4MB/s(placeholder)로 비현실 → **원격 LAN 직접 rsync 채택**. 무결성 검증(실데이터 누락 0, 실파일 18,198=DB story_images 18,198, 행수 원격 일치). DB는 원격 온라인 백업 스냅샷
+- [x] **v2 전환 + 구독 라우팅** (2026-06-24): master→**v2 운영**. `local-cc-bridge.mjs`(`cc:` 센티넬→claude CLI 구독 OAuth, API 키 제거로 과금0) `--import` 구동. `cc:claude-sonnet-4-6` 스모크 통과
+- [x] **Phase D/E** (2026-06-24): `.env`(DB_PATH/DATA_DIR=`~/achat-data`), 8080 구동, LLM 스모크(캐싱 cacheRead 40K·auto-continue·이미지·DB저장)
+- [x] **Phase F** (2026-06-24): pm2 4개(achat/cloudflared/mariadb/yetend) + 자동기동(launchd `pm2 resurrect`) + `pmset sleep 0`
+- [x] **Cloudflare Tunnel** (2026-06-24): `achat.ddsmdy.com` 컷오버(HTTP200), 구 `risu.ddsmdy.com` DNS 제거
+- [x] **Phase G(SW)** (2026-06-24): 옛 리눅스 achat 프로세스 중단 + `@reboot` crontab 제거 (데이터·코드 보존). ⬜ 물리 종료·포트포워딩 제거는 사용자 잔여
 
-## 열린 항목 (사용자 확인 필요)
-- [x] **iCloud 용량** — 두 트랙 합산 ~17.3G(achat 5.2G + babechat 12.1G), 여유 45G로 충분 확인 ✅
-- [x] yetend: git origin/포트(3000)/스택(Next.js+Prisma+MySQL) 확인 완료 → 트랙 1-Y 참조
-- [x] **yetend DB 방침 확정** — 즉시 이관은 NCP MySQL 유지, **로컬 MariaDB 전환은 추후 yetend v2 개편으로 분리**
-- [ ] yetend `public/uploads/` 용량 확인 → 이전 경로(iCloud vs LAN rsync) 결정
-- [ ] (추후) **yetend v2 개편** — 로컬 MariaDB 전환 + 코드 개편 (즉시 이관 안정화 후 별도 진행)
-- [ ] `achat.db`(92K) 레거시 용도 — 맥미니에서 실제 사용 여부
-- [ ] 맥미니 최종 동기화 시점 원격 서비스 동결 여부(이전 후 신규 플레이 데이터 갱신분 재이전 필요할 수 있음)
-- [ ] Cloudflare 계정 접근(터널 생성·DNS 라우팅 변경 권한)
+**트랙 1-Y — yetend ✅ 완료**
+- [x] clone(HTTPS `main`) + 시크릿(.env/.env.local) + `public/uploads` 93개 이전
+- [x] **DB 방침 정정+이관** (2026-06-24): 실제 DB가 NCP가 아니라 **옛 서버 로컬 MySQL**(`yetend.asuscomm.com`→58.232:3306)이었음. plan의 "NCP 유지" 기록 오류. → **맥미니 로컬 MariaDB로 즉시 이관**(mysqldump 9테이블 → import). `DATABASE_URL`=127.0.0.1, 로그인 검증 통과
+- [x] mariadb pm2(`buffer_pool 64M`, `bind 127.0.0.1` LAN차단) + `yetend.ddsmdy.com` 터널
+
+**트랙 2 — babechat 로컬 이미지 생성 (셋업 완료, 검증만 남음)**
+- [x] **ComfyUI 설치+구동 확인** (2026-06-24): `~/Workspace/ComfyUI` venv + PyTorch 2.12.1 **MPS** + ComfyUI-Manager/controlnet/Impact. 8188 구동 OK(VRAM 48G)
+- [x] **모델/LoRA 완비**: 체크포인트 WAI Illustrious v170 + Zeniji K-Webtoon v10 / LoRA DMD2 4step + manhwa-style
+- [x] **babechat 메모리 92개 복원**: 깨진 `/Users/shepard` 심링크 + iCloud placeholder → 로컬 실파일(`memory.bak-pre-icloud`)에서 복원
+- [ ] Draw Things 미설치 — ComfyUI로 대체 가능, **불필요**
+- [ ] **Phase IG-D — 송이안 시드 실제 생성 검증**(화풍 확인) — 트랙2 유일 잔여
+- 메모: ComfyUI 상시 미구동(필요시 `cd ~/Workspace/ComfyUI && nohup venv/bin/python main.py --port 8188 >/tmp/comfy.log 2>&1 & disown`). idle 686MB라 상시도 무방하나 GPU 경합 회피 위해 온디맨드 선택
+
+## 열린 항목 / 잔여
+- [x] yetend DB — **NCP 방침 오류 확인, 로컬 MariaDB 이관 완료**(위 트랙1-Y)
+- [x] Cloudflare 계정 접근 — 터널·DNS 라우팅 정상 수행됨
+- [ ] **옛 서버 물리 종료** — 프로세스·자동시작은 차단됨. 전원 OFF + 공유기 포트포워딩(8080/3000) 제거 (사용자)
+- [ ] **외부 모바일 검증** — `achat.ddsmdy.com` cc: 모델 / `yetend.ddsmdy.com` 로그인 (직접)
+- [ ] 송이안 시드 트랙2 생성 검증 (위 IG-D)
+- [ ] `achat.db`(92K) 레거시 용도 — 맥미니 실사용 여부
+- [ ] 트랙3(멀티런타임·원격명령·가족비서) — 검토만, 안정화 후
+- [ ] (검토완료·비권장) yetend 서술 구독 라우팅 — `tool_choice` 구조화 출력이라 claude -p 부적합, 비용 대비 작업·리스크 큼 → API 유지
